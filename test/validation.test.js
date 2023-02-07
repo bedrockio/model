@@ -1,6 +1,10 @@
 import yd from '@bedrockio/yada';
 
-import { getValidationSchema, getMongooseValidator } from '../src/validation';
+import {
+  getValidationSchema,
+  getMongooseValidator,
+  addFixedSchemas,
+} from '../src/validation';
 import { createSchemaFromAttributes, createTestModel } from '../src/testing';
 
 async function assertPass(schema, obj, expected) {
@@ -737,6 +741,27 @@ describe('validation', () => {
         roles: {
           role: 'test',
         },
+      });
+    });
+
+    it('should allow an array to be passed for sort', async () => {
+      const User = createTestModel({
+        name: String,
+      });
+      const schema = User.getSearchValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertPass(schema, {
+        name: 'foo',
+        sort: [
+          {
+            field: 'name',
+            order: 'asc',
+          },
+          {
+            field: 'createdAt',
+            order: 'desc',
+          },
+        ],
       });
     });
   });
@@ -1605,5 +1630,39 @@ describe('getMongooseValidator', () => {
     const emailValidator = getMongooseValidator('email');
     await expect(emailValidator('foo@bar.com')).resolves.not.toThrow();
     await expect(emailValidator('bad@email')).rejects.toThrow();
+  });
+});
+
+describe('addFixedSchemas', () => {
+  it('should be able to add a custom schema validator', async () => {
+    addFixedSchemas({
+      dog: yd.allow('Golden Retriever', 'Australian Shepherd'),
+    });
+    const User = createTestModel({
+      dog: {
+        type: String,
+        validate: 'dog',
+      },
+    });
+
+    await expect(
+      User.create({
+        dog: 'Australian Shepherd',
+      })
+    ).resolves.not.toThrow();
+
+    await expect(
+      User.create({
+        dog: 'Husky',
+      })
+    ).rejects.toThrow();
+
+    const schema = User.getCreateValidation();
+    await assertPass(schema, {
+      dog: 'Australian Shepherd',
+    });
+    await assertFail(schema, {
+      dog: 'Husky',
+    });
   });
 });

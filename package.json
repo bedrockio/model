@@ -23,7 +23,7 @@
     "url": "https://github.com/bedrockio/model"
   },
   "peerDependencies": {
-    "@bedrockio/yada": "^1.0.5",
+    "@bedrockio/yada": "^1.0.6",
     "mongoose": "^6.9.0"
   },
   "devDependencies": {
@@ -32,7 +32,7 @@
     "@babel/preset-env": "^7.20.2",
     "@bedrockio/logger": "^1.0.1",
     "@bedrockio/prettier-config": "^1.0.2",
-    "@bedrockio/yada": "^1.0.5",
+    "@bedrockio/yada": "^1.0.6",
     "@shelf/jest-mongodb": "^4.1.6",
     "babel-plugin-import-replacement": "^1.0.1",
     "babel-plugin-lodash": "^3.3.4",

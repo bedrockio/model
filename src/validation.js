@@ -7,9 +7,34 @@ import { searchValidation } from './search';
 import { isMongooseSchema } from './utils';
 import { PermissionsError } from './errors';
 
-const FIXED_SCHEMAS = {
+const fixedSchemas = {
+  // Email is special as we are assuming that in
+  // all cases lowercase should be allowed but coerced.
   email: yd.string().lowercase().email(),
+  // Force "ObjectId" to have parity with refs.
+  // "mongo" is notably excluded here for this reason.
   ObjectId: yd.string().mongo(),
+
+  ascii: yd.string().ascii(),
+  base64: yd.string().base64(),
+  btc: yd.string().btc(),
+  country: yd.string().country(),
+  creditCard: yd.string().creditCard(),
+  domain: yd.string().domain(),
+  eth: yd.string().eth(),
+  hex: yd.string().hex(),
+  ip: yd.string().ip(),
+  jwt: yd.string().jwt(),
+  latlng: yd.string().latlng(),
+  locale: yd.string().locale(),
+  md5: yd.string().md5(),
+  phone: yd.string().phone(),
+  postalCode: yd.string().postalCode(),
+  sha1: yd.string().sha1(),
+  slug: yd.string().slug(),
+  swift: yd.string().swift(),
+  url: yd.string().url(),
+  uuid: yd.string().uuid(),
 };
 
 export function getValidationSchema(attributes, options = {}) {
@@ -42,6 +67,10 @@ export function getMongooseValidator(name) {
   };
   validator.fixedName = name;
   return validator;
+}
+
+export function addFixedSchemas(schemas) {
+  Object.assign(fixedSchemas, schemas);
 }
 
 function getObjectSchema(obj, options) {
@@ -211,7 +240,7 @@ function getSchemaForType(type) {
     case 'ObjectId':
       return yd.custom(async (val) => {
         const id = String(val.id || val);
-        await FIXED_SCHEMAS['ObjectId'].validate(id);
+        await fixedSchemas['ObjectId'].validate(id);
         return id;
       });
     default:
@@ -246,9 +275,9 @@ function getRangeSchema(schema, type) {
 
 function getFixedSchema(arg) {
   const name = arg.fixedName || arg;
-  const schema = FIXED_SCHEMAS[name];
+  const schema = fixedSchemas[name];
   if (!schema) {
-    throw new Error(`Cannot find schema for ${name}.`);
+    throw new Error(`Cannot find schema for "${name}".`);
   }
   return schema;
 }

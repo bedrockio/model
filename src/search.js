@@ -1,6 +1,6 @@
 import yd from '@bedrockio/yada';
 import mongoose from 'mongoose';
-import { pick, omit, isEmpty, isPlainObject } from 'lodash';
+import { pick, isEmpty, isPlainObject } from 'lodash';
 
 import { isDateField, isNumberField, resolveField } from './utils';
 
@@ -73,6 +73,11 @@ export function applySearch(schema, definition) {
   });
 }
 
+const SORT_SCHEMA = yd.object({
+  field: yd.string().required(),
+  order: yd.string().allow('desc', 'asc').required(),
+});
+
 export function searchValidation(definition, options = {}) {
   const { limit, sort, ...rest } = {
     ...DEFAULTS,
@@ -85,12 +90,7 @@ export function searchValidation(definition, options = {}) {
     keyword: yd.string(),
     include: yd.string(),
     skip: yd.number().default(0),
-    sort: yd
-      .object({
-        field: yd.string().required(),
-        order: yd.string().allow('desc', 'asc').required(),
-      })
-      .default(sort),
+    sort: yd.allow(SORT_SCHEMA, yd.array(SORT_SCHEMA)).default(sort),
     limit: yd.number().positive().default(limit),
     ...rest,
   };
