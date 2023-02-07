@@ -1,12 +1,10 @@
-import { createTestModel, createSchemaFromAttributes } from './helpers';
+import { createTestModel } from '../src/testing';
 
 describe('soft delete', () => {
   it('should soft delete a document', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        name: 'String',
-      })
-    );
+    const User = createTestModel({
+      name: 'String',
+    });
     const user = await User.create({
       name: 'foo',
     });
@@ -15,11 +13,9 @@ describe('soft delete', () => {
   });
 
   it('should restore a document', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        name: 'String',
-      })
-    );
+    const User = createTestModel({
+      name: 'String',
+    });
     const user = await User.create({
       name: 'foo',
     });
@@ -30,11 +26,9 @@ describe('soft delete', () => {
   });
 
   it('should not query deleted documents by default', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        name: 'String',
-      })
-    );
+    const User = createTestModel({
+      name: 'String',
+    });
     const deletedUser = await User.create({
       name: 'foo',
       deletedAt: new Date(),
@@ -48,11 +42,9 @@ describe('soft delete', () => {
   });
 
   it('should still query deleted documents', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        name: 'String',
-      })
-    );
+    const User = createTestModel({
+      name: 'String',
+    });
     const deletedUser = await User.create({
       name: 'foo',
       deletedAt: new Date(),
@@ -68,11 +60,9 @@ describe('soft delete', () => {
   });
 
   it('should still query with deleted documents', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        name: 'String',
-      })
-    );
+    const User = createTestModel({
+      name: 'String',
+    });
     await User.create({
       name: 'foo',
     });
@@ -89,11 +79,9 @@ describe('soft delete', () => {
   });
 
   it('should hard delete a document', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        name: 'String',
-      })
-    );
+    const User = createTestModel({
+      name: 'String',
+    });
     const user = await User.create({
       name: 'foo',
     });

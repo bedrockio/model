@@ -1,15 +1,13 @@
 import mongoose from 'mongoose';
 
-import { createSchemaFromAttributes, createTestModel } from './helpers';
+import { createTestModel, createSchemaFromAttributes } from '../src/testing';
 
 describe('createSchema', () => {
   describe('basic functionality', () => {
     it('should create a basic schema', async () => {
-      const User = createTestModel(
-        createSchemaFromAttributes({
-          name: { type: String, validate: /[a-z]/ },
-        })
-      );
+      const User = createTestModel({
+        name: { type: String, validate: /[a-z]/ },
+      });
       const user = new User({ name: 'foo' });
       expect(user.name).toBe('foo');
       await expect(async () => {
@@ -19,11 +17,9 @@ describe('createSchema', () => {
     });
 
     it('should create a schema with an array field', async () => {
-      const User = createTestModel(
-        createSchemaFromAttributes({
-          names: [{ type: String, validate: /[a-z]/ }],
-        })
-      );
+      const User = createTestModel({
+        names: [{ type: String, validate: /[a-z]/ }],
+      });
       const user = new User({ names: ['foo'] });
 
       expect(Array.from(user.names)).toEqual(['foo']);
@@ -35,39 +31,33 @@ describe('createSchema', () => {
     });
 
     it('should allow alternate array function syntax', async () => {
-      const User = createTestModel(
-        createSchemaFromAttributes({
-          names: {
-            type: Array,
-            default: [],
-          },
-        })
-      );
+      const User = createTestModel({
+        names: {
+          type: Array,
+          default: [],
+        },
+      });
       const user = new User({ names: ['foo'] });
       expect(Array.from(user.names)).toEqual(['foo']);
     });
 
     it('should allow alternate array string syntax', async () => {
-      const User = createTestModel(
-        createSchemaFromAttributes({
-          names: {
-            type: 'Array',
-            default: [],
-          },
-        })
-      );
+      const User = createTestModel({
+        names: {
+          type: 'Array',
+          default: [],
+        },
+      });
       const user = new User({ names: ['foo'] });
       expect(Array.from(user.names)).toEqual(['foo']);
     });
 
     it('should create a schema with a nested field', async () => {
-      const User = createTestModel(
-        createSchemaFromAttributes({
-          profile: {
-            name: { type: String, validate: /[a-z]/ },
-          },
-        })
-      );
+      const User = createTestModel({
+        profile: {
+          name: { type: String, validate: /[a-z]/ },
+        },
+      });
       const user = new User({
         profile: {
           name: 'foo',
@@ -83,13 +73,11 @@ describe('createSchema', () => {
     });
 
     it('should accept a schema for a subfield', async () => {
-      const User = createTestModel(
-        createSchemaFromAttributes({
-          profile: createSchemaFromAttributes({
-            name: { type: String, validate: /[a-z]/ },
-          }),
-        })
-      );
+      const User = createTestModel({
+        profile: createSchemaFromAttributes({
+          name: { type: String, validate: /[a-z]/ },
+        }),
+      });
       const user = new User({
         profile: {
           name: 'foo',
@@ -105,11 +93,9 @@ describe('createSchema', () => {
     });
 
     it('should convert a string match to a regexp', async () => {
-      const User = createTestModel(
-        createSchemaFromAttributes({
-          color: { type: String, match: '^#[0-9a-f]{6}$' },
-        })
-      );
+      const User = createTestModel({
+        color: { type: String, match: '^#[0-9a-f]{6}$' },
+      });
       const user = await User.create({
         color: '#ffffff',
       });

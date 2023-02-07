@@ -1,18 +1,16 @@
 import mongoose from 'mongoose';
 
 import { createSchema } from '../src/schema';
-import { createTestModel, createSchemaFromAttributes } from './helpers';
+import { createTestModel, createSchemaFromAttributes } from '../src/testing';
 
 describe('search', () => {
   it('should search on name', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        name: {
-          type: String,
-          required: true,
-        },
-      })
-    );
+    const User = createTestModel({
+      name: {
+        type: String,
+        required: true,
+      },
+    });
     await Promise.all([
       User.create({ name: 'Billy' }),
       User.create({ name: 'Willy' }),
@@ -144,16 +142,14 @@ describe('search', () => {
   });
 
   it('should search on an array field', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        order: Number,
-        categories: [
-          {
-            type: String,
-          },
-        ],
-      })
-    );
+    const User = createTestModel({
+      order: Number,
+      categories: [
+        {
+          type: String,
+        },
+      ],
+    });
     const [user1, user2] = await Promise.all([
       User.create({ order: 1, categories: ['owner', 'member'] }),
       User.create({ order: 2, categories: ['owner'] }),
@@ -178,11 +174,9 @@ describe('search', () => {
   });
 
   it('should allow shorthand for a regex query', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        name: String,
-      })
-    );
+    const User = createTestModel({
+      name: String,
+    });
     await Promise.all([
       User.create({ name: 'Willy' }),
       User.create({ name: 'Billy' }),
@@ -198,11 +192,9 @@ describe('search', () => {
   });
 
   it('should behave like $in when empty array passed', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        categories: [String],
-      })
-    );
+    const User = createTestModel({
+      categories: [String],
+    });
     await Promise.all([
       User.create({ categories: ['owner', 'member'] }),
       User.create({ categories: ['owner'] }),
@@ -216,17 +208,15 @@ describe('search', () => {
   });
 
   it('should perform a search on a nested field', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        order: Number,
-        roles: [
-          {
-            role: { type: 'String', required: true },
-            scope: { type: 'String', required: true },
-          },
-        ],
-      })
-    );
+    const User = createTestModel({
+      order: Number,
+      roles: [
+        {
+          role: { type: 'String', required: true },
+          scope: { type: 'String', required: true },
+        },
+      ],
+    });
     const [user1, user2] = await Promise.all([
       User.create({
         order: 1,
@@ -281,20 +271,18 @@ describe('search', () => {
   });
 
   it('should perform a search on a complex nested field', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        name: String,
-        profile: {
-          roles: [
-            {
-              role: {
-                functions: [String],
-              },
+    const User = createTestModel({
+      name: String,
+      profile: {
+        roles: [
+          {
+            role: {
+              functions: [String],
             },
-          ],
-        },
-      })
-    );
+          },
+        ],
+      },
+    });
     await Promise.all([
       User.create({
         name: 'Bob',
@@ -342,16 +330,14 @@ describe('search', () => {
   it('should mixin operator queries', async () => {
     let result;
 
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        name: {
-          type: String,
-        },
-        age: {
-          type: Number,
-        },
-      })
-    );
+    const User = createTestModel({
+      name: {
+        type: String,
+      },
+      age: {
+        type: Number,
+      },
+    });
     await Promise.all([
       User.create({ name: 'Billy', age: 20 }),
       User.create({ name: 'Willy', age: 32 }),
@@ -384,13 +370,11 @@ describe('search', () => {
   });
 
   it('should mixin nested operator queries', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        name: {
-          type: String,
-        },
-      })
-    );
+    const User = createTestModel({
+      name: {
+        type: String,
+      },
+    });
     await Promise.all([
       User.create({ name: 'Billy' }),
       User.create({ name: 'Willy' }),
@@ -409,26 +393,24 @@ describe('search', () => {
   });
 
   it('should allow custom dot path in query', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        roles: [
-          {
-            role: {
-              type: 'String',
-              required: true,
-            },
-            scope: {
-              type: 'String',
-              required: true,
-            },
-            scopeRef: {
-              type: 'ObjectId',
-              ref: 'Organization',
-            },
+    const User = createTestModel({
+      roles: [
+        {
+          role: {
+            type: 'String',
+            required: true,
           },
-        ],
-      })
-    );
+          scope: {
+            type: 'String',
+            required: true,
+          },
+          scopeRef: {
+            type: 'ObjectId',
+            ref: 'Organization',
+          },
+        },
+      ],
+    });
     const ref1 = mongoose.Types.ObjectId();
     const ref2 = mongoose.Types.ObjectId();
 
@@ -566,19 +548,15 @@ describe('search', () => {
   });
 
   it('should return the query to allow population', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        name: 'String',
-      })
-    );
-    const Shop = createTestModel(
-      createSchemaFromAttributes({
-        user: {
-          ref: User.modelName,
-          type: mongoose.Schema.Types.ObjectId,
-        },
-      })
-    );
+    const User = createTestModel({
+      name: 'String',
+    });
+    const Shop = createTestModel({
+      user: {
+        ref: User.modelName,
+        type: mongoose.Schema.Types.ObjectId,
+      },
+    });
 
     const user = await User.create({ name: 'Billy' });
     await Shop.create({
@@ -596,11 +574,9 @@ describe('search', () => {
   });
 
   it('should error on bad queries', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        name: 'String',
-      })
-    );
+    const User = createTestModel({
+      name: 'String',
+    });
     await expect(async () => {
       await User.search({ _id: 'bad' });
     }).rejects.toThrow();

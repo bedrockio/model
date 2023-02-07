@@ -1,51 +1,43 @@
 import { Types } from 'mongoose';
 
 import { getIncludes } from '../src/include';
-import {
-  createSchemaFromAttributes,
-  createTestModel,
-  getTestModelName,
-} from './helpers';
+import { createTestModel, getTestModelName } from '../src/testing';
 
 const userModelName = getTestModelName();
 
-const Shop = createTestModel(
-  createSchemaFromAttributes({
-    name: String,
-    email: String,
-    tags: [String],
+const Shop = createTestModel({
+  name: String,
+  email: String,
+  tags: [String],
+  user: {
+    ref: userModelName,
+    type: 'ObjectId',
+  },
+  customers: [
+    {
+      ref: userModelName,
+      type: 'ObjectId',
+    },
+  ],
+  deep: {
     user: {
       ref: userModelName,
       type: 'ObjectId',
     },
-    customers: [
-      {
-        ref: userModelName,
-        type: 'ObjectId',
-      },
-    ],
-    deep: {
-      user: {
-        ref: userModelName,
-        type: 'ObjectId',
-      },
-    },
-  })
-);
+  },
+});
 
-const Product = createTestModel(
-  createSchemaFromAttributes({
-    name: String,
-    email: String,
-    tags: [String],
-    shop: {
-      ref: Shop.modelName,
-      type: 'ObjectId',
-    },
-  })
-);
+const Product = createTestModel({
+  name: String,
+  email: String,
+  tags: [String],
+  shop: {
+    ref: Shop.modelName,
+    type: 'ObjectId',
+  },
+});
 
-const userSchema = createSchemaFromAttributes({
+const userSchema = {
   name: String,
   email: String,
   tags: [String],
@@ -63,19 +55,17 @@ const userSchema = createSchemaFromAttributes({
     ref: userModelName,
     type: 'ObjectId',
   },
-});
+};
 
 const User = createTestModel(userSchema, userModelName);
 
-const Comment = createTestModel(
-  createSchemaFromAttributes({
-    body: String,
-    product: {
-      ref: Product.modelName,
-      type: 'ObjectId',
-    },
-  })
-);
+const Comment = createTestModel({
+  body: String,
+  product: {
+    ref: Product.modelName,
+    type: 'ObjectId',
+  },
+});
 
 Product.schema.virtual('comments', {
   ref: Comment.modelName,
@@ -458,24 +448,22 @@ describe('getIncludes', () => {
   });
 
   it('should allow trailing wildcards in includes', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        name: String,
-        name1: String,
-        name2: String,
-        nameFirst: String,
-        nameLast: String,
-        naming: String,
+    const User = createTestModel({
+      name: String,
+      name1: String,
+      name2: String,
+      nameFirst: String,
+      nameLast: String,
+      naming: String,
+      deep: {
         deep: {
-          deep: {
-            name: String,
-            name1: String,
-            name2: String,
-          },
+          name: String,
+          name1: String,
+          name2: String,
         },
-        nam: String,
-      })
-    );
+      },
+      nam: String,
+    });
     const data = getIncludes(User.modelName, ['name*', 'deep.deep.name*']);
     expect(data).toEqual({
       select: [
@@ -491,34 +479,32 @@ describe('getIncludes', () => {
   });
 
   it('should allow leading wildcards in includes', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        nam: String,
-        name: String,
-        Name: String,
-        fName: String,
-        FName: String,
-        firstName: String,
-        lastName: String,
-        aname: String,
-        name1: String,
-        name2: String,
+    const User = createTestModel({
+      nam: String,
+      name: String,
+      Name: String,
+      fName: String,
+      FName: String,
+      firstName: String,
+      lastName: String,
+      aname: String,
+      name1: String,
+      name2: String,
+      deep: {
         deep: {
-          deep: {
-            nam: String,
-            name: String,
-            Name: String,
-            fName: String,
-            FName: String,
-            firstName: String,
-            lastName: String,
-            aname: String,
-            name1: String,
-            name2: String,
-          },
+          nam: String,
+          name: String,
+          Name: String,
+          fName: String,
+          FName: String,
+          firstName: String,
+          lastName: String,
+          aname: String,
+          name1: String,
+          name2: String,
         },
-      })
-    );
+      },
+    });
     const data = getIncludes(User.modelName, ['*Name', 'deep.deep.*Name']);
     expect(data).toEqual({
       select: [

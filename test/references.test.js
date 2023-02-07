@@ -1,25 +1,21 @@
 import mongoose from 'mongoose';
 
-import { createTestModel, createSchemaFromAttributes } from './helpers';
+import { createTestModel } from '../src/testing';
 
 describe('assertNoReferences', () => {
   it('should throw error if document is referenced externally', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        name: {
-          type: String,
-          required: true,
-        },
-      })
-    );
-    const Shop = createTestModel(
-      createSchemaFromAttributes({
-        user: {
-          ref: User.modelName,
-          type: mongoose.Schema.Types.ObjectId,
-        },
-      })
-    );
+    const User = createTestModel({
+      name: {
+        type: String,
+        required: true,
+      },
+    });
+    const Shop = createTestModel({
+      user: {
+        ref: User.modelName,
+        type: mongoose.Schema.Types.ObjectId,
+      },
+    });
     const user1 = await User.create({ name: 'foo ' });
     const user2 = await User.create({ name: 'foo ' });
     await Shop.create({ user: user1 });

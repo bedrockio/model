@@ -1,16 +1,14 @@
 import mongoose from 'mongoose';
 
-import { createSchemaFromAttributes, createTestModel } from './helpers';
+import { createTestModel } from '../src/testing';
 
 describe('assign', () => {
   it('should allow assignment of fields', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        name: { type: String },
-        number: { type: Number },
-        date: { type: Date },
-      })
-    );
+    const User = createTestModel({
+      name: { type: String },
+      number: { type: Number },
+      date: { type: Date },
+    });
     const user = new User();
     const now = Date.now();
     user.assign({
@@ -25,21 +23,19 @@ describe('assign', () => {
 
   it('should delete falsy values for reference fields', async () => {
     const User = createTestModel();
-    const Shop = createTestModel(
-      createSchemaFromAttributes({
+    const Shop = createTestModel({
+      user: {
+        ref: User.modelName,
+        type: mongoose.Schema.Types.ObjectId,
+      },
+      nested: {
+        name: String,
         user: {
           ref: User.modelName,
           type: mongoose.Schema.Types.ObjectId,
         },
-        nested: {
-          name: String,
-          user: {
-            ref: User.modelName,
-            type: mongoose.Schema.Types.ObjectId,
-          },
-        },
-      })
-    );
+      },
+    });
     const id = mongoose.Types.ObjectId().toString();
     const shop = new Shop({
       user: id,
@@ -75,16 +71,14 @@ describe('assign', () => {
 
   it('should still allow assignment of empty arrays for multi-reference fields', async () => {
     const User = createTestModel();
-    const Shop = createTestModel(
-      createSchemaFromAttributes({
-        users: [
-          {
-            ref: User.modelName,
-            type: mongoose.Schema.Types.ObjectId,
-          },
-        ],
-      })
-    );
+    const Shop = createTestModel({
+      users: [
+        {
+          ref: User.modelName,
+          type: mongoose.Schema.Types.ObjectId,
+        },
+      ],
+    });
     const shop = new Shop({
       users: ['5f63b1b88f09266f237e9d29', '5f63b1b88f09266f237e9d29'],
     });
@@ -104,14 +98,12 @@ describe('assign', () => {
   });
 
   it('should allow partial assignment of nested fields', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        profile: {
-          firstName: String,
-          lastName: String,
-        },
-      })
-    );
+    const User = createTestModel({
+      profile: {
+        firstName: String,
+        lastName: String,
+      },
+    });
 
     const user = await User.create({
       profile: {
@@ -132,15 +124,13 @@ describe('assign', () => {
   });
 
   it('should naively merge nested array fields', async () => {
-    const Shop = createTestModel(
-      createSchemaFromAttributes({
-        products: [
-          {
-            name: String,
-          },
-        ],
-      })
-    );
+    const Shop = createTestModel({
+      products: [
+        {
+          name: String,
+        },
+      ],
+    });
     const shop = await Shop.create({
       products: [
         {
@@ -166,11 +156,9 @@ describe('assign', () => {
   });
 
   it('should not overwrite mixed content fields', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        profile: 'Object',
-      })
-    );
+    const User = createTestModel({
+      profile: 'Object',
+    });
 
     const user = await User.create({
       profile: {
@@ -192,11 +180,9 @@ describe('assign', () => {
   });
 
   it('should delete mixed content fields with null', async () => {
-    const User = createTestModel(
-      createSchemaFromAttributes({
-        profile: 'Object',
-      })
-    );
+    const User = createTestModel({
+      profile: 'Object',
+    });
 
     let user = await User.create({
       profile: {
