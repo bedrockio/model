@@ -1,4 +1,4 @@
-import { isPlainObject } from 'lodash-es';
+import { isPlainObject } from 'lodash';
 
 import { checkSelects } from './include';
 import { resolveField } from './utils';
@@ -18,6 +18,7 @@ function transformField(obj, schema, options) {
       transformField(el, schema, options);
     }
   } else if (isPlainObject(obj)) {
+    // Export "id" virtual instead of "_id"
     if (!obj.id && obj._id) {
       obj.id = obj._id;
     }

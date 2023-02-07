@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { startCase } from 'lodash-es';
+import { startCase } from 'lodash';
 
 const { ObjectId: SchemaObjectId } = mongoose.Schema.Types;
 
@@ -31,8 +31,6 @@ export function applyReferences(schema) {
     );
   });
 }
-
-// Reference helpers derive ObjectId references between models.
 
 function getAllReferences(targetName) {
   return Object.values(mongoose.models)

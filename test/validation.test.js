@@ -1,6 +1,6 @@
 import yd, { isSchema } from '@bedrockio/yada';
 
-import { getValidationSchema, getMongooseValidator } from '../validation';
+import { getValidationSchema, getMongooseValidator } from '../src/validation';
 import { createSchemaFromAttributes, createTestModel } from './helpers';
 
 async function assertPass(schema, obj, expected) {

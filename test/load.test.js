@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 
-import { loadModel, loadModelDir } from '../load';
-import { getDirname } from './helpers';
+import { loadModel, loadModelDir } from '../src/load';
 
 describe('loadModel', () => {
   it('should create basic model', async () => {
@@ -30,8 +29,7 @@ describe('loadModelDir', () => {
   it('should create models from a folder', async () => {
     expect(!!mongoose.models.SpecialCategory).toBe(false);
     expect(!!mongoose.models.CustomModel).toBe(false);
-    const __dirname = getDirname(import.meta.url);
-    loadModelDir(__dirname + '/../__fixtures__');
+    loadModelDir('test/definitions');
     expect(!!mongoose.models.SpecialCategory).toBe(true);
     const { SpecialCategory } = mongoose.models;
     await SpecialCategory.deleteMany({});

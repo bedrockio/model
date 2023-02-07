@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 
-import { createSchema } from '../schema';
-
+import { createSchema } from '../src/schema';
 import { createTestModel, createSchemaFromAttributes } from './helpers';
 
 describe('search', () => {

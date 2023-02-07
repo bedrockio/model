@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 import mongoose from 'mongoose';
-import { startCase } from 'lodash-es';
+import { startCase } from 'lodash';
 
 import { createSchema } from './schema';
 

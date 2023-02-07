@@ -7,8 +7,8 @@
     "sourceType": "module"
   },
   "extends": [
+    "plugin:bedrock/imports-node",
     "plugin:bedrock/recommended",
-    "plugin:bedrock/imports",
     "plugin:bedrock/jest"
   ]
 }

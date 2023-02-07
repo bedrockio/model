@@ -1,13 +1,13 @@
 import mongoose from 'mongoose';
-import { isPlainObject } from 'lodash-es';
+import { isPlainObject } from 'lodash';
 
 import { serializeOptions } from './serialization';
 import { isMongooseSchema } from './utils';
+import { applySlug } from './slug';
+import { applySearch } from './search';
 import { applyAssign } from './assign';
 import { applyInclude } from './include';
 import { applyReferences } from './references';
-import { applySearch } from './search';
-import { applySlug } from './slug';
 import { applySoftDelete } from './soft-delete';
 import { applyValidation, getMongooseValidator } from './validation';
 
@@ -29,11 +29,8 @@ export function createSchema(definition, options = {}) {
     {
       // Include timestamps by default.
       timestamps: true,
-
-      // Export "id" virtual and omit "__v" as well as private fields.
       toJSON: serializeOptions,
       toObject: serializeOptions,
-
       ...options,
     }
   );
@@ -68,7 +65,7 @@ function attributesToMongoose(attributes, path = []) {
         val = RegExp(val);
       } else if (key === 'validate' && type === 'string') {
         // Allow custom mongoose validation function that derives from the schema.
-        val = getMongooseValidator(val, attributes);
+        val = getMongooseValidator(val);
       }
     } else if (key !== 'readScopes') {
       if (Array.isArray(val)) {

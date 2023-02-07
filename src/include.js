@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { escapeRegExp } from 'lodash-es';
+import { escapeRegExp } from 'lodash';
 
 import { resolveField } from './utils';
 

@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { get } from 'lodash-es';
+import { get } from 'lodash';
 
 const {
   Date: SchemaDate,

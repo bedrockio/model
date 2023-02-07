@@ -1,6 +1,6 @@
 import yd from '@bedrockio/yada';
 import mongoose from 'mongoose';
-import { isEmpty, isPlainObject } from 'lodash-es';
+import { isEmpty, isPlainObject } from 'lodash';
 
 import { isDateField, isNumberField, resolveField } from './utils';
 

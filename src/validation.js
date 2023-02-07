@@ -1,6 +1,6 @@
 import yd, { isSchema } from '@bedrockio/yada';
 
-import { omit } from 'lodash-es';
+import { omit } from 'lodash';
 
 import { RESERVED_FIELDS } from './const';
 import { searchValidation } from './search';

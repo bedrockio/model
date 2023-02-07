@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 
-import { getIncludes } from '../include';
+import { getIncludes } from '../src/include';
 import {
   createSchemaFromAttributes,
   createTestModel,
