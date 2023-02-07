@@ -1713,12 +1713,12 @@
   resolved "https://registry.yarnpkg.com/@bedrockio/prettier-config/-/prettier-config-1.0.2.tgz#89878381d3059b810f97514ee6b69f946a6d1654"
   integrity sha512-Ebcx/D9FcV6WEQH2gXA4SkN62fus/aVMW46MYFm1/y+S0GVYj+OCuBbRMM4F8YAq9ntJ+B/z9fLiOheNpEpRzA==
 
-"@bedrockio/yada@^1.0.3":
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/@bedrockio/yada/-/yada-1.0.3.tgz#6a443ac392ac00277b11549cccedeef3e7a8271c"
-  integrity sha512-nI8DE+s5MTBfECMeY1WcBf+GgAbud4GCpr+w+5mPmNeL2xd16biX4creVrw+7ojPqL1RKPvENFAXdc9gZ2EUPQ==
+"@bedrockio/yada@^1.0.5":
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/@bedrockio/yada/-/yada-1.0.5.tgz#638bb81bbc53d637089541231b675fb2d8b55e29"
+  integrity sha512-fR9ZhERYh16FWlvoi1+zhdDowo+YBh+MIbFh65LeQqFo5QVwlzsObKyLyp7/QmTblUn00w54ByDfyXewCz9kNw==
   dependencies:
-    validator "^13.7.0"
+    validator "^13.9.0"
 
 "@eslint/eslintrc@^1.4.1":
   version "1.4.1"
@@ -2770,6 +2770,11 @@ babel-jest@^29.4.1:
     chalk "^4.0.0"
     graceful-fs "^4.2.9"
     slash "^3.0.0"
+
+babel-plugin-import-replacement@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/babel-plugin-import-replacement/-/babel-plugin-import-replacement-1.0.1.tgz#f453382334c789468e27d92c8e853f2a9da2a74c"
+  integrity sha512-JRaC9cFKOiLOjjegzEr85fXZAcbvViBDxv4Yvx6AThEZhD9ruw+YyzKC0WIBh1ZlNXU0kyzAgznEZE/JnqeyRA==
 
 babel-plugin-istanbul@^6.1.1:
   version "6.1.1"
@@ -6013,7 +6018,7 @@ v8-to-istanbul@^9.0.1:
     "@types/istanbul-lib-coverage" "^2.0.1"
     convert-source-map "^1.6.0"
 
-validator@^13.7.0:
+validator@^13.9.0:
   version "13.9.0"
   resolved "https://registry.yarnpkg.com/validator/-/validator-13.9.0.tgz#33e7b85b604f3bbce9bb1a05d5c3e22e1c2ff855"
   integrity sha512-B+dGG8U3fdtM0/aNK4/X8CXq/EcxU2WPrPEkJGslb47qyHsxmbggTWK0yEA4qnYVNF+nxNlN88o14hIcPmSIEA==

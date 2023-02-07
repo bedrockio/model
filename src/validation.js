@@ -1,17 +1,16 @@
-import yd, { isSchema } from '@bedrockio/yada';
+import yd from '@bedrockio/yada';
 
 import { omit } from 'lodash';
 
 import { RESERVED_FIELDS } from './const';
 import { searchValidation } from './search';
 import { isMongooseSchema } from './utils';
+import { PermissionsError } from './errors';
 
 const FIXED_SCHEMAS = {
   email: yd.string().lowercase().email(),
   ObjectId: yd.string().mongo(),
 };
-
-export class PermissionsError extends Error {}
 
 export function getValidationSchema(attributes, options = {}) {
   const { appendSchema } = options;
@@ -38,9 +37,11 @@ export function getValidationSchema(attributes, options = {}) {
 //
 export function getMongooseValidator(name) {
   const schema = getFixedSchema(name);
-  return async (val) => {
+  const validator = async (val) => {
     await schema.validate(val);
   };
+  validator.fixedName = name;
+  return validator;
 }
 
 function getObjectSchema(obj, options) {
@@ -62,7 +63,7 @@ function getObjectSchema(obj, options) {
       field = transformField(key, field);
     }
     if (field) {
-      if (isSchema(field)) {
+      if (yd.isSchema(field)) {
         map[key] = field;
       } else {
         map[key] = getSchemaForField(field, options);
@@ -243,7 +244,8 @@ function getRangeSchema(schema, type) {
   return schema;
 }
 
-function getFixedSchema(name) {
+function getFixedSchema(arg) {
+  const name = arg.fixedName || arg;
   const schema = FIXED_SCHEMAS[name];
   if (!schema) {
     throw new Error(`Cannot find schema for ${name}.`);

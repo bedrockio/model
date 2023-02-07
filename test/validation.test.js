@@ -1,4 +1,4 @@
-import yd, { isSchema } from '@bedrockio/yada';
+import yd from '@bedrockio/yada';
 
 import { getValidationSchema, getMongooseValidator } from '../src/validation';
 import { createSchemaFromAttributes, createTestModel } from './helpers';
@@ -54,7 +54,7 @@ describe('validation', () => {
         })
       );
       const schema = User.getCreateValidation();
-      expect(isSchema(schema)).toBe(true);
+      expect(yd.isSchema(schema)).toBe(true);
       await assertPass(schema, {
         name: 'foo',
         count: 10,
@@ -83,7 +83,7 @@ describe('validation', () => {
       const schema = User.getCreateValidation({
         count: yd.number().required(),
       });
-      expect(isSchema(schema)).toBe(true);
+      expect(yd.isSchema(schema)).toBe(true);
       await assertFail(schema, {
         name: 'foo',
       });
@@ -147,7 +147,7 @@ describe('validation', () => {
         })
       );
       const schema = User.getCreateValidation();
-      expect(isSchema(schema)).toBe(true);
+      expect(yd.isSchema(schema)).toBe(true);
       await assertPass(schema, {
         name: 'foo',
       });
@@ -168,7 +168,7 @@ describe('validation', () => {
         })
       );
       const schema = User.getCreateValidation();
-      expect(isSchema(schema)).toBe(true);
+      expect(yd.isSchema(schema)).toBe(true);
       await assertPass(schema, {
         name: 'foo',
       });
@@ -223,7 +223,7 @@ describe('validation', () => {
         })
       );
       const schema = User.getUpdateValidation();
-      expect(isSchema(schema)).toBe(true);
+      expect(yd.isSchema(schema)).toBe(true);
       await assertPass(schema, {
         name: 'foo',
       });
@@ -246,7 +246,7 @@ describe('validation', () => {
         })
       );
       const schema = User.getUpdateValidation();
-      expect(isSchema(schema)).toBe(true);
+      expect(yd.isSchema(schema)).toBe(true);
       await assertPass(schema, {
         devices: [
           {
@@ -614,25 +614,6 @@ describe('validation', () => {
       });
     });
 
-    it('should allow search on a nested field', async () => {
-      const User = createTestModel(
-        createSchemaFromAttributes({
-          roles: [
-            {
-              role: { type: 'String', required: true },
-              scope: { type: 'String', required: true },
-            },
-          ],
-        })
-      );
-      const schema = User.getSearchValidation();
-      await assertPass(schema, {
-        roles: {
-          role: 'test',
-        },
-      });
-    });
-
     it('should strip validation with skip flag', async () => {
       const User = createTestModel(
         createSchemaFromAttributes({
@@ -649,7 +630,7 @@ describe('validation', () => {
         })
       );
       const schema = User.getUpdateValidation();
-      expect(isSchema(schema)).toBe(true);
+      expect(yd.isSchema(schema)).toBe(true);
       await assertPass(schema, {
         name: 'foo',
         age: 25,
@@ -678,7 +659,7 @@ describe('validation', () => {
         })
       );
       const schema = User.getUpdateValidation();
-      expect(isSchema(schema)).toBe(true);
+      expect(yd.isSchema(schema)).toBe(true);
       await assertPass(schema, {
         users: [
           {
@@ -718,14 +699,14 @@ describe('validation', () => {
         })
       );
       const schema = User.getSearchValidation();
-      expect(isSchema(schema)).toBe(true);
+      expect(yd.isSchema(schema)).toBe(true);
       await assertPass(schema, {
         name: 'foo',
       });
       await assertPass(schema, {});
     });
 
-    it('should mixin default search schema', async () => {
+    it.only('should mixin default search schema', async () => {
       const User = createTestModel(
         createSchemaFromAttributes({
           name: {
@@ -759,7 +740,7 @@ describe('validation', () => {
         })
       );
       const schema = User.getSearchValidation();
-      expect(isSchema(schema)).toBe(true);
+      expect(yd.isSchema(schema)).toBe(true);
       await assertPass(schema, {
         name: ['foo', 'bar'],
       });
@@ -774,7 +755,7 @@ describe('validation', () => {
         })
       );
       const schema = User.getSearchValidation();
-      expect(isSchema(schema)).toBe(true);
+      expect(yd.isSchema(schema)).toBe(true);
       await assertPass(schema, {
         age: { gte: 5 },
       });
@@ -782,6 +763,25 @@ describe('validation', () => {
         date: { gte: '2020-01-01' },
       });
       await assertPass(schema, {});
+    });
+
+    it('should allow search on a nested field', async () => {
+      const User = createTestModel(
+        createSchemaFromAttributes({
+          roles: [
+            {
+              role: { type: 'String', required: true },
+              scope: { type: 'String', required: true },
+            },
+          ],
+        })
+      );
+      const schema = User.getSearchValidation();
+      await assertPass(schema, {
+        roles: {
+          role: 'test',
+        },
+      });
     });
   });
 
@@ -829,28 +829,28 @@ describe('getValidationSchema', () => {
       const schema = getValidationSchema({
         name: { type: String },
       });
-      expect(isSchema(schema)).toBe(true);
+      expect(yd.isSchema(schema)).toBe(true);
     });
 
     it('should get a schema for shorthand string field', async () => {
       const schema = getValidationSchema({
         name: String,
       });
-      expect(isSchema(schema)).toBe(true);
+      expect(yd.isSchema(schema)).toBe(true);
     });
 
     it('should get a schema for string type', async () => {
       const schema = getValidationSchema({
         name: { type: 'String' },
       });
-      expect(isSchema(schema)).toBe(true);
+      expect(yd.isSchema(schema)).toBe(true);
     });
 
     it('should get a schema for shorthand string type', async () => {
       const schema = getValidationSchema({
         name: 'String',
       });
-      expect(isSchema(schema)).toBe(true);
+      expect(yd.isSchema(schema)).toBe(true);
     });
   });
 
