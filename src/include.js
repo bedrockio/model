@@ -3,7 +3,8 @@ import { escapeRegExp } from 'lodash';
 
 import { resolveField } from './utils';
 
-// TODO: document
+// Overloading mongoose Query prototype to
+// allow an "include" method for queries.
 mongoose.Query.prototype.include = function (paths) {
   const filter = this.getFilter();
   filter.include = paths;

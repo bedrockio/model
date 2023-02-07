@@ -1,8 +1,9 @@
 import mongoose from 'mongoose';
 import { isPlainObject } from 'lodash';
 
+import { camelUpper, isMongooseSchema } from './utils';
+
 import { serializeOptions } from './serialization';
-import { isMongooseSchema } from './utils';
 import { applySlug } from './slug';
 import { applySearch } from './search';
 import { applyAssign } from './assign';
@@ -89,7 +90,11 @@ function getMongooseType(arg, path, typedef = {}) {
   const str = arg.name || arg;
   const type = mongoose.Schema.Types[str];
   if (!type) {
-    throw new Error(`Type ${str} could not be converted to Mongoose type.`);
+    if (camelUpper(str) in mongoose.Schema.Types) {
+      throw new Error(`Type "${str}" should be in capitalized camel case.`);
+    } else {
+      throw new Error(`Unknown Mongoose type "${str}".`);
+    }
   } else if (type === SchemaObjectId && !typedef.ref && !typedef.refPath) {
     throw new Error(`Ref must be passed for ${path.join('.')}`);
   } else if (typedef.ref && type !== SchemaObjectId) {

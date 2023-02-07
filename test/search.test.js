@@ -54,7 +54,9 @@ describe('search', () => {
           required: true,
         },
       },
-      search: ['name'],
+      search: {
+        fields: ['name'],
+      },
     });
     schema.index({
       name: 'text',
@@ -99,7 +101,9 @@ describe('search', () => {
           required: true,
         },
       },
-      search: ['name', 'role'],
+      search: {
+        fields: ['name', 'role'],
+      },
     });
     schema.index({
       name: 'text',
@@ -128,7 +132,9 @@ describe('search', () => {
           required: true,
         },
       },
-      search: ['name'],
+      search: {
+        fields: ['name'],
+      },
     });
     const User = createTestModel(schema);
     const [billy] = await Promise.all([
@@ -580,5 +586,79 @@ describe('search', () => {
     await expect(async () => {
       await User.search({ _id: 'bad' });
     }).rejects.toThrow();
+  });
+
+  it('should allow model-level override of search defaults', async () => {
+    const schema = createSchema({
+      attributes: {
+        name: {
+          type: String,
+          required: true,
+        },
+      },
+      search: {
+        limit: 2,
+        sort: {
+          field: 'name',
+          order: 'asc',
+        },
+      },
+    });
+    const User = createTestModel(schema);
+    await Promise.all([
+      User.create({ name: 'Welly' }),
+      User.create({ name: 'Willy' }),
+      User.create({ name: 'Chilly' }),
+      User.create({ name: 'Smelly' }),
+      User.create({ name: 'Billy' }),
+    ]);
+    const { data, meta } = await User.search();
+    expect(data).toMatchObject([{ name: 'Billy' }, { name: 'Chilly' }]);
+    expect(data.length).toBe(2);
+    expect(meta.total).toBe(5);
+  });
+
+  it('should allow sorting on multiple fields', async () => {
+    const User = createTestModel({
+      name: 'String',
+      age: 'Number',
+    });
+    await Promise.all([
+      User.create({ name: 'Billy', age: 5 }),
+      User.create({ name: 'Billy', age: 6 }),
+      User.create({ name: 'Willy', age: 7 }),
+      User.create({ name: 'Willy', age: 8 }),
+    ]);
+
+    const result = await User.search({
+      sort: [
+        {
+          field: 'name',
+          order: 'asc',
+        },
+        {
+          field: 'age',
+          order: 'desc',
+        },
+      ],
+    });
+    expect(result.data).toMatchObject([
+      {
+        name: 'Billy',
+        age: 6,
+      },
+      {
+        name: 'Billy',
+        age: 5,
+      },
+      {
+        name: 'Willy',
+        age: 8,
+      },
+      {
+        name: 'Willy',
+        age: 7,
+      },
+    ]);
   });
 });

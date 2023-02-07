@@ -1,25 +1,31 @@
 import yd from '@bedrockio/yada';
 import mongoose from 'mongoose';
-import { isEmpty, isPlainObject } from 'lodash';
+import { pick, omit, isEmpty, isPlainObject } from 'lodash';
 
 import { isDateField, isNumberField, resolveField } from './utils';
 
 const { ObjectId } = mongoose.Types;
 
-const DEFAULT_LIMIT = 50;
-// TODO: default limit/sort on attributes, allow arrays
-const DEFAULT_SORT = { field: 'createdAt', order: 'desc' };
+const DEFAULTS = {
+  limit: 50,
+  sort: {
+    field: 'createdAt',
+    order: 'desc',
+  },
+};
 
 export function applySearch(schema, definition) {
+  validateDefinition(definition);
+
   schema.static('search', function search(body = {}) {
-    const {
-      ids,
-      keyword,
-      skip = 0,
-      limit = DEFAULT_LIMIT,
-      sort = DEFAULT_SORT,
-      ...rest
-    } = body;
+    const options = {
+      ...DEFAULTS,
+      ...definition.search,
+      ...body,
+    };
+
+    const { ids, keyword, skip = 0, limit, sort, fields, ...rest } = options;
+
     const query = {};
 
     if (ids?.length) {
@@ -27,13 +33,13 @@ export function applySearch(schema, definition) {
     }
 
     if (keyword) {
-      Object.assign(query, buildKeywordQuery(keyword, definition));
+      Object.assign(query, buildKeywordQuery(keyword, fields));
     }
 
     Object.assign(query, normalizeQuery(rest, schema.obj));
 
     const mQuery = this.find(query)
-      .sort(sort && { [sort.field]: sort.order === 'desc' ? -1 : 1 })
+      .sort(resolveSort(sort))
       .skip(skip)
       .limit(limit);
 
@@ -67,8 +73,13 @@ export function applySearch(schema, definition) {
   });
 }
 
-export function searchValidation(options = {}) {
-  const { sort = DEFAULT_SORT, limit = DEFAULT_LIMIT, ...rest } = options;
+export function searchValidation(definition, options = {}) {
+  const { limit, sort, ...rest } = {
+    ...DEFAULTS,
+    ...pick(definition.search, 'limit', 'sort'),
+    ...options,
+  };
+
   return {
     ids: yd.array(yd.string()),
     keyword: yd.string(),
@@ -83,6 +94,28 @@ export function searchValidation(options = {}) {
     limit: yd.number().positive().default(limit),
     ...rest,
   };
+}
+
+function validateDefinition(definition) {
+  if (Array.isArray(definition.search)) {
+    // eslint-disable-next-line
+    console.warn(
+      [
+        '"search" field on model definition must not be an array.',
+        'Use "search.fields" to define fields for keyword queries.',
+      ].join('\n')
+    );
+    throw new Error('Invalid model definition.');
+  }
+}
+
+function resolveSort(sort) {
+  if (!Array.isArray(sort)) {
+    sort = [sort];
+  }
+  return sort.map(({ field, order }) => {
+    return [field, order === 'desc' ? -1 : 1];
+  });
 }
 
 // Keyword queries
@@ -116,16 +149,16 @@ export function searchValidation(options = {}) {
 // https://stackoverflow.com/questions/44833817/mongodb-full-and-partial-text-search
 // https://jira.mongodb.org/browse/SERVER-15090
 
-function buildKeywordQuery(keyword, definition) {
-  if (definition.search) {
-    return buildRegexQuery(keyword, definition);
+function buildKeywordQuery(keyword, fields) {
+  if (fields) {
+    return buildRegexQuery(keyword, fields);
   } else {
     return buildTextIndexQuery(keyword);
   }
 }
 
-function buildRegexQuery(keyword, definition) {
-  const queries = definition.search.map((field) => {
+function buildRegexQuery(keyword, fields) {
+  const queries = fields.map((field) => {
     const regexKeyword = keyword.replace(/\+/g, '\\+');
     return {
       [field]: {

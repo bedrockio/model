@@ -847,7 +847,7 @@ describe('getValidationSchema', () => {
       await assertPass(schema, { deletedAt: 'date', name: 'foo' });
     });
 
-    it('should be able to override required fields', async () => {
+    it('should override required fields', async () => {
       const schema = getValidationSchema(
         {
           name: {
@@ -910,7 +910,7 @@ describe('getValidationSchema', () => {
       });
     });
 
-    it('should be able to transform fields', async () => {
+    it('should transform fields', async () => {
       const schema = getValidationSchema(
         {
           name: {
@@ -933,7 +933,7 @@ describe('getValidationSchema', () => {
       await assertPass(schema, { name: 'fooooo' });
     });
 
-    it('should be able to disallow fields with custom transform', async () => {
+    it('should disallow fields with custom transform', async () => {
       const schema = getValidationSchema(
         {
           name: {
@@ -1521,7 +1521,7 @@ describe('getValidationSchema', () => {
   });
 
   describe('appendSchema', () => {
-    it('should be able to append plain objects as schemas', async () => {
+    it('should append plain objects as schemas', async () => {
       const schema = getValidationSchema(
         {
           type: { type: String, required: true },
@@ -1536,7 +1536,7 @@ describe('getValidationSchema', () => {
       await assertPass(schema, { type: 'foo', count: 10 });
     });
 
-    it('should be able to merge schemas', async () => {
+    it('should merge schemas', async () => {
       const schema = getValidationSchema(
         {
           type: { type: String, required: true },
@@ -1554,7 +1554,7 @@ describe('getValidationSchema', () => {
   });
 
   describe('ranges', () => {
-    it('should be able to append a date range schema', async () => {
+    it('should append a date range schema', async () => {
       const schema = getValidationSchema(
         {
           startsAt: { type: Date },
@@ -1578,7 +1578,7 @@ describe('getValidationSchema', () => {
       await assertFail(schema, { startsAt: { lte: 'bad' } });
     });
 
-    it('should be able to append a number range schema', async () => {
+    it('should append a number range schema', async () => {
       const schema = getValidationSchema(
         {
           age: { type: Number },

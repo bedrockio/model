@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { get } from 'lodash';
+import { get, camelCase, capitalize } from 'lodash';
 
 const {
   Date: SchemaDate,
@@ -46,4 +46,8 @@ export function resolveField(schema, key) {
     field = field.type;
   }
   return field;
+}
+
+export function camelUpper(str) {
+  return capitalize(camelCase(str));
 }

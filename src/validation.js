@@ -283,7 +283,7 @@ function getFieldType(field) {
   }
 }
 
-export function applyValidation(schema) {
+export function applyValidation(schema, definition) {
   schema.static(
     'getCreateValidation',
     function getCreateValidation(appendSchema) {
@@ -314,7 +314,7 @@ export function applyValidation(schema) {
         skipRequired: true,
         allowMultiple: true,
         unwindArrayFields: true,
-        appendSchema: searchValidation(searchOptions),
+        appendSchema: searchValidation(definition, searchOptions),
       });
     }
   );

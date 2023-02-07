@@ -746,7 +746,7 @@ describe('document includes', () => {
     });
   });
 
-  it('should be able to exclude fields', async () => {
+  it('should exclude fields', async () => {
     const user = await User.create({
       name: 'Bob',
       email: 'foo@bar.com',
