@@ -410,8 +410,6 @@ router.post('/', validateBody(User.getSearchValidation()), async (ctx) => {
 
 The `getSearchValidation` will allow the `include` property to be passed, letting the client populate documents as they require. Note that the fields a client is able to include is subject to [access control](#access-control).
 
-TODO: MAKE SURE ACCESS CONTROL WORKS WITH INCLUDE
-
 ### Access Control
 
 TODO

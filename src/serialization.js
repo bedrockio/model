@@ -7,6 +7,7 @@ export const serializeOptions = {
   getters: true,
   versionKey: false,
   transform: (doc, ret, options) => {
+    options.doc = doc;
     checkSelects(doc, ret);
     transformField(ret, doc.schema.obj, options);
   },
@@ -46,20 +47,41 @@ function isAllowedField(schema, key, options) {
     // No schema defined may be virtuals.
     return true;
   }
-  const { readScopes = 'all' } = resolveField(schema, key) || {};
+  let { readScopes = 'all' } = resolveField(schema, key) || {};
   if (readScopes === 'all') {
     return true;
-  } else if (Array.isArray(readScopes)) {
+  } else if (readScopes === 'none') {
+    return false;
+  } else {
+    const { doc, authUser } = options;
+    if (!Array.isArray(readScopes)) {
+      readScopes = [readScopes];
+    }
     const scopes = resolveScopes(options);
     return readScopes.some((scope) => {
-      return scopes.includes(scope);
+      if (scope === 'self') {
+        assertAuthUser(scope, options);
+        return doc.id == authUser.id;
+      } else if (scope === 'user') {
+        assertAuthUser(scope, options);
+        return doc.user?.id == authUser.id;
+      } else if (scope === 'owner') {
+        assertAuthUser(scope, options);
+        return doc.owner?.id == authUser.id;
+      } else {
+        return scopes.includes(scope);
+      }
     });
-  } else {
-    return false;
   }
 }
 
 function resolveScopes(options) {
   const { scope, scopes = [] } = options;
   return scope ? [scope] : scopes;
+}
+
+function assertAuthUser(scope, options) {
+  if (!options.authUser) {
+    throw new Error(`Read scope "${scope}" requires .toObject({ authUser }).`);
+  }
 }
