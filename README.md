@@ -276,7 +276,7 @@ Populating foreign documents with [populate](https://mongoosejs.com/docs/populat
 1. Document population is highly situational. In complex real world applications a document may require deep population or none at all, however autopopulate does not allow this level of control.
 2. Although circular references usually are the result of bad data modeling, in some cases they cannot be avoided. Autopopulate will keep loading these references until it reaches a maximum depth, even when the fetched data is redundant.
 
-Both of the above issues have major performance implications which result in slower queries and more unneeded data transfer over the wire.
+Both of these issues have major performance implications which result in slower queries and more unneeded data transfer over the wire.
 
 For this reason calling `populate` manually is highly preferable, however in complex situations this can easily be a lot of overhead. The include module attempts to greatly streamline this process by adding an `include` method to queries:
 
@@ -290,7 +290,7 @@ const product = await Product.findById(id).include([
 ]);
 ```
 
-This will map to a `populate` call that can be far more complex:
+This method accepts a string or array of strings that will map to a `populate` call that can be far more complex:
 
 ```js
 const product = await Product.findById(id).populate([
@@ -321,10 +321,10 @@ In addition to brevity, one major advantage of using `include` is that the calle
 
 #### Excluding Fields
 
-Additionally fields can be excluded rather than included:
+Fields can be excluded rather than included using `-`:
 
 ```js
-const user = await User.findById(id).include(['-profile']);
+const user = await User.findById(id).include('-profile');
 ```
 
 The above will return all fields except `profile`. Note that:
@@ -334,7 +334,7 @@ The above will return all fields except `profile`. Note that:
 
 #### Wildcards
 
-Additionally `include` supports the wildcards:
+Multiple fields can be selected using wildcards:
 
 - `*` - Matches anything except `.`.
 - `**` - Matches anything including `.`.
@@ -345,7 +345,7 @@ Additionally `include` supports the wildcards:
 //   "firstName": "String"
 //   "lastName": "String"
 // }
-const user = await User.findById(id).include(['*Name']);
+const user = await User.findById(id).include('*Name');
 ```
 
 The example above will select both `firstName` and `lastName`.
@@ -364,7 +364,7 @@ The example above will select both `firstName` and `lastName`.
 //     }
 //   }
 // }
-const user = await User.findById(id).include(['**.phone']);
+const user = await User.findById(id).include('**.phone');
 ```
 
 This example above will select both `profile1.address.phone` and `profile2.address.phone`. Compare this to `*` which will not match here.
@@ -373,7 +373,7 @@ Note that wildcards will only select local fields. Populated fields on foreign d
 
 #### Searching with includes
 
-Note that [search](#search), which returns a query can also use `include`:
+Note that [search](#search), which returns a query, can also use `include`:
 
 ```js
 const user = await User.search({
@@ -381,10 +381,12 @@ const user = await User.search({
 }).include('profile');
 ```
 
-Additionally `include` is flagged as a special parameter for filters, allowing the following equivalent syntax:
+#### Include as a Filter
+
+Additionally `include` is flagged as a special parameter for filters, allowing the following equivalent syntax on `search` as well as all `find` methods:
 
 ```js
-const user = await User.search({
+const user = await User.find({
   firstName: 'Frank',
   include: 'profile',
 });

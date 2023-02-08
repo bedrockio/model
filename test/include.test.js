@@ -821,3 +821,61 @@ describe('document includes', () => {
     });
   });
 });
+
+describe('access control', () => {
+  const User = createTestModel({
+    name: 'String',
+    password: {
+      type: String,
+      readScopes: 'none',
+    },
+  });
+
+  const Shop = createTestModel({
+    name: 'String',
+    user: {
+      ref: User.modelName,
+      type: 'ObjectId',
+    },
+  });
+
+  it('should not allow read access', async () => {
+    let user = await User.create({
+      password: 'fake password',
+    });
+    user = await User.findById(user.id).include('password');
+    expect(user.password).toBe('fake password');
+    expect(user.toObject().password).toBeUndefined();
+  });
+
+  it('should not allow read access with wildcard', async () => {
+    let user = await User.create({
+      password: 'fake password',
+    });
+    user = await User.findById(user.id).include('*');
+    expect(user.password).toBe('fake password');
+    expect(user.toObject().password).toBeUndefined();
+  });
+
+  it('should not allow read access with exclusion', async () => {
+    let user = await User.create({
+      password: 'fake password',
+    });
+    user = await User.findById(user.id).include('-name');
+    expect(user.password).toBe('fake password');
+    expect(user.toObject().password).toBeUndefined();
+  });
+
+  it('should not allow deep read access', async () => {
+    const user = await User.create({
+      password: 'fake password',
+    });
+    let shop = await Shop.create({
+      name: 'foo',
+      user,
+    });
+    shop = await Shop.findById(shop.id).include('user');
+    expect(shop.user.password).toBe('fake password');
+    expect(shop.toObject().user.password).toBeUndefined();
+  });
+});
