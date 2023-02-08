@@ -1,3 +1,5 @@
+process.env.ENV_NAME = 'test';
+
 export default {
   preset: '@shelf/jest-mongodb',
   setupFilesAfterEnv: ['<rootDir>/test/setup'],

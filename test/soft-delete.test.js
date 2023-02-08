@@ -1,94 +1,333 @@
 import { createTestModel } from '../src/testing';
 
 describe('soft delete', () => {
-  it('should soft delete a document', async () => {
-    const User = createTestModel({
-      name: 'String',
+  describe('delete', () => {
+    it('should soft delete a document', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      const user = await User.create({
+        name: 'foo',
+      });
+      await user.delete();
+      expect(await user.deletedAt).toBeInstanceOf(Date);
     });
-    const user = await User.create({
-      name: 'foo',
+
+    it('should soft delete with deleteOne', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      await User.create({
+        name: 'foo',
+      });
+      await User.create({
+        name: 'bar',
+      });
+      const res = await User.deleteOne({
+        name: 'foo',
+      });
+      expect(res).toEqual({
+        acknowledged: true,
+        deletedCount: 1,
+      });
+      expect(await User.countDocuments()).toBe(1);
+      expect(await User.countDocumentsWithDeleted()).toBe(2);
     });
-    await user.delete();
-    expect(await user.deletedAt).toBeInstanceOf(Date);
+
+    it('should soft delete with deleteMany', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      await User.create({
+        name: 'foo',
+      });
+      await User.create({
+        name: 'bar',
+      });
+      const res = await User.deleteMany();
+      expect(res).toEqual({
+        acknowledged: true,
+        deletedCount: 2,
+      });
+      expect(await User.countDocuments()).toBe(0);
+      expect(await User.countDocumentsWithDeleted()).toBe(2);
+    });
+
+    it('should soft delete with findOneAndDelete', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      await User.create({
+        name: 'foo',
+      });
+      expect(await User.countDocuments()).toBe(1);
+      expect(await User.countDocumentsWithDeleted()).toBe(1);
+      const user = await User.findOneAndDelete({
+        name: 'foo',
+      });
+      expect(user.name).toBe('foo');
+      expect(await User.countDocuments()).toBe(0);
+      expect(await User.countDocumentsWithDeleted()).toBe(1);
+    });
+
+    it('should soft delete with findByIdAndDelete', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      let user = await User.create({
+        name: 'foo',
+      });
+      user = await User.findByIdAndDelete(user.id);
+      expect(user.name).toBe('foo');
+      expect(await User.countDocuments()).toBe(0);
+      expect(await User.countDocumentsWithDeleted()).toBe(1);
+    });
   });
 
-  it('should restore a document', async () => {
-    const User = createTestModel({
-      name: 'String',
+  describe('restore', () => {
+    it('should restore a document', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      const user = await User.create({
+        name: 'foo',
+      });
+      await user.delete();
+      expect(await user.deletedAt).toBeInstanceOf(Date);
+      await user.restore();
+      expect(await user.deletedAt).toBeUndefined();
     });
-    const user = await User.create({
-      name: 'foo',
+
+    it('should restore with restoreOne', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      await User.create({
+        name: 'foo',
+      });
+      await User.create({
+        name: 'bar',
+      });
+      await User.deleteOne({
+        name: 'foo',
+      });
+      expect(await User.countDocuments()).toBe(1);
+      expect(await User.countDocumentsWithDeleted()).toBe(2);
+
+      const res = await User.restoreOne({
+        name: 'foo',
+      });
+      expect(res).toEqual({
+        acknowledged: true,
+        restoredCount: 1,
+      });
+      expect(await User.countDocuments()).toBe(2);
+      expect(await User.countDocumentsWithDeleted()).toBe(2);
     });
-    await user.delete();
-    expect(await user.deletedAt).toBeInstanceOf(Date);
-    await user.restore();
-    expect(await user.deletedAt).toBeUndefined();
+
+    it('should restore with restoreMany', async () => {
+      let users;
+      const User = createTestModel({
+        name: 'String',
+      });
+      await User.create({
+        name: 'foo',
+      });
+      await User.create({
+        name: 'bar',
+      });
+      await User.deleteMany({});
+      expect(await User.countDocuments()).toBe(0);
+      expect(await User.countDocumentsWithDeleted()).toBe(2);
+      users = await User.findWithDeleted();
+      expect(users[0].deleted).toBe(true);
+      expect(users[0].deletedAt).not.toBeUndefined();
+      expect(users[1].deleted).toBe(true);
+      expect(users[1].deletedAt).not.toBeUndefined();
+
+      const res = await User.restoreMany({});
+      expect(res).toEqual({
+        acknowledged: true,
+        restoredCount: 2,
+      });
+      expect(await User.countDocuments()).toBe(2);
+      expect(await User.countDocumentsWithDeleted()).toBe(2);
+      users = await User.findWithDeleted();
+      expect(users[0].deleted).toBe(false);
+      expect(users[0].deletedAt).toBeUndefined();
+      expect(users[1].deleted).toBe(false);
+      expect(users[1].deletedAt).toBeUndefined();
+    });
   });
 
-  it('should not query deleted documents by default', async () => {
-    const User = createTestModel({
-      name: 'String',
+  describe('destroy', () => {
+    it('should hard delete a document', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      const user = await User.create({
+        name: 'foo',
+      });
+      await User.create({
+        name: 'foo2',
+      });
+      await user.destroy();
+      expect(await User.countDocumentsWithDeleted()).toBe(1);
     });
-    const deletedUser = await User.create({
-      name: 'foo',
-      deletedAt: new Date(),
-      deleted: true,
+
+    it('should hard delete with destroyOne', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      await User.create({
+        name: 'foo',
+      });
+      await User.create({
+        name: 'bar',
+      });
+      const res = await User.destroyOne({
+        name: 'foo',
+      });
+      expect(res).toEqual({
+        acknowledged: true,
+        destroyedCount: 1,
+      });
+      expect(await User.countDocuments()).toBe(1);
+      expect(await User.countDocumentsWithDeleted()).toBe(1);
     });
-    expect(await User.find()).toEqual([]);
-    expect(await User.findOne()).toBe(null);
-    expect(await User.findById(deletedUser.id)).toBe(null);
-    expect(await User.exists()).toBe(null);
-    expect(await User.countDocuments()).toBe(0);
+
+    it('should hard delete with destroyMany', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      await User.create({
+        name: 'foo',
+      });
+      await User.create({
+        name: 'bar',
+      });
+      const res = await User.destroyMany();
+      expect(res).toEqual({
+        acknowledged: true,
+        destroyedCount: 2,
+      });
+      expect(await User.countDocuments()).toBe(0);
+      expect(await User.countDocumentsWithDeleted()).toBe(0);
+    });
   });
 
-  it('should still query deleted documents', async () => {
-    const User = createTestModel({
-      name: 'String',
+  describe('query existing', () => {
+    it('should not query deleted documents by default', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      const deletedUser = await User.create({
+        name: 'foo',
+        deletedAt: new Date(),
+        deleted: true,
+      });
+      expect(await User.find()).toEqual([]);
+      expect(await User.findOne()).toBe(null);
+      expect(await User.findById(deletedUser.id)).toBe(null);
+      expect(await User.exists()).toBe(null);
+      expect(await User.countDocuments()).toBe(0);
     });
-    const deletedUser = await User.create({
-      name: 'foo',
-      deletedAt: new Date(),
-      deleted: true,
-    });
-    expect(await User.findDeleted()).not.toBe(null);
-    expect(await User.findOneDeleted()).not.toBe(null);
-    expect(await User.findByIdDeleted(deletedUser.id)).not.toBe(null);
-    expect(await User.existsDeleted()).toStrictEqual({
-      _id: deletedUser._id,
-    });
-    expect(await User.countDocumentsDeleted()).toBe(1);
   });
 
-  it('should still query with deleted documents', async () => {
-    const User = createTestModel({
-      name: 'String',
+  describe('query deleted', () => {
+    it('should still query deleted documents', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      const deletedUser = await User.create({
+        name: 'foo',
+        deletedAt: new Date(),
+        deleted: true,
+      });
+      expect(await User.findDeleted()).not.toBe(null);
+      expect(await User.findOneDeleted()).not.toBe(null);
+      expect(await User.findByIdDeleted(deletedUser.id)).not.toBe(null);
+      expect(await User.existsDeleted()).toStrictEqual({
+        _id: deletedUser._id,
+      });
+      expect(await User.countDocumentsDeleted()).toBe(1);
     });
-    await User.create({
-      name: 'foo',
-    });
-    const deletedUser = await User.create({
-      name: 'bars',
-      deletedAt: new Date(),
-      deleted: true,
-    });
-    expect((await User.findWithDeleted()).length).toBe(2);
-    expect(await User.findOneWithDeleted({ name: 'bars' })).not.toBe(null);
-    expect(await User.findByIdWithDeleted(deletedUser.id)).not.toBe(null);
-    expect(await User.existsWithDeleted({ name: 'bars' })).not.toBe(null);
-    expect(await User.countDocumentsWithDeleted()).toBe(2);
   });
 
-  it('should hard delete a document', async () => {
-    const User = createTestModel({
-      name: 'String',
+  describe('query with deleted', () => {
+    it('should still query with deleted documents', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      await User.create({
+        name: 'foo',
+      });
+      const deletedUser = await User.create({
+        name: 'bars',
+        deletedAt: new Date(),
+        deleted: true,
+      });
+      expect((await User.findWithDeleted()).length).toBe(2);
+      expect(await User.findOneWithDeleted({ name: 'bars' })).not.toBe(null);
+      expect(await User.findByIdWithDeleted(deletedUser.id)).not.toBe(null);
+      expect(await User.existsWithDeleted({ name: 'bars' })).not.toBe(null);
+      expect(await User.countDocumentsWithDeleted()).toBe(2);
     });
-    const user = await User.create({
-      name: 'foo',
+  });
+
+  describe('other', () => {
+    it('should not allow remove method', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      const user = await User.create({
+        name: 'foo',
+      });
+      await user.delete();
+
+      expect(() => {
+        user.remove();
+      }).toThrow('Method not allowed.');
     });
-    await User.create({
-      name: 'foo2',
+
+    it('should not allow deleteOne on document', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      const user = await User.create({
+        name: 'foo',
+      });
+
+      expect(() => {
+        user.deleteOne();
+      }).toThrow('Method not allowed.');
     });
-    await user.destroy();
-    expect(await User.countDocumentsWithDeleted()).toBe(1);
+
+    it('should not allow remove on model', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      expect(() => {
+        User.remove();
+      }).toThrow('Method not allowed.');
+    });
+
+    it('should not allow findOneAndRemove on model', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      expect(() => {
+        User.findOneAndRemove();
+      }).toThrow('Method not allowed.');
+    });
+
+    it('should not allow findByIdAndRemove on model', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      expect(() => {
+        User.findByIdAndRemove();
+      }).toThrow('Method not allowed.');
+    });
   });
 });

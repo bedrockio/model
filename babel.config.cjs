@@ -1,21 +1,21 @@
-import path from 'path';
+const path = require('path');
 
-const { BUILD_PATH } = process.env;
+const { BUILD_DIR } = process.env;
 
-export default {
+module.exports = {
   presets: [
     [
       '@babel/preset-env',
       {
         targets: {
-          node: '16.13.0',
+          node: 'current',
         },
       },
     ],
   ],
   plugins: [
     'lodash',
-    ...(BUILD_PATH
+    ...(BUILD_DIR
       ? [
           [
             'import-replacement',
@@ -23,15 +23,12 @@ export default {
               rules: [
                 {
                   match: 'mongoose',
-                  replacement: path.resolve(
-                    BUILD_PATH,
-                    'node_modules/mongoose'
-                  ),
+                  replacement: path.resolve(BUILD_DIR, 'node_modules/mongoose'),
                 },
                 {
                   match: '@bedrockio/yada',
                   replacement: path.resolve(
-                    BUILD_PATH,
+                    BUILD_DIR,
                     'node_modules/@bedrockio/yada'
                   ),
                 },
