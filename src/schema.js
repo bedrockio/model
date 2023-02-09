@@ -12,6 +12,8 @@ import { applyReferences } from './references';
 import { applySoftDelete } from './soft-delete';
 import { applyValidation, getMongooseValidator } from './validation';
 
+import warn from './warn';
+
 const { ObjectId: SchemaObjectId } = mongoose.Schema.Types;
 
 export function createSchema(definition, options = {}) {
@@ -68,16 +70,24 @@ function attributesToMongoose(attributes, path = []) {
         // Allow custom mongoose validation function that derives from the schema.
         val = getMongooseValidator(val);
       }
-    } else if (key !== 'readScopes') {
-      if (Array.isArray(val)) {
-        val = val.map((el, i) => {
-          return attributesToMongoose(el, [...path, i]);
-        });
-      } else if (isPlainObject(val)) {
-        val = attributesToMongoose(val, [...path, key]);
-      } else if (!isMongooseSchema(val)) {
-        val = getMongooseType(val, path);
+    } else if (Array.isArray(val)) {
+      if (val.length > 1) {
+        warn(
+          'Array schemas may only have one type. For',
+          'objects of mixed type use "Object" instead.'
+        );
+        throw new Error('Array schema may only have one type.');
       }
+      val = val.map((el, i) => {
+        if (typeof el !== 'string') {
+          el = attributesToMongoose(el, [...path, i]);
+        }
+        return el;
+      });
+    } else if (isPlainObject(val)) {
+      val = attributesToMongoose(val, [...path, key]);
+    } else if (!isMongooseSchema(val)) {
+      val = getMongooseType(val, path);
     }
     definition[key] = val;
   }

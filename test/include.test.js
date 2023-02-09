@@ -6,8 +6,8 @@ import { createTestModel, getTestModelName } from '../src/testing';
 const userModelName = getTestModelName();
 
 const Shop = createTestModel({
-  name: String,
-  email: String,
+  name: 'String',
+  email: 'String',
   tags: [String],
   user: {
     ref: userModelName,
@@ -28,8 +28,8 @@ const Shop = createTestModel({
 });
 
 const Product = createTestModel({
-  name: String,
-  email: String,
+  name: 'String',
+  email: 'String',
   tags: [String],
   shop: {
     ref: Shop.modelName,
@@ -38,12 +38,12 @@ const Product = createTestModel({
 });
 
 const userSchema = {
-  name: String,
-  email: String,
+  name: 'String',
+  email: 'String',
   tags: [String],
   address: {
-    line1: String,
-    line2: String,
+    line1: 'String',
+    line2: 'String',
   },
   likedProducts: [
     {
@@ -60,7 +60,7 @@ const userSchema = {
 const User = createTestModel(userSchema, userModelName);
 
 const Comment = createTestModel({
-  body: String,
+  body: 'String',
   product: {
     ref: Product.modelName,
     type: 'ObjectId',
@@ -449,20 +449,20 @@ describe('getIncludes', () => {
 
   it('should allow trailing wildcards in includes', async () => {
     const User = createTestModel({
-      name: String,
-      name1: String,
-      name2: String,
-      nameFirst: String,
-      nameLast: String,
-      naming: String,
+      name: 'String',
+      name1: 'String',
+      name2: 'String',
+      nameFirst: 'String',
+      nameLast: 'String',
+      naming: 'String',
       deep: {
         deep: {
-          name: String,
-          name1: String,
-          name2: String,
+          name: 'String',
+          name1: 'String',
+          name2: 'String',
         },
       },
-      nam: String,
+      nam: 'String',
     });
     const data = getIncludes(User.modelName, ['name*', 'deep.deep.name*']);
     expect(data).toEqual({
@@ -480,28 +480,28 @@ describe('getIncludes', () => {
 
   it('should allow leading wildcards in includes', async () => {
     const User = createTestModel({
-      nam: String,
-      name: String,
-      Name: String,
-      fName: String,
-      FName: String,
-      firstName: String,
-      lastName: String,
-      aname: String,
-      name1: String,
-      name2: String,
+      nam: 'String',
+      name: 'String',
+      Name: 'String',
+      fName: 'String',
+      FName: 'String',
+      firstName: 'String',
+      lastName: 'String',
+      aname: 'String',
+      name1: 'String',
+      name2: 'String',
       deep: {
         deep: {
-          nam: String,
-          name: String,
-          Name: String,
-          fName: String,
-          FName: String,
-          firstName: String,
-          lastName: String,
-          aname: String,
-          name1: String,
-          name2: String,
+          nam: 'String',
+          name: 'String',
+          Name: 'String',
+          fName: 'String',
+          FName: 'String',
+          firstName: 'String',
+          lastName: 'String',
+          aname: 'String',
+          name1: 'String',
+          name2: 'String',
         },
       },
     });
@@ -826,7 +826,7 @@ describe('access control', () => {
   const User = createTestModel({
     name: 'String',
     password: {
-      type: String,
+      type: 'String',
       readScopes: 'none',
     },
   });

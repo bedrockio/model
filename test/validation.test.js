@@ -47,11 +47,11 @@ describe('validation', () => {
     it('should get a basic create schema', async () => {
       const User = createTestModel({
         name: {
-          type: String,
+          type: 'String',
           required: true,
         },
         count: {
-          type: Number,
+          type: 'Number',
           required: true,
         },
       });
@@ -76,7 +76,7 @@ describe('validation', () => {
     it('should append schemas', async () => {
       const User = createTestModel({
         name: {
-          type: String,
+          type: 'String',
           required: true,
         },
       });
@@ -96,9 +96,12 @@ describe('validation', () => {
     it('should handle geolocation schema', async () => {
       const User = createTestModel({
         geoLocation: {
-          type: { type: 'String', default: 'Point' },
+          type: {
+            type: 'String',
+            default: 'Point',
+          },
           coordinates: {
-            type: Array,
+            type: 'Array',
             default: [],
           },
         },
@@ -132,11 +135,11 @@ describe('validation', () => {
     it('should not require a field with a default', async () => {
       const User = createTestModel({
         name: {
-          type: String,
+          type: 'String',
           required: true,
         },
         type: {
-          type: String,
+          type: 'String',
           required: true,
           enum: ['foo', 'bar'],
           default: 'foo',
@@ -152,11 +155,11 @@ describe('validation', () => {
     it('should allow a flag to skip required', async () => {
       const User = createTestModel({
         name: {
-          type: String,
+          type: 'String',
           required: true,
         },
         age: {
-          type: Number,
+          type: 'Number',
           required: true,
           skipValidation: true,
         },
@@ -172,9 +175,7 @@ describe('validation', () => {
   describe('getUpdateValidation', () => {
     it('should not fail on empty object', async () => {
       const User = createTestModel({
-        name: {
-          type: String,
-        },
+        name: 'String',
       });
       const schema = User.getUpdateValidation();
       await assertPass(schema, {});
@@ -184,7 +185,7 @@ describe('validation', () => {
       const User = createTestModel({
         names: [
           {
-            first: String,
+            first: 'String',
           },
         ],
       });
@@ -202,11 +203,11 @@ describe('validation', () => {
     it('should skip required fields', async () => {
       const User = createTestModel({
         name: {
-          type: String,
+          type: 'String',
           required: true,
         },
         count: {
-          type: Number,
+          type: 'Number',
           required: true,
         },
       });
@@ -285,7 +286,7 @@ describe('validation', () => {
     it('should strip reserved fields', async () => {
       const User = createTestModel({
         name: {
-          type: String,
+          type: 'String',
           required: true,
         },
       });
@@ -302,11 +303,11 @@ describe('validation', () => {
     it('should strip virtuals', async () => {
       const userSchema = createSchemaFromAttributes({
         firstName: {
-          type: String,
+          type: 'String',
           required: true,
         },
         lastName: {
-          type: String,
+          type: 'String',
           required: true,
         },
       });
@@ -336,11 +337,11 @@ describe('validation', () => {
     it('should strip nested virtuals', async () => {
       const profileSchema = createSchemaFromAttributes({
         firstName: {
-          type: String,
+          type: 'String',
           required: true,
         },
         lastName: {
-          type: String,
+          type: 'String',
           required: true,
         },
       });
@@ -377,13 +378,11 @@ describe('validation', () => {
     });
 
     describe('write scopes', () => {
-      it('should disallow all write access', async () => {
+      it('should disallow all access', async () => {
         const User = createTestModel({
-          name: {
-            type: String,
-          },
+          name: 'String',
           password: {
-            type: String,
+            type: 'String',
             writeScopes: 'none',
           },
         });
@@ -397,13 +396,57 @@ describe('validation', () => {
         });
       });
 
+      it('should disallow access on an array field', async () => {
+        const User = createTestModel({
+          name: 'String',
+          tokens: [
+            {
+              type: 'String',
+              writeScopes: 'none',
+            },
+          ],
+        });
+        const schema = User.getUpdateValidation();
+        await assertPass(schema, {
+          name: 'Barry',
+        });
+        await assertFail(schema, {
+          name: 'Barry',
+          tokens: ['fake token'],
+        });
+      });
+
+      it('should disallow access on a deep field', async () => {
+        const User = createTestModel({
+          name: 'String',
+          a: {
+            b: {
+              c: {
+                type: 'String',
+                writeScopes: 'none',
+              },
+            },
+          },
+        });
+        const schema = User.getUpdateValidation();
+        await assertPass(schema, {
+          name: 'Barry',
+        });
+        await assertFail(schema, {
+          name: 'Barry',
+          a: {
+            b: {
+              c: 'deep',
+            },
+          },
+        });
+      });
+
       it('should strip write scope validation fields', async () => {
         const User = createTestModel({
-          name: {
-            type: String,
-          },
+          name: 'String',
           password: {
-            type: String,
+            type: 'String',
             writeScopes: 'none',
             skipValidation: true,
           },
@@ -421,13 +464,11 @@ describe('validation', () => {
         expect(value.password).toBeUndefined();
       });
 
-      it('should disallow write access by scope', async () => {
+      it('should disallow access by scope', async () => {
         const User = createTestModel({
-          name: {
-            type: String,
-          },
+          name: 'String',
           password: {
-            type: String,
+            type: 'String',
             writeScopes: ['private'],
           },
         });
@@ -452,15 +493,15 @@ describe('validation', () => {
       it('should require only one of valid scopes', async () => {
         const User = createTestModel({
           foo: {
-            type: String,
+            type: 'String',
             writeScopes: ['foo'],
           },
           bar: {
-            type: String,
+            type: 'String',
             writeScopes: ['bar'],
           },
           foobar: {
-            type: String,
+            type: 'String',
             writeScopes: ['foo', 'bar'],
           },
         });
@@ -591,11 +632,11 @@ describe('validation', () => {
     it('should strip validation with skip flag', async () => {
       const User = createTestModel({
         name: {
-          type: String,
+          type: 'String',
           required: true,
         },
         age: {
-          type: Number,
+          type: 'Number',
           required: true,
           skipValidation: true,
           default: 10,
@@ -619,12 +660,10 @@ describe('validation', () => {
         users: [
           {
             name: {
-              type: String,
+              type: 'String',
               required: true,
             },
-            count: {
-              type: Number,
-            },
+            count: 'Number',
           },
         ],
       });
@@ -662,7 +701,7 @@ describe('validation', () => {
     it('should get a basic search schema allowing empty', async () => {
       const User = createTestModel({
         name: {
-          type: String,
+          type: 'String',
           required: true,
         },
       });
@@ -677,7 +716,7 @@ describe('validation', () => {
     it('should mixin default search schema', async () => {
       const User = createTestModel({
         name: {
-          type: String,
+          type: 'String',
           required: true,
         },
       });
@@ -699,7 +738,7 @@ describe('validation', () => {
     it('should allow an array for a string field', async () => {
       const User = createTestModel({
         name: {
-          type: String,
+          type: 'String',
           required: true,
         },
       });
@@ -713,8 +752,8 @@ describe('validation', () => {
 
     it('should allow range based search', async () => {
       const User = createTestModel({
-        age: Number,
-        date: Date,
+        age: 'Number',
+        date: 'Date',
       });
       const schema = User.getSearchValidation();
       expect(yd.isSchema(schema)).toBe(true);
@@ -731,8 +770,14 @@ describe('validation', () => {
       const User = createTestModel({
         roles: [
           {
-            role: { type: 'String', required: true },
-            scope: { type: 'String', required: true },
+            role: {
+              type: 'String',
+              required: true,
+            },
+            scope: {
+              type: 'String',
+              required: true,
+            },
           },
         ],
       });
@@ -746,7 +791,7 @@ describe('validation', () => {
 
     it('should allow an array to be passed for sort', async () => {
       const User = createTestModel({
-        name: String,
+        name: 'String',
       });
       const schema = User.getSearchValidation();
       expect(yd.isSchema(schema)).toBe(true);
@@ -769,12 +814,12 @@ describe('validation', () => {
   it('should allow min/max on fields', async () => {
     const Review = createTestModel({
       age: {
-        type: Number,
+        type: 'Number',
         min: 0,
         max: 100,
       },
       date: {
-        type: Date,
+        type: 'Date',
         min: '2020-01-01',
         max: '2021-01-01',
       },
@@ -806,21 +851,21 @@ describe('getValidationSchema', () => {
   describe('alternate type forms', () => {
     it('should get a schema for a basic string field', async () => {
       const schema = getValidationSchema({
-        name: { type: String },
+        name: 'String',
       });
       expect(yd.isSchema(schema)).toBe(true);
     });
 
     it('should get a schema for shorthand string field', async () => {
       const schema = getValidationSchema({
-        name: String,
+        name: 'String',
       });
       expect(yd.isSchema(schema)).toBe(true);
     });
 
     it('should get a schema for string type', async () => {
       const schema = getValidationSchema({
-        name: { type: 'String' },
+        name: 'String',
       });
       expect(yd.isSchema(schema)).toBe(true);
     });
@@ -837,12 +882,10 @@ describe('getValidationSchema', () => {
     it('should validate basic fields', async () => {
       const schema = getValidationSchema({
         name: {
-          type: String,
+          type: 'String',
           required: true,
         },
-        count: {
-          type: Number,
-        },
+        count: 'Number',
       });
       await assertPass(schema, {
         name: 'foo',
@@ -860,7 +903,7 @@ describe('getValidationSchema', () => {
     it('should strip unknown fields', async () => {
       const schema = getValidationSchema(
         {
-          name: String,
+          name: 'String',
         },
         {
           stripUnknown: true,
@@ -876,11 +919,11 @@ describe('getValidationSchema', () => {
       const schema = getValidationSchema(
         {
           name: {
-            type: String,
+            type: 'String',
             required: true,
           },
           count: {
-            type: Number,
+            type: 'Number',
             required: true,
           },
         },
@@ -899,12 +942,10 @@ describe('getValidationSchema', () => {
           users: [
             {
               name: {
-                type: String,
+                type: 'String',
                 required: true,
               },
-              count: {
-                type: Number,
-              },
+              count: 'Number',
             },
           ],
         },
@@ -939,7 +980,7 @@ describe('getValidationSchema', () => {
       const schema = getValidationSchema(
         {
           name: {
-            type: String,
+            type: 'String',
             required: true,
           },
         },
@@ -962,11 +1003,11 @@ describe('getValidationSchema', () => {
       const schema = getValidationSchema(
         {
           name: {
-            type: String,
+            type: 'String',
             required: true,
           },
           password: {
-            type: String,
+            type: 'String',
             private: true,
           },
         },
@@ -986,7 +1027,7 @@ describe('getValidationSchema', () => {
       const schema = getValidationSchema(
         {
           name: {
-            type: String,
+            type: 'String',
             required: true,
           },
         },
@@ -1005,7 +1046,7 @@ describe('getValidationSchema', () => {
     it('should validate a required field', async () => {
       const schema = getValidationSchema({
         name: {
-          type: String,
+          type: 'String',
           required: true,
         },
       });
@@ -1018,7 +1059,7 @@ describe('getValidationSchema', () => {
     it('should validate an enum field', async () => {
       const schema = getValidationSchema({
         name: {
-          type: String,
+          type: 'String',
           enum: ['foo', 'bar'],
         },
       });
@@ -1031,7 +1072,7 @@ describe('getValidationSchema', () => {
       const schema = getValidationSchema(
         {
           name: {
-            type: String,
+            type: 'String',
             enum: ['foo', 'bar'],
           },
         },
@@ -1045,7 +1086,7 @@ describe('getValidationSchema', () => {
     it('should validate minimum length', async () => {
       const schema = getValidationSchema({
         name: {
-          type: String,
+          type: 'String',
           minLength: 3,
         },
       });
@@ -1056,7 +1097,7 @@ describe('getValidationSchema', () => {
     it('should validate maximum length', async () => {
       const schema = getValidationSchema({
         name: {
-          type: String,
+          type: 'String',
           maxLength: 3,
         },
       });
@@ -1067,7 +1108,7 @@ describe('getValidationSchema', () => {
     it('should validate minimum and maximum length together', async () => {
       const schema = getValidationSchema({
         name: {
-          type: String,
+          type: 'String',
           minLength: 3,
           maxLength: 5,
         },
@@ -1080,7 +1121,7 @@ describe('getValidationSchema', () => {
     it('should validate a matched field', async () => {
       const schema = getValidationSchema({
         name: {
-          type: String,
+          type: 'String',
           match: /^foo$/,
         },
       });
@@ -1104,7 +1145,7 @@ describe('getValidationSchema', () => {
     it('should validate an enum field', async () => {
       const schema = getValidationSchema({
         count: {
-          type: Number,
+          type: 'Number',
           enum: [100, 1000],
         },
       });
@@ -1116,7 +1157,7 @@ describe('getValidationSchema', () => {
     it('should validate a minimum value', async () => {
       const schema = getValidationSchema({
         count: {
-          type: Number,
+          type: 'Number',
           min: 100,
         },
       });
@@ -1127,7 +1168,7 @@ describe('getValidationSchema', () => {
     it('should validate maximum value', async () => {
       const schema = getValidationSchema({
         count: {
-          type: Number,
+          type: 'Number',
           max: 100,
         },
       });
@@ -1138,7 +1179,7 @@ describe('getValidationSchema', () => {
     it('should validate minimum and maximum together', async () => {
       const schema = getValidationSchema({
         count: {
-          type: Number,
+          type: 'Number',
           min: 100,
           max: 200,
         },
@@ -1153,7 +1194,7 @@ describe('getValidationSchema', () => {
   describe('boolean fields', () => {
     it('should validate boolean field', async () => {
       const schema = getValidationSchema({
-        isActive: Boolean,
+        isActive: 'Boolean',
       });
       await assertPass(schema, { isActive: true });
       await assertPass(schema, { isActive: false });
@@ -1163,7 +1204,7 @@ describe('getValidationSchema', () => {
   describe('date fields', () => {
     it('should validate date ISO-8601 field', async () => {
       const schema = getValidationSchema({
-        posted: Date,
+        posted: 'Date',
       });
       await assertPass(schema, { posted: '2020-01-01T00:00:00Z' });
       await assertPass(schema, { posted: '2020-01-01T00:00:00' });
@@ -1379,11 +1420,7 @@ describe('getValidationSchema', () => {
   describe('array fields', () => {
     it('should validate array of strings', async () => {
       const schema = getValidationSchema({
-        categories: [
-          {
-            type: String,
-          },
-        ],
+        categories: ['String'],
       });
       await assertPass(schema, { categories: ['foo'] });
       await assertPass(schema, { categories: [] });
@@ -1392,7 +1429,7 @@ describe('getValidationSchema', () => {
 
     it('should validate array type shortcut syntax', async () => {
       const schema = getValidationSchema({
-        categories: [String],
+        categories: ['String'],
       });
       await assertPass(schema, { categories: ['foo'] });
       await assertPass(schema, { categories: [] });
@@ -1416,7 +1453,7 @@ describe('getValidationSchema', () => {
       const schema = getValidationSchema({
         categories: [
           {
-            type: String,
+            type: 'String',
             required: true,
           },
         ],
@@ -1430,9 +1467,17 @@ describe('getValidationSchema', () => {
       const schema = getValidationSchema({
         roles: [
           {
-            role: { type: 'String', required: true },
-            scope: { type: 'String', required: true },
-            scopeRef: { type: 'ObjectId' },
+            role: {
+              type: 'String',
+              required: true,
+            },
+            scope: {
+              type: 'String',
+              required: true,
+            },
+            scopeRef: {
+              type: 'ObjectId',
+            },
           },
         ],
       });
@@ -1495,7 +1540,7 @@ describe('getValidationSchema', () => {
 
     it('should allow explit array function type', async () => {
       const schema = getValidationSchema({
-        tags: Array,
+        tags: 'Array',
       });
       await assertPass(schema, {
         tags: ['foo', 'bar'],
@@ -1510,7 +1555,7 @@ describe('getValidationSchema', () => {
     it('should validate nested field', async () => {
       const schema = getValidationSchema({
         counts: {
-          view: Number,
+          view: 'Number',
         },
       });
       await assertPass(schema, { counts: { view: 1 } });
@@ -1537,10 +1582,19 @@ describe('getValidationSchema', () => {
 
     it('should validate mixed with nested type object', async () => {
       const schema = getValidationSchema({
-        type: { type: String, required: true },
+        type: {
+          type: 'String',
+          required: true,
+        },
       });
-      await assertPass(schema, { type: 'foo' });
-      await assertFail(schema, { type: { type: 'foo' } });
+      await assertPass(schema, {
+        type: 'foo',
+      });
+      await assertFail(schema, {
+        type: {
+          type: 'foo',
+        },
+      });
       await assertFail(schema, {});
     });
   });
@@ -1549,7 +1603,10 @@ describe('getValidationSchema', () => {
     it('should append plain objects as schemas', async () => {
       const schema = getValidationSchema(
         {
-          type: { type: String, required: true },
+          type: {
+            type: 'String',
+            required: true,
+          },
         },
         {
           appendSchema: {
@@ -1557,15 +1614,26 @@ describe('getValidationSchema', () => {
           },
         }
       );
-      await assertFail(schema, { type: 'foo' });
-      await assertPass(schema, { type: 'foo', count: 10 });
+      await assertFail(schema, {
+        type: 'foo',
+      });
+      await assertPass(schema, {
+        type: 'foo',
+        count: 10,
+      });
     });
 
     it('should merge schemas', async () => {
       const schema = getValidationSchema(
         {
-          type: { type: String, required: true },
-          count: { type: Number, required: true },
+          type: {
+            type: 'String',
+            required: true,
+          },
+          count: {
+            type: 'Number',
+            required: true,
+          },
         },
         {
           appendSchema: yd.object({
@@ -1573,8 +1641,13 @@ describe('getValidationSchema', () => {
           }),
         }
       );
-      await assertPass(schema, { type: 'foo' });
-      await assertPass(schema, { type: 'foo', count: 10 });
+      await assertPass(schema, {
+        type: 'foo',
+      });
+      await assertPass(schema, {
+        type: 'foo',
+        count: 10,
+      });
     });
   });
 
@@ -1582,7 +1655,7 @@ describe('getValidationSchema', () => {
     it('should append a date range schema', async () => {
       const schema = getValidationSchema(
         {
-          startsAt: { type: Date },
+          startsAt: 'Date',
         },
         {
           allowRanges: true,
@@ -1606,7 +1679,7 @@ describe('getValidationSchema', () => {
     it('should append a number range schema', async () => {
       const schema = getValidationSchema(
         {
-          age: { type: Number },
+          age: 'Number',
         },
         {
           allowRanges: true,
@@ -1640,7 +1713,7 @@ describe('addFixedSchemas', () => {
     });
     const User = createTestModel({
       dog: {
-        type: String,
+        type: 'String',
         validate: 'dog',
       },
     });

@@ -6,7 +6,7 @@ describe('assertNoReferences', () => {
   it('should throw error if document is referenced externally', async () => {
     const User = createTestModel({
       name: {
-        type: String,
+        type: 'String',
         required: true,
       },
     });

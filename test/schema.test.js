@@ -6,7 +6,10 @@ describe('createSchema', () => {
   describe('basic functionality', () => {
     it('should create a basic schema', async () => {
       const User = createTestModel({
-        name: { type: String, validate: /[a-z]/ },
+        name: {
+          type: 'String',
+          validate: /[a-z]/,
+        },
       });
       const user = new User({ name: 'foo' });
       expect(user.name).toBe('foo');
@@ -16,46 +19,13 @@ describe('createSchema', () => {
       }).rejects.toThrow();
     });
 
-    it('should create a schema with an array field', async () => {
-      const User = createTestModel({
-        names: [{ type: String, validate: /[a-z]/ }],
-      });
-      const user = new User({ names: ['foo'] });
-
-      expect(Array.from(user.names)).toEqual(['foo']);
-
-      await expect(async () => {
-        user.names = ['FOO'];
-        await user.save();
-      }).rejects.toThrow();
-    });
-
-    it('should allow alternate array function syntax', async () => {
-      const User = createTestModel({
-        names: {
-          type: Array,
-          default: [],
-        },
-      });
-      const user = new User({ names: ['foo'] });
-      expect(Array.from(user.names)).toEqual(['foo']);
-    });
-
-    it('should allow alternate array string syntax', async () => {
-      const User = createTestModel({
-        names: {
-          type: 'Array',
-          default: [],
-        },
-      });
-      const user = new User({ names: ['foo'] });
-      expect(Array.from(user.names)).toEqual(['foo']);
-    });
-
     it('should create a schema with a nested field', async () => {
       const User = createTestModel({
         profile: {
-          name: { type: String, validate: /[a-z]/ },
+          name: {
+            type: 'String',
+            validate: /[a-z]/,
+          },
         },
       });
       const user = new User({
@@ -75,7 +45,10 @@ describe('createSchema', () => {
     it('should accept a schema for a subfield', async () => {
       const User = createTestModel({
         profile: createSchemaFromAttributes({
-          name: { type: String, validate: /[a-z]/ },
+          name: {
+            type: 'String',
+            validate: /[a-z]/,
+          },
         }),
       });
       const user = new User({
@@ -94,7 +67,10 @@ describe('createSchema', () => {
 
     it('should convert a string match to a regexp', async () => {
       const User = createTestModel({
-        color: { type: String, match: '^#[0-9a-f]{6}$' },
+        color: {
+          type: 'String',
+          match: '^#[0-9a-f]{6}$',
+        },
       });
       const user = await User.create({
         color: '#ffffff',
@@ -108,7 +84,7 @@ describe('createSchema', () => {
 
     it('should convert native functions to mongoose', async () => {
       const schema = createSchemaFromAttributes({
-        name: String,
+        name: 'String',
       });
       expect(schema.obj.name).toBe(mongoose.Schema.Types.String);
     });
@@ -140,6 +116,91 @@ describe('createSchema', () => {
         ref: 'String',
       });
       expect(schema.obj.ref).toBe(mongoose.Schema.Types.String);
+    });
+  });
+
+  describe('array fields', () => {
+    it('should create a schema with an array field', async () => {
+      const User = createTestModel({
+        names: [
+          {
+            type: 'String',
+            validate: /[a-z]/,
+          },
+        ],
+      });
+      const user = new User({ names: ['foo'] });
+
+      expect(Array.from(user.names)).toEqual(['foo']);
+
+      await expect(async () => {
+        user.names = ['FOO'];
+        await user.save();
+      }).rejects.toThrow();
+    });
+
+    it('should allow alternate array function syntax', async () => {
+      const User = createTestModel({
+        names: {
+          type: 'Array',
+        },
+      });
+      const user = new User({ names: ['foo'] });
+      expect(Array.from(user.names)).toEqual(['foo']);
+    });
+
+    it('should allow alternate array native syntax', async () => {
+      const User = createTestModel({
+        names: {
+          type: Array,
+        },
+      });
+      const user = new User({ names: ['foo'] });
+      expect(Array.from(user.names)).toEqual(['foo']);
+    });
+
+    it('should allow string syntax', async () => {
+      const User = createTestModel({
+        names: ['String'],
+      });
+      const user = new User({ names: ['foo'] });
+      expect(Array.from(user.names)).toEqual(['foo']);
+    });
+
+    it('should allow explicit element type', async () => {
+      const User = createTestModel({
+        names: {
+          type: ['String'],
+        },
+      });
+      const user = new User({ names: ['foo'] });
+      expect(Array.from(user.names)).toEqual(['foo']);
+    });
+
+    it('should allow a specified default', async () => {
+      const User = createTestModel({
+        names: {
+          type: 'Array',
+          default: undefined,
+        },
+      });
+      const user = new User();
+      expect(user.names).toBeUndefined();
+    });
+
+    it('should throw an error on more than one type', async () => {
+      expect(() => {
+        createTestModel({
+          names: [
+            {
+              type: 'String',
+            },
+            {
+              type: 'Number',
+            },
+          ],
+        });
+      }).toThrow('Array schema may only have one type.');
     });
   });
 
@@ -182,8 +243,8 @@ describe('createSchema', () => {
         const User = createTestModel({
           names: [
             {
-              name: String,
-              position: Number,
+              name: 'String',
+              position: 'Number',
             },
           ],
         });
@@ -211,8 +272,8 @@ describe('createSchema', () => {
                 {
                   three: [
                     {
-                      name: String,
-                      position: Number,
+                      name: 'String',
+                      position: 'Number',
                     },
                   ],
                 },
@@ -261,7 +322,7 @@ describe('createSchema', () => {
 
       it('should not expose fields with underscore', () => {
         const User = createTestModel({
-          _private: String,
+          _private: 'String',
         });
         const user = new User();
         user._private = 'private';
@@ -276,7 +337,7 @@ describe('createSchema', () => {
       it('should disallow all read access', () => {
         const User = createTestModel({
           password: {
-            type: String,
+            type: 'String',
             readScopes: 'none',
           },
         });
@@ -290,7 +351,7 @@ describe('createSchema', () => {
       it('should disallow read access by scope', () => {
         const User = createTestModel({
           password: {
-            type: String,
+            type: 'String',
             readScopes: ['admin'],
           },
         });
@@ -304,7 +365,7 @@ describe('createSchema', () => {
       it('should allow read access by scope', () => {
         const User = createTestModel({
           password: {
-            type: String,
+            type: 'String',
             readScopes: ['admin'],
           },
         });
@@ -322,7 +383,7 @@ describe('createSchema', () => {
 
         const User = createTestModel({
           password: {
-            type: String,
+            type: 'String',
             readScopes: 'self',
           },
         });
@@ -351,9 +412,9 @@ describe('createSchema', () => {
 
         const User = createTestModel();
         const Shop = createTestModel({
-          name: String,
+          name: 'String',
           earnings: {
-            type: Number,
+            type: 'Number',
             readScopes: 'owner',
           },
           owner: {
@@ -388,9 +449,9 @@ describe('createSchema', () => {
 
         const User = createTestModel();
         const Account = createTestModel({
-          name: String,
+          name: 'String',
           likes: {
-            type: Number,
+            type: 'Number',
             readScopes: 'user',
           },
           user: {
@@ -423,7 +484,7 @@ describe('createSchema', () => {
       it('should allow string shortcut for scopes', () => {
         const User = createTestModel({
           password: {
-            type: String,
+            type: 'String',
             readScopes: ['admin'],
           },
         });
@@ -439,7 +500,7 @@ describe('createSchema', () => {
       it('should allow read access to all', () => {
         const User = createTestModel({
           password: {
-            type: String,
+            type: 'String',
             readScopes: 'all',
           },
         });
@@ -454,7 +515,7 @@ describe('createSchema', () => {
         const User = createTestModel({
           tags: [
             {
-              type: String,
+              type: 'String',
               readScopes: 'none',
             },
           ],
@@ -473,11 +534,9 @@ describe('createSchema', () => {
           one: {
             two: {
               three: {
-                name: {
-                  type: String,
-                },
+                name: 'String',
                 age: {
-                  type: Number,
+                  type: 'Number',
                   readScopes: 'none',
                 },
               },
@@ -516,11 +575,9 @@ describe('createSchema', () => {
                 {
                   three: [
                     {
-                      name: {
-                        type: String,
-                      },
+                      name: 'String',
                       age: {
-                        type: Number,
+                        type: 'Number',
                         readScopes: 'none',
                       },
                     },
@@ -572,7 +629,7 @@ describe('createSchema', () => {
       it('should serialize identically with toObject', () => {
         const User = createTestModel({
           secret: {
-            type: String,
+            type: 'String',
             readScopes: 'none',
           },
         });
@@ -589,7 +646,7 @@ describe('createSchema', () => {
       it('should allow access to private fields with options on toJSON', () => {
         const User = createTestModel({
           secret: {
-            type: String,
+            type: 'String',
             readScopes: ['admin'],
           },
         });
@@ -608,7 +665,7 @@ describe('createSchema', () => {
       it('should allow access to private fields with options on toObject', () => {
         const User = createTestModel({
           secret: {
-            type: String,
+            type: 'String',
             readScopes: ['admin'],
           },
         });
@@ -627,8 +684,8 @@ describe('createSchema', () => {
       it('should mark access on nested objects', async () => {
         const User = createTestModel({
           login: {
-            password: String,
-            attempts: Number,
+            password: 'String',
+            attempts: 'Number',
             readScopes: ['admin'],
           },
         });
@@ -646,9 +703,12 @@ describe('createSchema', () => {
       it('should disallow access on nested objects', async () => {
         const User = createTestModel({
           terms: {
-            readScopes: { type: String, default: 'none' },
-            service: Boolean,
-            privacy: Boolean,
+            readScopes: {
+              type: 'String',
+              default: 'none',
+            },
+            service: 'Boolean',
+            privacy: 'Boolean',
           },
         });
         const user = new User({
@@ -671,9 +731,9 @@ describe('createSchema', () => {
           profile: {
             accounts: [
               {
-                name: String,
+                name: 'String',
                 profits: {
-                  type: Number,
+                  type: 'Number',
                   readScopes: ['admin', 'self', 'foo'],
                 },
               },
@@ -776,7 +836,7 @@ describe('createSchema', () => {
           {
             bar: [
               {
-                name: String,
+                name: 'String',
               },
             ],
           },
@@ -801,12 +861,12 @@ describe('createSchema', () => {
       const User = createTestModel({
         foo: {
           type: {
-            type: String,
+            type: 'String',
             required: true,
           },
           bar: [
             {
-              name: String,
+              name: 'String',
             },
           ],
         },
@@ -831,7 +891,7 @@ describe('createSchema', () => {
       let user;
       const User = createTestModel({
         email: {
-          type: String,
+          type: 'String',
           validate: 'email',
         },
       });
@@ -872,7 +932,7 @@ describe('createSchema', () => {
       let user;
       const User = createTestModel({
         email: {
-          type: String,
+          type: 'String',
           required: true,
           validate: 'email',
         },
@@ -905,7 +965,7 @@ describe('createSchema', () => {
       const User = createTestModel({
         emails: [
           {
-            type: String,
+            type: 'String',
             validate: 'email',
           },
         ],

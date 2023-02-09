@@ -5,9 +5,9 @@ import { createTestModel } from '../src/testing';
 describe('assign', () => {
   it('should allow assignment of fields', async () => {
     const User = createTestModel({
-      name: { type: String },
-      number: { type: Number },
-      date: { type: Date },
+      date: 'Date',
+      name: 'String',
+      number: 'Number',
     });
     const user = new User();
     const now = Date.now();
@@ -29,7 +29,7 @@ describe('assign', () => {
         type: mongoose.Schema.Types.ObjectId,
       },
       nested: {
-        name: String,
+        name: 'String',
         user: {
           ref: User.modelName,
           type: mongoose.Schema.Types.ObjectId,
@@ -100,8 +100,8 @@ describe('assign', () => {
   it('should allow partial assignment of nested fields', async () => {
     const User = createTestModel({
       profile: {
-        firstName: String,
-        lastName: String,
+        firstName: 'String',
+        lastName: 'String',
       },
     });
 
@@ -127,7 +127,7 @@ describe('assign', () => {
     const Shop = createTestModel({
       products: [
         {
-          name: String,
+          name: 'String',
         },
       ],
     });

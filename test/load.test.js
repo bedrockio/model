@@ -8,7 +8,10 @@ describe('loadModel', () => {
     const Box = loadModel(
       {
         attributes: {
-          name: { type: String, validate: /[a-z]/ },
+          name: {
+            type: 'String',
+            validate: /[a-z]/,
+          },
         },
       },
       'Box'

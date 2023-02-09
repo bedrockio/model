@@ -7,7 +7,7 @@ describe('search', () => {
   it('should search on name', async () => {
     const User = createTestModel({
       name: {
-        type: String,
+        type: 'String',
         required: true,
       },
     });
@@ -27,7 +27,7 @@ describe('search', () => {
   it('should search on name as a keyword', async () => {
     const schema = createSchemaFromAttributes({
       name: {
-        type: String,
+        type: 'String',
         required: true,
       },
     });
@@ -50,7 +50,7 @@ describe('search', () => {
     const schema = createSchema({
       attributes: {
         name: {
-          type: String,
+          type: 'String',
           required: true,
         },
       },
@@ -93,11 +93,11 @@ describe('search', () => {
     const schema = createSchema({
       attributes: {
         name: {
-          type: String,
+          type: 'String',
           required: true,
         },
         role: {
-          type: String,
+          type: 'String',
           required: true,
         },
       },
@@ -128,7 +128,7 @@ describe('search', () => {
     const schema = createSchema({
       attributes: {
         name: {
-          type: String,
+          type: 'String',
           required: true,
         },
       },
@@ -149,12 +149,8 @@ describe('search', () => {
 
   it('should search on an array field', async () => {
     const User = createTestModel({
-      order: Number,
-      categories: [
-        {
-          type: String,
-        },
-      ],
+      order: 'Number',
+      categories: ['String'],
     });
     const [user1, user2] = await Promise.all([
       User.create({ order: 1, categories: ['owner', 'member'] }),
@@ -181,7 +177,7 @@ describe('search', () => {
 
   it('should allow shorthand for a regex query', async () => {
     const User = createTestModel({
-      name: String,
+      name: 'String',
     });
     await Promise.all([
       User.create({ name: 'Willy' }),
@@ -199,7 +195,7 @@ describe('search', () => {
 
   it('should behave like $in when empty array passed', async () => {
     const User = createTestModel({
-      categories: [String],
+      categories: ['String'],
     });
     await Promise.all([
       User.create({ categories: ['owner', 'member'] }),
@@ -215,11 +211,17 @@ describe('search', () => {
 
   it('should perform a search on a nested field', async () => {
     const User = createTestModel({
-      order: Number,
+      order: 'Number',
       roles: [
         {
-          role: { type: 'String', required: true },
-          scope: { type: 'String', required: true },
+          role: {
+            type: 'String',
+            required: true,
+          },
+          scope: {
+            type: 'String',
+            required: true,
+          },
         },
       ],
     });
@@ -278,12 +280,12 @@ describe('search', () => {
 
   it('should perform a search on a complex nested field', async () => {
     const User = createTestModel({
-      name: String,
+      name: 'String',
       profile: {
         roles: [
           {
             role: {
-              functions: [String],
+              functions: ['String'],
             },
           },
         ],
@@ -337,12 +339,8 @@ describe('search', () => {
     let result;
 
     const User = createTestModel({
-      name: {
-        type: String,
-      },
-      age: {
-        type: Number,
-      },
+      name: 'String',
+      age: 'Number',
     });
     await Promise.all([
       User.create({ name: 'Billy', age: 20 }),
@@ -377,9 +375,7 @@ describe('search', () => {
 
   it('should mixin nested operator queries', async () => {
     const User = createTestModel({
-      name: {
-        type: String,
-      },
+      name: 'String',
     });
     await Promise.all([
       User.create({ name: 'Billy' }),
@@ -451,10 +447,8 @@ describe('search', () => {
   it('should allow date range search', async () => {
     let result;
     const schema = createSchemaFromAttributes({
-      name: String,
-      archivedAt: {
-        type: Date,
-      },
+      name: 'String',
+      archivedAt: 'Date',
     });
     const User = createTestModel(schema);
     await Promise.all([
@@ -495,10 +489,8 @@ describe('search', () => {
     let result;
     const schema = createSchemaFromAttributes({
       user: {
-        name: String,
-        archivedAt: {
-          type: Date,
-        },
+        name: 'String',
+        archivedAt: 'Date',
       },
     });
     const User = createTestModel(schema);
@@ -515,8 +507,8 @@ describe('search', () => {
   it('should allow number range search', async () => {
     let result;
     const schema = createSchemaFromAttributes({
-      name: String,
-      age: Number,
+      name: 'String',
+      age: 'Number',
     });
     const User = createTestModel(schema);
     await Promise.all([
@@ -592,7 +584,7 @@ describe('search', () => {
     const schema = createSchema({
       attributes: {
         name: {
-          type: String,
+          type: 'String',
           required: true,
         },
       },
