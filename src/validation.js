@@ -7,7 +7,7 @@ import { searchValidation } from './search';
 import { isMongooseSchema } from './utils';
 import { PermissionsError } from './errors';
 
-const fixedSchemas = {
+const namedSchemas = {
   // Email is special as we are assuming that in
   // all cases lowercase should be allowed but coerced.
   email: yd.string().lowercase().email(),
@@ -46,6 +46,20 @@ export function getValidationSchema(attributes, options = {}) {
   return schema;
 }
 
+export function addValidators(schemas) {
+  Object.assign(namedSchemas, schemas);
+}
+
+export function getNamedValidator(name) {
+  return wrapMongooseValidator(getNamedSchema(name));
+}
+
+export function getTupleValidator(types) {
+  return wrapMongooseValidator(
+    yd.array(types.map(getSchemaForField)).length(types.length)
+  );
+}
+
 // Returns an async function that will error on failure.
 //
 // Note that mongoose validator functions will not be called
@@ -59,18 +73,12 @@ export function getValidationSchema(attributes, options = {}) {
 // the first style here.
 //
 // https://mongoosejs.com/docs/api/schematype.html#schematype_SchemaType-validate
-//
-export function getMongooseValidator(name) {
-  const schema = getFixedSchema(name);
+function wrapMongooseValidator(schema) {
   const validator = async (val) => {
     await schema.validate(val);
   };
-  validator.fixedName = name;
+  validator.schema = schema;
   return validator;
-}
-
-export function addFixedSchemas(schemas) {
-  Object.assign(fixedSchemas, schemas);
 }
 
 function getObjectSchema(obj, options) {
@@ -159,7 +167,7 @@ function getSchemaForField(field, options = {}) {
 
   let schema;
   if (field.validate) {
-    schema = getFixedSchema(field.validate);
+    schema = field.validate.schema;
   } else {
     schema = getSchemaForType(type, options);
   }
@@ -240,7 +248,7 @@ function getSchemaForType(type) {
     case 'ObjectId':
       return yd.custom(async (val) => {
         const id = String(val.id || val);
-        await fixedSchemas['ObjectId'].validate(id);
+        await namedSchemas['ObjectId'].validate(id);
         return id;
       });
     default:
@@ -273,9 +281,8 @@ function getRangeSchema(schema, type) {
   return schema;
 }
 
-function getFixedSchema(arg) {
-  const name = arg.fixedName || arg;
-  const schema = fixedSchemas[name];
+function getNamedSchema(name) {
+  const schema = namedSchemas[name];
   if (!schema) {
     throw new Error(`Cannot find schema for "${name}".`);
   }

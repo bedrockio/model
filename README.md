@@ -5,6 +5,7 @@ Bedrock utilities for model creation.
 - [Install](#install)
 - [Dependencies](#dependencies)
 - [Usage](#usage)
+- [Schemas](#schemas)
 - [Features](#features)
   - [Soft Delete](#soft-delete)
   - [Validation](#validation)
@@ -64,6 +65,54 @@ model.exports = {
   ...loadModelDir('./definitions');
 }
 ```
+
+## Schemas
+
+The `attributes` field of model definitions can be considered equivalent to Mongoose, but defined in JSON with extended features:
+
+```js
+{
+  "attributes": {
+    // Shortcut for the syntax below.
+    "name1": "String",
+    // Defines further parameters on the type.
+    "name2": {
+      "type": "String",
+      "trim": true,
+    },
+    "email": {
+      "type": "String",
+      // Validation shortcuts
+      "validate": "email",
+      // Access control
+      "readScopes": ["admin"],
+      "writeScopes": ["admin"],
+    },
+    "tags": [
+      {
+        "type": "String"
+      }
+    ],
+    // Arrays of mixed type
+    "mixed": [
+      {
+        "type": "Mixed"
+      }
+    ],
+    // Extended tuple syntax
+    "location": ["Number", "Number"]
+  }
+}
+```
+
+Links:
+
+- [Validation](#validation)
+- [Access Control](#access-control)
+
+Array fields that have more than one element are considered a "tuple". They will enforce an exact length and specific type for each element.
+
+Note that Mongoose does not provide a way to enforce array elements of specific mixed types, requiring the `Mixed` type instead.
 
 ## Features
 
@@ -149,9 +198,9 @@ There are 3 main methods to generate schemas:
   - The special fields `limit`, `sort`, `keyword`, `include`, and `ids` are also allowed.
   - Array fields are "unwound". This means that for example given an array field `categories`, input may be either a string or an array of strings.
 
-#### Fixed Validations
+#### Named Validations
 
-Fixed validations can be specified on the model:
+Named validations can be specified on the model:
 
 ```json
 {

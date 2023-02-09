@@ -2,8 +2,8 @@ import yd from '@bedrockio/yada';
 
 import {
   getValidationSchema,
-  getMongooseValidator,
-  addFixedSchemas,
+  getNamedValidator,
+  addValidators,
 } from '../src/validation';
 import { createSchemaFromAttributes, createTestModel } from '../src/testing';
 
@@ -1698,17 +1698,17 @@ describe('getValidationSchema', () => {
   });
 });
 
-describe('getMongooseValidator', () => {
+describe('getNamedValidator', () => {
   it('should get an email validator', async () => {
-    const emailValidator = getMongooseValidator('email');
+    const emailValidator = getNamedValidator('email');
     await expect(emailValidator('foo@bar.com')).resolves.not.toThrow();
     await expect(emailValidator('bad@email')).rejects.toThrow();
   });
 });
 
-describe('addFixedSchemas', () => {
+describe('addValidators', () => {
   it('should be able to add a custom schema validator', async () => {
-    addFixedSchemas({
+    addValidators({
       dog: yd.allow('Golden Retriever', 'Australian Shepherd'),
     });
     const User = createTestModel({

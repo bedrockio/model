@@ -10,9 +10,11 @@ import { applyAssign } from './assign';
 import { applyInclude } from './include';
 import { applyReferences } from './references';
 import { applySoftDelete } from './soft-delete';
-import { applyValidation, getMongooseValidator } from './validation';
-
-import warn from './warn';
+import {
+  applyValidation,
+  getNamedValidator,
+  getTupleValidator,
+} from './validation';
 
 const { ObjectId: SchemaObjectId } = mongoose.Schema.Types;
 
@@ -68,22 +70,24 @@ function attributesToMongoose(attributes, path = []) {
         val = RegExp(val);
       } else if (key === 'validate' && type === 'string') {
         // Allow custom mongoose validation function that derives from the schema.
-        val = getMongooseValidator(val);
+        val = getNamedValidator(val);
       }
     } else if (Array.isArray(val)) {
-      if (val.length > 1) {
-        warn(
-          'Array schemas may only have one type. For',
-          'objects of mixed type use "Object" instead.'
-        );
-        throw new Error('Array schema may only have one type.');
-      }
       val = val.map((el, i) => {
         if (typeof el !== 'string') {
           el = attributesToMongoose(el, [...path, i]);
         }
         return el;
       });
+      if (val.length > 1) {
+        // Note that validators will not run with:
+        // { type: 'Array' }
+        // [{ type: 'Mixed' }]
+        val = {
+          type: ['Mixed'],
+          validate: getTupleValidator(val),
+        };
+      }
     } else if (isPlainObject(val)) {
       val = attributesToMongoose(val, [...path, key]);
     } else if (!isMongooseSchema(val)) {

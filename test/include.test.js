@@ -8,7 +8,7 @@ const userModelName = getTestModelName();
 const Shop = createTestModel({
   name: 'String',
   email: 'String',
-  tags: [String],
+  tags: ['String'],
   user: {
     ref: userModelName,
     type: 'ObjectId',
@@ -30,7 +30,7 @@ const Shop = createTestModel({
 const Product = createTestModel({
   name: 'String',
   email: 'String',
-  tags: [String],
+  tags: ['String'],
   shop: {
     ref: Shop.modelName,
     type: 'ObjectId',
@@ -40,7 +40,7 @@ const Product = createTestModel({
 const userSchema = {
   name: 'String',
   email: 'String',
-  tags: [String],
+  tags: ['String'],
   address: {
     line1: 'String',
     line2: 'String',

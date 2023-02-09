@@ -189,18 +189,39 @@ describe('createSchema', () => {
     });
 
     it('should throw an error on more than one type', async () => {
-      expect(() => {
-        createTestModel({
-          names: [
-            {
-              type: 'String',
-            },
-            {
-              type: 'Number',
-            },
-          ],
-        });
-      }).toThrow('Array schema may only have one type.');
+      const User = createTestModel({
+        location: ['Number', 'Number'],
+      });
+
+      await expect(
+        User.create({
+          location: [],
+        })
+      ).rejects.toThrow();
+
+      await expect(
+        User.create({
+          location: [35],
+        })
+      ).rejects.toThrow();
+
+      await expect(
+        User.create({
+          location: [35, 139],
+        })
+      ).resolves.not.toThrow();
+
+      await expect(
+        User.create({
+          location: [35, 139, 13],
+        })
+      ).rejects.toThrow();
+
+      await expect(
+        User.create({
+          location: [35, '139'],
+        })
+      ).rejects.toThrow();
     });
   });
 

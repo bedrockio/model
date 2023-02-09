@@ -1713,10 +1713,10 @@
   resolved "https://registry.yarnpkg.com/@bedrockio/prettier-config/-/prettier-config-1.0.2.tgz#89878381d3059b810f97514ee6b69f946a6d1654"
   integrity sha512-Ebcx/D9FcV6WEQH2gXA4SkN62fus/aVMW46MYFm1/y+S0GVYj+OCuBbRMM4F8YAq9ntJ+B/z9fLiOheNpEpRzA==
 
-"@bedrockio/yada@^1.0.6":
-  version "1.0.6"
-  resolved "https://registry.yarnpkg.com/@bedrockio/yada/-/yada-1.0.6.tgz#ae351d9ec9df94c4dea3bda59e1b2ba51cc1117f"
-  integrity sha512-3p2qFeBrRrGFdqknY9F2yg0ohNm7BqjldF/v28dS87vE5qetq8P1KkbpANEfQsuXmnDhJVPh5OUOUSmhJgJGfA==
+"@bedrockio/yada@^1.0.7":
+  version "1.0.7"
+  resolved "https://registry.yarnpkg.com/@bedrockio/yada/-/yada-1.0.7.tgz#d041d07c8136cd82d9366fcee794628f5be28e50"
+  integrity sha512-SWpiZrvzuw57G0JgtGzH/Tbrm09rNVzNJMecR1Qq75kGegoZvDi+v3M3Paru9nHxpOqyXMI8DDovFQbnGj5wtw==
   dependencies:
     validator "^13.9.0"
 
