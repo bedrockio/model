@@ -1,35 +1,69 @@
 import mongoose from 'mongoose';
-import { startCase } from 'lodash';
+
+import { ReferenceError } from './errors';
 
 const { ObjectId: SchemaObjectId } = mongoose.Schema.Types;
 
 export function applyReferences(schema) {
-  schema.method('assertNoReferences', async function (options = {}) {
-    const { except = [] } = options;
-    const { modelName } = this.constructor;
-    await Promise.all(
-      getAllReferences(modelName).map(async ({ model, paths }) => {
-        const hasException = except.some((e) => {
+  schema.method(
+    'assertNoReferences',
+    async function assertNoReferences(options = {}) {
+      const { except = [] } = options;
+      const { modelName } = this.constructor;
+
+      assertExceptions(except);
+
+      const references = getAllReferences(modelName);
+      const results = [];
+
+      for (let { model, paths } of references) {
+        const isAllowed = except.some((e) => {
           return e === model || e === model.modelName;
         });
-        if (hasException) {
+        if (isAllowed) {
           return;
         }
-        const count = await model.countDocuments({
+
+        const query = {
           $or: paths.map((path) => {
             return { [path]: this.id };
           }),
-        });
-        if (count > 0) {
-          throw new Error(
-            `Refusing to delete ${startCase(modelName).toLowerCase()} ${
-              this.id
-            } referenced by ${model.modelName}.`
-          );
+        };
+
+        const docs = await model.find(
+          query,
+          {
+            _id: 1,
+          },
+          {
+            lean: true,
+          }
+        );
+        if (docs.length > 0) {
+          const ids = docs.map((doc) => {
+            return String(doc._id);
+          });
+          results.push({
+            ids,
+            model,
+            count: ids.length,
+          });
         }
-      })
-    );
-  });
+      }
+
+      if (results.length) {
+        throw new ReferenceError('Refusing to delete.', results);
+      }
+    }
+  );
+}
+
+function assertExceptions(except) {
+  for (let val of except) {
+    if (typeof val === 'string' && !mongoose.models[val]) {
+      throw new Error(`Unknown model "${val}".`);
+    }
+  }
 }
 
 function getAllReferences(targetName) {

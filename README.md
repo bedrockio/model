@@ -841,15 +841,16 @@ router.delete('/:id', async (ctx) => {
     await shop.assertNoReferences({
       except: [AuditEntry],
     });
-  } catch {
-    ctx.throw(400, 'Shop has external references.');
+  } catch (err) {
+    console.info(err.references);
+    ctx.throw(400, err.message);
   }
   await user.delete();
   ctx.status = 204;
 });
 ```
 
-The above example will throw an error if shop is referenced externally (for example by a a `Product`), however it will not count `AuditEntry` references.
+The above example will throw an error if shop is referenced externally (for example by a a `Product`), however it will not count `AuditEntry` references. Note that a `references` property on the thrown error will contain the found references.
 
 ### Assign
 
