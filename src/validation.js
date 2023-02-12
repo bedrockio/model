@@ -1,11 +1,13 @@
+import mongoose from 'mongoose';
 import yd from '@bedrockio/yada';
 
-import { omit } from 'lodash';
+import { omit, lowerFirst } from 'lodash';
 
-import { RESERVED_FIELDS } from './const';
+import { hasWriteAccess } from './access';
 import { searchValidation } from './search';
-import { isMongooseSchema } from './utils';
 import { PermissionsError } from './errors';
+import { isMongooseSchema, isSchemaTypedef } from './utils';
+import { RESERVED_FIELDS } from './schema';
 
 const namedSchemas = {
   // Email is special as we are assuming that in
@@ -37,6 +39,63 @@ const namedSchemas = {
   uuid: yd.string().uuid(),
 };
 
+export function addValidators(schemas) {
+  Object.assign(namedSchemas, schemas);
+}
+
+export function applyValidation(schema, definition) {
+  schema.static(
+    'getCreateValidation',
+    function getCreateValidation(appendSchema) {
+      return getSchemaFromMongoose(schema, {
+        appendSchema,
+        stripReserved: true,
+        requireWriteAccess: true,
+        modelName: this.modelName,
+      });
+    }
+  );
+
+  schema.static(
+    'getUpdateValidation',
+    function getUpdateValidation(appendSchema) {
+      return getSchemaFromMongoose(schema, {
+        appendSchema,
+        skipRequired: true,
+        stripReserved: true,
+        stripUnknown: true,
+        requireWriteAccess: true,
+        modelName: this.modelName,
+      });
+    }
+  );
+
+  schema.static(
+    'getSearchValidation',
+    function getSearchValidation(searchOptions) {
+      return getSchemaFromMongoose(schema, {
+        allowRanges: true,
+        skipRequired: true,
+        allowMultiple: true,
+        unwindArrayFields: true,
+        appendSchema: searchValidation(definition, searchOptions),
+        modelName: this.modelName,
+      });
+    }
+  );
+}
+
+// Yada schemas
+
+function getSchemaFromMongoose(schema, options) {
+  let { obj } = schema;
+  if (options.stripReserved) {
+    obj = omit(obj, RESERVED_FIELDS);
+  }
+  return getValidationSchema(obj, options);
+}
+
+// Exported for testing
 export function getValidationSchema(attributes, options = {}) {
   const { appendSchema } = options;
   let schema = getObjectSchema(attributes, options);
@@ -46,158 +105,79 @@ export function getValidationSchema(attributes, options = {}) {
   return schema;
 }
 
-export function addValidators(schemas) {
-  Object.assign(namedSchemas, schemas);
-}
-
-export function getNamedValidator(name) {
-  return wrapMongooseValidator(getNamedSchema(name));
-}
-
-export function getTupleValidator(types) {
-  return wrapMongooseValidator(
-    yd.array(types.map(getSchemaForField)).length(types.length)
-  );
-}
-
-// Returns an async function that will error on failure.
-//
-// Note that mongoose validator functions will not be called
-// if the field is optional and not set or unset with undefined.
-// If the field is not optional the "required" field will also
-// perform valdation so no additional checks are necessary.
-//
-// Also note that throwing an error inside a validator and passing
-// the "message" field result in an identical error message. In this
-// case we want the schema error messages to trickle down so using
-// the first style here.
-//
-// https://mongoosejs.com/docs/api/schematype.html#schematype_SchemaType-validate
-function wrapMongooseValidator(schema) {
-  const validator = async (val) => {
-    await schema.validate(val);
-  };
-  validator.schema = schema;
-  return validator;
-}
-
-function getObjectSchema(obj, options) {
+function getObjectSchema(arg, options) {
   const { stripUnknown } = options;
-  const map = {};
-  const { transformField } = options;
-  for (let [key, field] of Object.entries(obj)) {
-    if (key === 'type' && !field.type) {
-      // Ignore "type" field unless it's defining a field
-      // named "type":
-      // type: { type: String }
-      continue;
-    } else if (field.skipValidation) {
-      // Also skip fields that explicitly flag skipping
-      // validation.
-      continue;
+  if (isSchemaTypedef(arg)) {
+    return getSchemaForTypedef(arg, options);
+  } else if (arg instanceof mongoose.Schema) {
+    return getObjectSchema(arg.obj, options);
+  } else if (Array.isArray(arg)) {
+    return getArraySchema(arg, options);
+  } else if (typeof arg === 'object') {
+    const map = {};
+    for (let [key, field] of Object.entries(arg)) {
+      map[key] = getObjectSchema(field, options);
     }
-    if (transformField) {
-      field = transformField(key, field);
+
+    let schema = yd.object(map);
+
+    if (stripUnknown) {
+      schema = schema.options({
+        stripUnknown: true,
+      });
     }
-    if (field) {
-      if (yd.isSchema(field)) {
-        map[key] = field;
-      } else {
-        map[key] = getSchemaForField(field, options);
-      }
-    }
+
+    return schema;
+  } else {
+    return getSchemaForType(arg);
   }
-
-  let schema = yd.object(map);
-
-  if (stripUnknown) {
-    schema = schema.options({
-      stripUnknown: true,
-    });
-  }
-
-  return schema;
 }
 
 function getArraySchema(obj, options) {
-  if (Array.isArray(obj)) {
-    // Array further further specifies array fields:
-    // tags: [{ name: String }]
-
-    // "required" is a special field in this case which
-    // means that an empty array is not allowed:
-    // tags: [{
-    //   name: String,
-    //   requried: true
-    //  }]
-    obj = obj[0];
-
-    let schema;
-    if (options.unwindArrayFields) {
-      // Allow array "unwinding". This is used for search validation:
-      // { tag: 'one' }
-      schema = getSchemaForField(obj, options);
-    } else {
-      schema = yd.array(getSchemaForField(obj, options));
-    }
-    if (obj.required) {
-      schema = schema.min(1);
-    }
-    return schema;
-  } else {
-    // Object/constructor notation implies array of anything:
-    // tags: { type: Array }
-    // tags: Array
-    return yd.array();
+  // Nested array fields may not skip required
+  // validations as they are a new context.
+  let schema = getObjectSchema(obj[0], {
+    ...options,
+    skipRequired: false,
+  });
+  if (!options.unwindArrayFields) {
+    schema = yd.array(schema);
   }
+  return schema;
 }
 
-function getSchemaForField(field, options = {}) {
-  const type = getFieldType(field);
-  if (type === 'Array') {
-    // Nested array fields may not skip required
-    // validations as they are a new context.
-    return getArraySchema(field, {
-      ...options,
-      skipRequired: false,
-    });
-  } else if (type === 'Object') {
-    return getObjectSchema(field, options);
-  }
+function getSchemaForTypedef(typedef, options = {}) {
+  let { type } = typedef;
 
   let schema;
-  if (field.validate) {
-    schema = field.validate.schema;
+
+  if (isMongooseSchema(type)) {
+    schema = getSchemaFromMongoose(type, options);
+  } else if (Array.isArray(type)) {
+    schema = getArraySchema(type, options);
+  } else if (typeof type === 'object') {
+    schema = getObjectSchema(type, options);
   } else {
-    schema = getSchemaForType(type, options);
+    schema = getSchemaForType(type);
   }
 
-  if (isRequiredField(field, options)) {
+  if (isRequired(typedef, options)) {
     schema = schema.required();
-  } else if (field.writeScopes) {
-    // if (!field.skipValidation) {
-    schema = validateWriteScopes(schema, field.writeScopes);
-    // }
-    // } else {
-    //   // TODO: for now we allow both empty strings and null
-    //   // as a potential signal for "set but non-existent".
-    //   // Is this ok? Do we not want any falsy fields in the
-    //   // db whatsoever?
-    //   schema = schema.allow('', null);
   }
-  if (typeof field === 'object') {
-    if (field.enum) {
-      schema = schema.allow(...field.enum);
-    }
-    if (field.match) {
-      schema = schema.match(RegExp(field.match));
-    }
-    if (field.min != null || field.minLength != null) {
-      schema = schema.min(field.min ?? field.minLength);
-    }
-    if (field.max != null || field.maxLength != null) {
-      schema = schema.max(field.max ?? field.maxLength);
-    }
+  if (typedef.validate?.schema) {
+    schema = schema.append(typedef.validate.schema);
+  }
+  if (typedef.enum) {
+    schema = schema.allow(...typedef.enum);
+  }
+  if (typedef.match) {
+    schema = schema.match(RegExp(typedef.match));
+  }
+  if (typedef.min != null || typedef.minLength != null) {
+    schema = schema.min(typedef.min ?? typedef.minLength);
+  }
+  if (typedef.max != null || typedef.maxLength != null) {
+    schema = schema.max(typedef.max ?? typedef.maxLength);
   }
   if (options.allowRanges) {
     schema = getRangeSchema(schema, type);
@@ -205,32 +185,10 @@ function getSchemaForField(field, options = {}) {
   if (options.allowMultiple) {
     schema = yd.allow(schema, yd.array(schema));
   }
+  if (typedef.writeScopes && options.requireWriteAccess) {
+    schema = validateWriteScopes(schema, typedef.writeScopes, options);
+  }
   return schema;
-}
-
-function isRequiredField(field, options) {
-  return (
-    field.required &&
-    !field.default &&
-    !field.skipValidation &&
-    !options.skipRequired
-  );
-}
-
-function validateWriteScopes(schema, allowedScopes) {
-  return schema.custom((val, { scopes }) => {
-    let allowed = false;
-    if (allowedScopes === 'all') {
-      allowed = true;
-    } else if (Array.isArray(allowedScopes)) {
-      allowed = allowedScopes.some((scope) => {
-        return scopes?.includes(scope);
-      });
-    }
-    if (!allowed) {
-      throw new PermissionsError('requires write permissions');
-    }
-  });
 }
 
 function getSchemaForType(type) {
@@ -244,6 +202,7 @@ function getSchemaForType(type) {
     case 'Date':
       return yd.date().iso();
     case 'Mixed':
+    case 'Object':
       return yd.object();
     case 'ObjectId':
       return yd.custom(async (val) => {
@@ -281,94 +240,71 @@ function getRangeSchema(schema, type) {
   return schema;
 }
 
+function isRequired(typedef, options) {
+  return typedef.required && !typedef.default && !options.skipRequired;
+}
+
+function validateWriteScopes(schema, allowedScopes, options) {
+  const { stripUnknown, modelName } = options;
+  if (stripUnknown) {
+    return schema.strip((val, options) => {
+      return !resolveAccess(allowedScopes, modelName, options);
+    });
+  } else {
+    return schema.custom((val, options) => {
+      if (!resolveAccess(allowedScopes, modelName, options)) {
+        throw new PermissionsError('requires write permissions');
+      }
+    });
+  }
+}
+
+function resolveAccess(allowedScopes, modelName, options) {
+  const document = options[lowerFirst(modelName)] || options['document'];
+  return hasWriteAccess(allowedScopes, {
+    ...options,
+    document,
+  });
+}
+
+// Mongoose Validators
+
+export function getNamedValidator(name) {
+  return wrapMongooseValidator(getNamedSchema(name));
+}
+
+export function getTupleValidator(types) {
+  types = types.map((type) => {
+    return getSchemaForTypedef(type);
+  });
+  return wrapMongooseValidator(yd.array(types).length(types.length));
+}
+
+// Returns an async function that will error on failure.
+//
+// Note that mongoose validator functions will not be called
+// if the field is optional and not set or unset with undefined.
+// If the field is not optional the "required" field will also
+// perform valdation so no additional checks are necessary.
+//
+// Also note that throwing an error inside a validator and passing
+// the "message" field result in an identical error message. In this
+// case we want the schema error messages to trickle down so using
+// the first style here.
+//
+// https://mongoosejs.com/docs/api/schematype.html#schematype_SchemaType-validate
+function wrapMongooseValidator(schema) {
+  const validator = async (val) => {
+    await schema.validate(val);
+  };
+  validator.schema = schema;
+  return validator;
+}
+
 function getNamedSchema(name) {
   const schema = namedSchemas[name];
   if (!schema) {
     throw new Error(`Cannot find schema for "${name}".`);
   }
   return schema;
-}
-
-function getFieldType(field) {
-  // Normalize different type definitions including Mongoose types as well
-  // as strings. Be careful here of nested type definitions.
-  if (Array.isArray(field)) {
-    // names: [String]
-    return 'Array';
-  } else if (typeof field === 'function') {
-    // Coerce both global constructors and mongoose.Schema.Types.
-    // name: String
-    // name: mongoose.Schema.Types.String
-    return field.schemaName || field.name;
-  } else if (typeof field === 'object') {
-    if (!field.type || typeof field.type === 'object') {
-      // Nested field
-      // profile: { name: String } (no type field)
-      // type: { type: 'String' } (may be nested)
-      return 'Object';
-    } else {
-      // name: { type: String }
-      // name: { type: 'String' }
-      return getFieldType(field.type);
-    }
-  } else if (typeof field === 'string') {
-    // name: 'String'
-    return field;
-  } else {
-    throw new Error(`Could not derive type for field ${field}.`);
-  }
-}
-
-export function applyValidation(schema, definition) {
-  schema.static(
-    'getCreateValidation',
-    function getCreateValidation(appendSchema) {
-      return getSchemaFromMongoose(schema, {
-        appendSchema,
-        stripReserved: true,
-      });
-    }
-  );
-
-  schema.static(
-    'getUpdateValidation',
-    function getUpdateValidation(appendSchema) {
-      return getSchemaFromMongoose(schema, {
-        appendSchema,
-        skipRequired: true,
-        stripReserved: true,
-        stripUnknown: true,
-      });
-    }
-  );
-
-  schema.static(
-    'getSearchValidation',
-    function getSearchValidation(searchOptions) {
-      return getSchemaFromMongoose(schema, {
-        allowRanges: true,
-        skipRequired: true,
-        allowMultiple: true,
-        unwindArrayFields: true,
-        appendSchema: searchValidation(definition, searchOptions),
-      });
-    }
-  );
-}
-
-function getSchemaFromMongoose(schema, options) {
-  let { obj } = schema;
-  if (options.stripReserved) {
-    obj = omit(obj, RESERVED_FIELDS);
-  }
-  return getValidationSchema(obj, {
-    ...options,
-    transformField: (key, field) => {
-      if (isMongooseSchema(field)) {
-        return getSchemaFromMongoose(field, options);
-      } else {
-        return field;
-      }
-    },
-  });
 }

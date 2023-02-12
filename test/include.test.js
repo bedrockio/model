@@ -57,7 +57,7 @@ const userSchema = {
   },
 };
 
-const User = createTestModel(userSchema, userModelName);
+const User = createTestModel(userModelName, userSchema);
 
 const Comment = createTestModel({
   body: 'String',

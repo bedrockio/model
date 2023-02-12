@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 import { createSchema } from '../src/schema';
-import { createTestModel, createSchemaFromAttributes } from '../src/testing';
+import { createTestModel } from '../src/testing';
 
 describe('search', () => {
   it('should search on name', async () => {
@@ -25,16 +25,15 @@ describe('search', () => {
   });
 
   it('should search on name as a keyword', async () => {
-    const schema = createSchemaFromAttributes({
+    const User = createTestModel({
       name: {
         type: 'String',
         required: true,
       },
     });
-    schema.index({
+    User.schema.index({
       name: 'text',
     });
-    const User = createTestModel(schema);
     await User.createIndexes();
     await Promise.all([
       User.create({ name: 'Billy' }),
@@ -446,11 +445,10 @@ describe('search', () => {
 
   it('should allow date range search', async () => {
     let result;
-    const schema = createSchemaFromAttributes({
+    const User = createTestModel({
       name: 'String',
       archivedAt: 'Date',
     });
-    const User = createTestModel(schema);
     await Promise.all([
       User.create({ name: 'Billy', archivedAt: '2020-01-01' }),
       User.create({ name: 'Willy', archivedAt: '2021-01-01' }),
@@ -487,13 +485,12 @@ describe('search', () => {
 
   it('should allow date range search on dot path', async () => {
     let result;
-    const schema = createSchemaFromAttributes({
+    const User = createTestModel({
       user: {
         name: 'String',
         archivedAt: 'Date',
       },
     });
-    const User = createTestModel(schema);
     await Promise.all([
       User.create({ user: { name: 'Billy', archivedAt: '2020-01-01' } }),
       User.create({ user: { name: 'Willy', archivedAt: '2021-01-01' } }),
@@ -506,11 +503,10 @@ describe('search', () => {
 
   it('should allow number range search', async () => {
     let result;
-    const schema = createSchemaFromAttributes({
+    const User = createTestModel({
       name: 'String',
       age: 'Number',
     });
-    const User = createTestModel(schema);
     await Promise.all([
       User.create({ name: 'Billy', age: 22 }),
       User.create({ name: 'Willy', age: 54 }),

@@ -3,23 +3,21 @@ import mongoose from 'mongoose';
 import { pick, isEmpty, isPlainObject } from 'lodash';
 
 import { isDateField, isNumberField, resolveField } from './utils';
+import { SEARCH_DEFAULTS } from './const';
 
 const { ObjectId } = mongoose.Types;
 
-const DEFAULTS = {
-  limit: 50,
-  sort: {
-    field: 'createdAt',
-    order: 'desc',
-  },
-};
+const SORT_SCHEMA = yd.object({
+  field: yd.string().required(),
+  order: yd.string().allow('desc', 'asc').required(),
+});
 
 export function applySearch(schema, definition) {
   validateDefinition(definition);
 
   schema.static('search', function search(body = {}) {
     const options = {
-      ...DEFAULTS,
+      ...SEARCH_DEFAULTS,
       ...definition.search,
       ...body,
     };
@@ -73,14 +71,9 @@ export function applySearch(schema, definition) {
   });
 }
 
-const SORT_SCHEMA = yd.object({
-  field: yd.string().required(),
-  order: yd.string().allow('desc', 'asc').required(),
-});
-
 export function searchValidation(definition, options = {}) {
   const { limit, sort, ...rest } = {
-    ...DEFAULTS,
+    ...SEARCH_DEFAULTS,
     ...pick(definition.search, 'limit', 'sort'),
     ...options,
   };

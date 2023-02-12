@@ -6,6 +6,12 @@ Bedrock utilities for model creation.
 - [Dependencies](#dependencies)
 - [Usage](#usage)
 - [Schemas](#schemas)
+- [Schema Extensions](#schema-extensions)
+  - [Attributes](#attributes)
+  - [Scopes](#scopes)
+  - [Tuples](#tuples)
+  - [Array Extensions](#array-extensions)
+  - [Scope Hoisting](#scope-hoisting)
 - [Features](#features)
   - [Soft Delete](#soft-delete)
   - [Validation](#validation)
@@ -110,9 +116,244 @@ Links:
 - [Validation](#validation)
 - [Access Control](#access-control)
 
+### Schema Extensions
+
+This package provides a number of extensions to assist schema creation outside the scope of Mongoose.
+
+#### Attributes
+
+Objects are easily defined with their attributes directly on the field:
+
+```js
+{
+  "profile": {
+    "firstName": "String",
+    "lastName": "String",
+  }
+};
+```
+
+However it is common to need to add an option like `required` to an object schema. In Mongoose this is technically written as:
+
+```js
+{
+  "profile": {
+    "type": {
+      "firstName": "String",
+      "lastName": "String",
+    },
+    "required": true
+  }
+};
+```
+
+However in complex cases this can be obtuse and difficult to remember. A more explicit syntax is allowed here:
+
+```js
+{
+  "profile": {
+    "type": "Object",
+    "attributes": {
+      "firstName": "String",
+      "lastName": "String",
+    },
+    "required": true
+  }
+};
+```
+
+The type `Object` and `attributes` is a signal to create the correct schema for the above type. This can also be similarly used for `Array` for an array of objects:
+
+```js
+{
+  "profiles": {
+    "type": "Array",
+    "attributes": {
+      "firstName": "String",
+      "lastName": "String",
+    },
+    "writeScopes": "none"
+  }
+};
+```
+
+In the above example the `writeScopes` applies to the array itself, not individual fields. Note that for an array of primitives the correct syntax is:
+
+```js
+{
+  "tokens": {
+    "type": ["String"],
+    "writeScopes": "none"
+  }
+};
+```
+
+#### Scopes
+
+One common need is to define multiple fields with the same options. A custom type `Scope` helps make this possible:
+
+```js
+{
+  "$private": {
+    "type": "Scope",
+    "readScopes": "none",
+    "writeScopes": "none",
+    "attributes": {
+      "firstName": "String",
+      "lastName": "String",
+    }
+  }
+};
+```
+
+This syntax expands into the following:
+
+```js
+{
+  "firstName": {
+    "type": "String",
+    "readScopes": "none",
+    "writeScopes": "none",
+  },
+  "lastName": {
+    "type": "String",
+    "readScopes": "none",
+    "writeScopes": "none",
+  }
+};
+```
+
+Note that the name `$private` is arbitrary. The `$` helps distinguish it from real fields, but it can be anything as the property is removed.
+
+#### Tuples
+
 Array fields that have more than one element are considered a "tuple". They will enforce an exact length and specific type for each element.
 
-Note that Mongoose does not provide a way to enforce array elements of specific mixed types, requiring the `Mixed` type instead.
+```js
+{
+  "location": ["Number", "Number"],
+}
+```
+
+This will map to the following:
+
+```js
+{
+  "location": {
+    "type": ["Mixed"],
+    "validator": // ...
+  }
+}
+```
+
+Where `validator` is a special validator that enforces both the exact array length and content types.
+
+Note that Mongoose [does not provide a way to enforce array elements of specific mixed types](https://github.com/Automattic/mongoose/issues/10894), requiring the `Mixed` type instead.
+
+#### Array Extensions
+
+A common need is to validate the length of an array or make it required by enforcing a minimum length of 1. However this does not exist in Mongoose:
+
+```js
+{
+  "tokens": {
+    "type": ["String"],
+    "required": true
+  }
+};
+```
+
+The above syntax will not do anything as the default for arrays is always `[]` so the field will always exist. It also suffers from being ambiguous (is the array required or the elements inside?). An extension is provided here for explicit handling of this case:
+
+```js
+{
+  "tokens": {
+    "type": ["String"],
+    "minLength": 1,
+    "maxLength": 2
+  }
+};
+```
+
+A custom validator will be created to enforce the array length, bringing parity with `minLength` and `maxLength` on strings.
+
+#### Scope Hoisting
+
+Defining read/write scopes on a field is often written:
+
+```js
+{
+  "tokens": [
+    {
+      "type": "String",
+      "readScopes": "none",
+    },
+  ],
+};
+```
+
+However this is not technically correct as the `readScopes` above is referring to the `tokens` array instead of individual elements. The correct schema is technically written:
+
+```js
+{
+  "tokens": {
+    "type": ["String"],
+    "readScopes": "none",
+  },
+}
+```
+
+However this is overhead and hard to remember, so `readScopes` and `writeScopes` will be hoisted to the array field itself as a special case. Note that only these two fields will be hoisted as other fields like `validate` and `default` are correctly defined on the string itself.
+
+### Gotchas
+
+#### The `type` field is a special:
+
+```js
+{
+  "location": {
+    "type": "String",
+    "coordinates": ["Number"],
+  }
+}
+```
+
+Given the above schema, let's say you want to add a default. The appropriate schema would be:
+
+```js
+{
+  "location": {
+    "type": {
+      "type": "String",
+      "coordinates": ["Number"],
+    },
+    "default": {
+      "type": "Point",
+      "coordinates": [0, 0],
+    }
+  }
+}
+```
+
+However this is not a valid definition in Mongoose, which instead sees `type` and `default` as individual fields. A type definition and object schema unfortunately cannot be disambiguated in this case. [Syntax extentsions](#syntax-extensions) provides an escape hatch here:
+
+```js
+{
+  "location": {
+    "type": "Object",
+    "attributes": {
+      "type": "String",
+      "coordinates": ["Number"],
+    },
+    "default": {
+      "type": "Point",
+      "coordinates": [0, 0],
+    }
+  }
+}
+```
+
+This will manually create a new nested subschema.
 
 ## Features
 
@@ -234,7 +475,7 @@ The method takes the following options:
 - `include` - Allows [include](#includes) based population.
 - `keyword` - A keyword to perform a [keyword search](#keyword-search).
 - `ids` - An array of document ids to search on.
-- `fields` - Used by [keyword search](#keyword-search).
+- `fields` - Used by [keyword search](#keyword-search). Generally for internal use.
 
 Any other fields passed in will be forwarded to `find`. The return value contains the found documents in `data` and `meta` which contains metadata about the search:
 
@@ -418,7 +659,11 @@ const user = await User.findById(id).include('**.phone');
 
 This example above will select both `profile1.address.phone` and `profile2.address.phone`. Compare this to `*` which will not match here.
 
-Note that wildcards will only select local fields. Populated fields on foreign documents must always be explicitly passed, otherwise they will be returned unpopulated.
+Note that wildcards do not implicitly populate foreign fields. For example passing `p*` where `profile` is a foreign field will include all fields matching `p*` but it will not populate the `profile` field. In this case an array must be used instead:
+
+```js
+const user = await User.findById(id).include(['p*', 'profile']);
+```
 
 #### Searching with includes
 
@@ -461,6 +706,114 @@ The `getSearchValidation` will allow the `include` property to be passed, lettin
 
 ### Access Control
 
+1. Access by role
+2. Access by `authUser`
+
+## Update
+
+### Self
+
+A user is allowed to update their date of birth but not their name or email, which have to be verified:
+
+```js
+// user.json
+{
+  "name": {
+    "type": "String",
+    "writeScopes" "none"
+  },
+  "email": {
+    "type": "String",
+    "writeScopes" "none"
+  },
+  "dob": {
+    "type": "String",
+    "writeScopes" "self"
+  },
+}
+```
+
+### Owner
+
+A user is allowed to update the name of their own shop and admins can as well. However, only admins can set the owner of the shop:
+
+```json
+// shop.json
+{
+  "name": {
+    "type": "String",
+    "writeScopes": ["owner", "admin"]
+  },
+  "owner": {
+    "type": "ObjectId",
+    "ref": "User",
+    "writeScopes": "admin"
+  }
+}
+```
+
+### User
+
+A user is allowed to update the fact that they have received their medical report, but nothing else. The medical report is received externally so even admins are not allowed to change the user they belong to.
+
+The difference with `owner` here is the name only, however both options exist as a `user` defined on a schema does not necessarily represent the document's owner, as this example illustrates:
+
+```js
+// medical-report.json
+{
+  "received": {
+    "type": "String",
+    "writeScopes": "user"
+  },
+  "user": {
+    "type": "ObjectId",
+    "ref": "User",
+    "writeScopes": "none"
+  }
+}
+```
+
+## Create
+
+Field `writeScopes` do affect document creation, as they will throw an error if the field is attempted to be set.
+
+### Self
+
+Note that `self` is meaningless in a create schema as the created user does not exist yet so by definition cannot be an `authUser` to check against.
+
+```js
+// user.json
+{
+  "attributes": {
+    "name": "String"
+  },
+  "writeAccess": "self"
+}
+```
+
+### Owner
+
+A user is allowed to create new shops. This is meaning less as the document has not been created yet.
+
+```js
+// shop.json
+{
+  "attributes": {
+    "name":"String",
+    "owner": {
+      "type": "ObjectId",
+      "ref": "User",
+      "writeScopes": "admin"
+    }
+  },
+  "writeScopes": "owner"
+}
+```
+
+### User
+
+Same as above.
+
 TODO
 
 ### References
@@ -492,12 +845,9 @@ Note that a unique model name will be generated to prevent clashing with other m
 ```js
 const { createTestModel } = require('@bedrockio/model');
 
-const Post = createTestModel(
-  {
-    name: 'String',
-  },
-  'Post'
-);
+const Post = createTestModel('Post', {
+  name: 'String',
+});
 ```
 
 Make sure in this case that the model name is unique.

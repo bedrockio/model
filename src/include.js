@@ -1,11 +1,12 @@
 import mongoose from 'mongoose';
 import { escapeRegExp } from 'lodash';
 
-import { resolveField } from './utils';
+import { resolveInnerField } from './utils';
+import { POPULATE_MAX_DEPTH } from './const';
 
 // Overloading mongoose Query prototype to
 // allow an "include" method for queries.
-mongoose.Query.prototype.include = function (paths) {
+mongoose.Query.prototype.include = function include(paths) {
   const filter = this.getFilter();
   filter.include = paths;
   return this;
@@ -49,6 +50,8 @@ export function applyInclude(schema) {
   });
 }
 
+// TODO: can checkSelects somehow be more self contained?
+
 // "Selected" keys virtually project documents so that
 // they do not return the entire document down the wire.
 // This is to maintain parity with query projection used
@@ -83,6 +86,7 @@ export function checkSelects(doc, ret) {
   }
 }
 
+// Exported for testing.
 export function getIncludes(modelName, arg) {
   const paths = Array.isArray(arg) ? arg : [arg];
   const node = pathsToNode(paths, modelName);
@@ -101,7 +105,6 @@ function getDocumentIncludes(doc, arg) {
 // - An empty array for "select" will select all.
 // - Entries in the "populate" array will select the
 //   field even if not included in "select".
-
 function nodeToPopulates(node) {
   const select = [];
   const populate = [];
@@ -120,8 +123,6 @@ function nodeToPopulates(node) {
     populate,
   };
 }
-
-const MAX_DEPTH = 5;
 
 function pathsToNode(paths, modelName) {
   const node = {};
@@ -142,8 +143,8 @@ function pathsToNode(paths, modelName) {
 
 function setNodePath(node, options) {
   const { path, modelName, exclude, depth = 0 } = options;
-  if (depth > MAX_DEPTH) {
-    throw new Error(`Cannot populate more than ${MAX_DEPTH} levels.`);
+  if (depth > POPULATE_MAX_DEPTH) {
+    throw new Error(`Cannot populate more than ${POPULATE_MAX_DEPTH} levels.`);
   }
   const schema = mongoose.models[modelName]?.schema;
   if (!schema) {
@@ -158,11 +159,11 @@ function setNodePath(node, options) {
 
     for (let [key, type] of resolvePaths(schema, str)) {
       if (type === 'real') {
-        const field = resolveField(schema.obj, key);
+        const field = resolveInnerField(schema.obj, key);
         // Only exclude the field if the match is exact, ie:
-        // - name - Exclude "name"
-        // - user.name - Implies population of "user" but exclude "user.name",
-        //   so continue traversing into object when part is "user".
+        // -name - Exclude "name"
+        // -user.name - Implies population of "user" but exclude "user.name",
+        //  so continue traversing into object when part is "user".
         if (isExact && exclude) {
           node['-' + key] = null;
         } else if (field.ref) {

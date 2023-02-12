@@ -1,6 +1,6 @@
 {
   "name": "@bedrockio/model",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Bedrock utilities for model creation.",
   "type": "module",
   "scripts": {
@@ -23,10 +23,11 @@
     "url": "https://github.com/bedrockio/model"
   },
   "dependencies": {
-    "@bedrockio/logger": "^1.0.3"
+    "@bedrockio/logger": "^1.0.3",
+    "lodash": "^4.17.21"
   },
   "peerDependencies": {
-    "@bedrockio/yada": "^1.0.7",
+    "@bedrockio/yada": "^1.0.9",
     "mongoose": "^6.9.0"
   },
   "devDependencies": {
@@ -34,7 +35,7 @@
     "@babel/core": "^7.20.12",
     "@babel/preset-env": "^7.20.2",
     "@bedrockio/prettier-config": "^1.0.2",
-    "@bedrockio/yada": "^1.0.7",
+    "@bedrockio/yada": "^1.0.9",
     "@shelf/jest-mongodb": "^4.1.6",
     "babel-plugin-import-replacement": "^1.0.1",
     "babel-plugin-lodash": "^3.3.4",
