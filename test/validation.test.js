@@ -621,7 +621,7 @@ describe('validation', () => {
     });
 
     describe('write access', () => {
-      it('should strip disallowed', async () => {
+      it('should throw on attempt to update', async () => {
         const User = createTestModel({
           name: 'String',
           password: {
@@ -630,13 +630,96 @@ describe('validation', () => {
           },
         });
         const schema = User.getUpdateValidation();
-        const result = await schema.validate({
-          name: 'Barry',
-          password: 'fake password',
+        await expect(
+          schema.validate({
+            name: 'Barry',
+            password: 'fake password',
+          })
+        ).rejects.toThrow();
+      });
+
+      it('should not throw when value has not changed', async () => {
+        const User = createTestModel({
+          name: {
+            type: 'String',
+            writeAccess: 'none',
+          },
+          profile: {
+            age: {
+              type: 'Number',
+              writeAccess: 'none',
+            },
+          },
         });
-        expect(result).toEqual({
-          name: 'Barry',
+        const user = await User.create({
+          name: 'Joe',
+          profile: {
+            age: 30,
+          },
         });
+        const schema = User.getUpdateValidation();
+
+        await expect(
+          schema.validate(
+            {
+              name: 'Joe',
+            },
+            {
+              document: user,
+            }
+          )
+        ).resolves.not.toThrow();
+
+        await expect(
+          schema.validate(
+            {
+              profile: {
+                age: 30,
+              },
+            },
+            {
+              document: user,
+            }
+          )
+        ).resolves.not.toThrow();
+
+        await expect(
+          schema.validate(
+            {
+              name: 'Joe',
+              profile: {
+                age: 30,
+              },
+            },
+            {
+              document: user,
+            }
+          )
+        ).resolves.not.toThrow();
+
+        await expect(
+          schema.validate(
+            {
+              name: 'Bill',
+            },
+            {
+              document: user,
+            }
+          )
+        ).rejects.toThrow();
+
+        await expect(
+          schema.validate(
+            {
+              profile: {
+                age: 50,
+              },
+            },
+            {
+              document: user,
+            }
+          )
+        ).rejects.toThrow();
       });
 
       it('should handle self scope', async () => {
@@ -707,6 +790,64 @@ describe('validation', () => {
             }
           )
         ).resolves.not.toThrow();
+      });
+
+      it('should throw if not the same', async () => {
+        const User = createTestModel({
+          name: 'String',
+          grade: {
+            type: 'Number',
+            writeAccess: 'self',
+          },
+        });
+        const user1 = await User.create({
+          name: 'Barry',
+          grade: 50,
+        });
+        const user2 = await User.create({
+          name: 'Larry',
+          grade: 50,
+        });
+        const schema = User.getCreateValidation();
+
+        await expect(
+          schema.validate(
+            {
+              name: 'Barry',
+              grade: 50,
+            },
+            {
+              document: user1,
+              authUser: user1,
+            }
+          )
+        ).resolves.not.toThrow();
+
+        await expect(
+          schema.validate(
+            {
+              name: 'Barry',
+              grade: 50,
+            },
+            {
+              document: user1,
+              authUser: user2,
+            }
+          )
+        ).resolves.not.toThrow();
+
+        await expect(
+          schema.validate(
+            {
+              name: 'Barry',
+              grade: 70,
+            },
+            {
+              document: user1,
+              authUser: user2,
+            }
+          )
+        ).rejects.toThrow();
       });
     });
   });

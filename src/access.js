@@ -22,16 +22,16 @@ function hasAccess(type, allowed = 'all', options = {}) {
     const scopes = resolveScopes(options);
     return allowed.some((scope) => {
       if (scope === 'self') {
-        assertAuthUser(type, scope, options);
+        assertOptions(type, scope, options);
         return document.id == authUser.id;
       } else if (scope === 'user') {
-        assertAuthUser(type, scope, options);
+        assertOptions(type, scope, options);
         return document.user?.id == authUser.id;
       } else if (scope === 'owner') {
-        assertAuthUser(type, scope, options);
+        assertOptions(type, scope, options);
         return document.owner?.id == authUser.id;
       } else {
-        return scopes.includes(scope);
+        return scopes?.includes(scope);
       }
     });
   }
@@ -45,15 +45,15 @@ function resolveScopes(options) {
   return scope ? [scope] : scopes;
 }
 
-function assertAuthUser(type, scope, options) {
-  if (!options.authUser) {
+function assertOptions(type, scope, options) {
+  if (!options.authUser || !options.document) {
     if (type === 'read') {
       throw new ImplementationError(
         `Read scope "${scope}" requires .toObject({ authUser }).`
       );
     } else {
       throw new ImplementationError(
-        `Write scope "${scope}" requires passing { authUser } to the validator.`
+        `Write scope "${scope}" requires passing { document, authUser } to the validator.`
       );
     }
   }

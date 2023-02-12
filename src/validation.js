@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import yd from '@bedrockio/yada';
 
-import { omit, lowerFirst } from 'lodash';
+import { get, omit, lowerFirst } from 'lodash';
 
 import { hasWriteAccess } from './access';
 import { searchValidation } from './search';
@@ -247,25 +247,19 @@ function isRequired(typedef, options) {
 }
 
 function validateWriteScopes(schema, allowedScopes, options) {
-  const { stripUnknown, modelName } = options;
-  if (stripUnknown) {
-    return schema.strip((val, options) => {
-      return !resolveAccess(allowedScopes, modelName, options);
+  const { modelName } = options;
+  return schema.custom((val, options) => {
+    const document = options[lowerFirst(modelName)] || options['document'];
+    const hasAccess = hasWriteAccess(allowedScopes, {
+      ...options,
+      document,
     });
-  } else {
-    return schema.custom((val, options) => {
-      if (!resolveAccess(allowedScopes, modelName, options)) {
-        throw new PermissionsError('requires write permissions');
+    if (!hasAccess) {
+      const currentValue = get(document, options.path);
+      if (val !== currentValue) {
+        throw new PermissionsError('requires write permissions.');
       }
-    });
-  }
-}
-
-function resolveAccess(allowedScopes, modelName, options) {
-  const document = options[lowerFirst(modelName)] || options['document'];
-  return hasWriteAccess(allowedScopes, {
-    ...options,
-    document,
+    }
   });
 }
 
