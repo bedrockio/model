@@ -39,7 +39,7 @@ function isAllowedField(key, field, options) {
     // to false and should not be exposed.
     return false;
   } else {
-    const { readScopes } = resolveField(field, key);
-    return hasReadAccess(readScopes, options);
+    const { readAccess } = resolveField(field, key);
+    return hasReadAccess(readAccess, options);
   }
 }

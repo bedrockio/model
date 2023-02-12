@@ -827,7 +827,7 @@ describe('access control', () => {
     name: 'String',
     password: {
       type: 'String',
-      readScopes: 'none',
+      readAccess: 'none',
     },
   });
 

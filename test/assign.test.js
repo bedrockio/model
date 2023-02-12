@@ -123,7 +123,7 @@ describe('assign', () => {
     expect(user.profile.lastName).toEqual('Doe');
   });
 
-  it('should naively merge nested array fields', async () => {
+  it('should naively set nested array fields', async () => {
     const Shop = createTestModel({
       products: [
         {
@@ -202,5 +202,24 @@ describe('assign', () => {
 
     expect(user.profile.name).toBe('Bob');
     expect('age' in user.profile).toBe(false);
+  });
+
+  it('should allow 0 to be set on number fields', async () => {
+    const User = createTestModel({
+      age: 'Number',
+    });
+
+    let user = await User.create({
+      age: 30,
+    });
+
+    user.assign({
+      age: 0,
+    });
+    await user.save();
+
+    user = await User.findById(user.id);
+
+    expect(user.age).toBe(0);
   });
 });

@@ -185,8 +185,8 @@ function getSchemaForTypedef(typedef, options = {}) {
   if (options.allowMultiple) {
     schema = yd.allow(schema, yd.array(schema));
   }
-  if (typedef.writeScopes && options.requireWriteAccess) {
-    schema = validateWriteScopes(schema, typedef.writeScopes, options);
+  if (typedef.writeAccess && options.requireWriteAccess) {
+    schema = validateWriteScopes(schema, typedef.writeAccess, options);
   }
   return schema;
 }

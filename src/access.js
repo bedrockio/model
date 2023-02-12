@@ -1,4 +1,5 @@
 import { ImplementationError } from './errors';
+import warn from './warn';
 
 export function hasReadAccess(allowed, options) {
   return hasAccess('read', allowed, options);
@@ -37,6 +38,9 @@ function hasAccess(type, allowed = 'all', options = {}) {
 }
 
 function resolveScopes(options) {
+  if (!options.scope && !options.scopes) {
+    warn('Scopes were requested but not provided.');
+  }
   const { scope, scopes = [] } = options;
   return scope ? [scope] : scopes;
 }

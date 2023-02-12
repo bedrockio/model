@@ -557,8 +557,8 @@ describe('createSchema', () => {
         tokens: [
           {
             type: 'String',
-            readScopes: 'none',
-            writeScopes: 'none',
+            readAccess: 'none',
+            writeAccess: 'none',
           },
         ],
       });
@@ -569,8 +569,8 @@ describe('createSchema', () => {
               type: 'String',
             },
           ],
-          readScopes: 'none',
-          writeScopes: 'none',
+          readAccess: 'none',
+          writeAccess: 'none',
         },
       });
     });
@@ -781,8 +781,8 @@ describe('createSchema', () => {
         const User = createTestModel({
           private: {
             type: 'Scope',
-            readScopes: 'none',
-            writeScopes: 'none',
+            readAccess: 'none',
+            writeAccess: 'none',
             attributes: {
               firstName: 'String',
               lastName: 'String',
@@ -793,13 +793,13 @@ describe('createSchema', () => {
         expect(User.schema.obj).toMatchObject({
           firstName: {
             type: 'String',
-            readScopes: 'none',
-            writeScopes: 'none',
+            readAccess: 'none',
+            writeAccess: 'none',
           },
           lastName: {
             type: 'String',
-            readScopes: 'none',
-            writeScopes: 'none',
+            readAccess: 'none',
+            writeAccess: 'none',
           },
         });
       });

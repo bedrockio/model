@@ -115,7 +115,7 @@ describe('serialization', () => {
       const User = createTestModel({
         password: {
           type: 'String',
-          readScopes: 'none',
+          readAccess: 'none',
         },
       });
       const user = new User({
@@ -129,7 +129,7 @@ describe('serialization', () => {
       const User = createTestModel({
         password: {
           type: 'String',
-          readScopes: ['admin'],
+          readAccess: ['admin'],
         },
       });
       const user = new User({
@@ -143,7 +143,7 @@ describe('serialization', () => {
       const User = createTestModel({
         password: {
           type: 'String',
-          readScopes: ['admin'],
+          readAccess: ['admin'],
         },
       });
       const user = new User({
@@ -161,7 +161,7 @@ describe('serialization', () => {
       const User = createTestModel({
         password: {
           type: 'String',
-          readScopes: 'self',
+          readAccess: 'self',
         },
       });
       const user1 = new User({
@@ -192,7 +192,7 @@ describe('serialization', () => {
         name: 'String',
         earnings: {
           type: 'Number',
-          readScopes: 'owner',
+          readAccess: 'owner',
         },
         owner: {
           type: 'ObjectId',
@@ -229,7 +229,7 @@ describe('serialization', () => {
         name: 'String',
         likes: {
           type: 'Number',
-          readScopes: 'user',
+          readAccess: 'user',
         },
         user: {
           type: 'ObjectId',
@@ -262,7 +262,7 @@ describe('serialization', () => {
       const User = createTestModel({
         password: {
           type: 'String',
-          readScopes: ['admin'],
+          readAccess: ['admin'],
         },
       });
       const user = new User({
@@ -276,7 +276,7 @@ describe('serialization', () => {
       const User = createTestModel({
         password: {
           type: 'String',
-          readScopes: 'all',
+          readAccess: 'all',
         },
       });
       const user = new User({
@@ -291,7 +291,7 @@ describe('serialization', () => {
         tags: [
           {
             type: 'String',
-            readScopes: 'none',
+            readAccess: 'none',
           },
         ],
       });
@@ -309,7 +309,7 @@ describe('serialization', () => {
       const User = createTestModel({
         tags: {
           type: ['String'],
-          readScopes: 'none',
+          readAccess: 'none',
         },
       });
       const user = new User({
@@ -330,7 +330,7 @@ describe('serialization', () => {
               name: 'String',
               age: {
                 type: 'Number',
-                readScopes: 'none',
+                readAccess: 'none',
               },
             },
           },
@@ -371,7 +371,7 @@ describe('serialization', () => {
                     name: 'String',
                     age: {
                       type: 'Number',
-                      readScopes: 'none',
+                      readAccess: 'none',
                     },
                   },
                 ],
@@ -419,7 +419,7 @@ describe('serialization', () => {
       const User = createTestModel({
         secret: {
           type: 'String',
-          readScopes: 'none',
+          readAccess: 'none',
         },
       });
       const user = new User({
@@ -436,7 +436,7 @@ describe('serialization', () => {
       const User = createTestModel({
         secret: {
           type: 'String',
-          readScopes: ['admin'],
+          readAccess: ['admin'],
         },
       });
       const user = new User({
@@ -455,7 +455,7 @@ describe('serialization', () => {
       const User = createTestModel({
         secret: {
           type: 'String',
-          readScopes: ['admin'],
+          readAccess: ['admin'],
         },
       });
       const user = new User({
@@ -474,7 +474,7 @@ describe('serialization', () => {
       const User = createTestModel({
         login: {
           type: 'Object',
-          readScopes: ['admin'],
+          readAccess: ['admin'],
           attributes: {
             password: 'String',
             attempts: 'Number',
@@ -495,7 +495,7 @@ describe('serialization', () => {
     it('should deny access on nested objects', async () => {
       const User = createTestModel({
         terms: {
-          readScopes: {
+          readAccess: {
             type: 'String',
             default: 'none',
           },
@@ -512,7 +512,7 @@ describe('serialization', () => {
       expect(user.terms).toEqual({
         service: true,
         privacy: true,
-        readScopes: 'none',
+        readAccess: 'none',
       });
       expect(user.toObject().terms).toBeUndefined();
     });
@@ -526,7 +526,7 @@ describe('serialization', () => {
               name: 'String',
               profits: {
                 type: 'Number',
-                readScopes: ['admin', 'self', 'foo'],
+                readAccess: ['admin', 'self', 'foo'],
               },
             },
           ],
@@ -625,7 +625,7 @@ describe('serialization', () => {
       const User = createTestModel({
         tokens: {
           type: 'Array',
-          readScopes: 'none',
+          readAccess: 'none',
           attributes: {
             name: 'String',
           },
@@ -655,7 +655,7 @@ describe('serialization', () => {
               validate: 'email',
             },
           ],
-          readScopes: 'none',
+          readAccess: 'none',
         },
       });
       const user = new User({

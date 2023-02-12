@@ -105,7 +105,6 @@ function normalizeSchemaTypedef(typedef, path) {
 }
 
 // TODO: can yada just be a normal dep?
-// TODO: rename "readScopes" to "readAccess" etc
 
 function normalizeArrayAttributes(arr, path) {
   return arr.map((el, i) => {
@@ -216,7 +215,7 @@ function applySyntaxExtensions(typedef) {
 // Hoist read/write scopes from a nested element.
 // See the readme for more.
 function applyOptionHoisting(typedef) {
-  Object.assign(typedef, pick(typedef.type[0], 'readScopes', 'writeScopes'));
+  Object.assign(typedef, pick(typedef.type[0], 'readAccess', 'writeAccess'));
 }
 
 function isExtendedSyntax(typedef) {

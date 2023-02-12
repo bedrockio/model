@@ -138,13 +138,13 @@ describe('validation', () => {
       });
     });
 
-    describe('write scopes', () => {
+    describe('write access', () => {
       it('should deny access', async () => {
         const User = createTestModel({
           name: 'String',
           verified: {
             type: 'Boolean',
-            writeScopes: 'none',
+            writeAccess: 'none',
           },
         });
         const schema = User.getCreateValidation();
@@ -165,7 +165,7 @@ describe('validation', () => {
           name: 'String',
           tokens: {
             type: ['String'],
-            writeScopes: 'none',
+            writeAccess: 'none',
           },
         });
 
@@ -190,7 +190,7 @@ describe('validation', () => {
             b: {
               c: {
                 type: 'String',
-                writeScopes: 'none',
+                writeAccess: 'none',
               },
             },
           },
@@ -214,7 +214,7 @@ describe('validation', () => {
           name: 'String',
           password: {
             type: 'String',
-            writeScopes: ['admin'],
+            writeAccess: ['admin'],
           },
         });
         const schema = User.getCreateValidation();
@@ -239,15 +239,15 @@ describe('validation', () => {
         const User = createTestModel({
           foo: {
             type: 'String',
-            writeScopes: ['foo'],
+            writeAccess: ['foo'],
           },
           bar: {
             type: 'String',
-            writeScopes: ['bar'],
+            writeAccess: ['bar'],
           },
           foobar: {
             type: 'String',
-            writeScopes: ['foo', 'bar'],
+            writeAccess: ['foo', 'bar'],
           },
         });
         const schema = User.getCreateValidation();
@@ -620,13 +620,13 @@ describe('validation', () => {
       });
     });
 
-    describe('write scopes', () => {
+    describe('write access', () => {
       it('should strip disallowed', async () => {
         const User = createTestModel({
           name: 'String',
           password: {
             type: 'String',
-            writeScopes: 'none',
+            writeAccess: 'none',
           },
         });
         const schema = User.getUpdateValidation();
@@ -644,7 +644,7 @@ describe('validation', () => {
           name: 'String',
           grade: {
             type: 'Number',
-            writeScopes: 'self',
+            writeAccess: 'self',
           },
         });
         const user1 = await User.create({
@@ -687,7 +687,7 @@ describe('validation', () => {
           name: 'String',
           grade: {
             type: 'Number',
-            writeScopes: 'self',
+            writeAccess: 'self',
           },
         });
         const user = await User.create({
@@ -834,13 +834,13 @@ describe('validation', () => {
       });
     });
 
-    describe('write scopes', () => {
-      it('should not enforce write scopes', async () => {
+    describe('write access', () => {
+      it('should not enforce write access', async () => {
         const User = createTestModel({
           name: 'String',
           age: {
             type: 'Number',
-            writeScopes: 'none',
+            writeAccess: 'none',
           },
         });
         const schema = User.getSearchValidation();

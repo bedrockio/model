@@ -11,7 +11,6 @@ Bedrock utilities for model creation.
   - [Scopes](#scopes)
   - [Tuples](#tuples)
   - [Array Extensions](#array-extensions)
-  - [Scope Hoisting](#scope-hoisting)
 - [Features](#features)
   - [Soft Delete](#soft-delete)
   - [Validation](#validation)
@@ -31,7 +30,7 @@ yarn install @bedrockio/model
 
 ## Dependencies
 
-Peer dependencies must be installed to use this package:
+Peer dependencies must be installed:
 
 ```bash
 yarn install mongoose
@@ -91,8 +90,8 @@ The `attributes` field of model definitions can be considered equivalent to Mong
       // Validation shortcuts
       "validate": "email",
       // Access control
-      "readScopes": ["admin"],
-      "writeScopes": ["admin"],
+      "readAccess": ["admin"],
+      "writeAccess": ["admin"],
     },
     "tags": [
       {
@@ -172,18 +171,18 @@ The type `Object` and `attributes` is a signal to create the correct schema for 
       "firstName": "String",
       "lastName": "String",
     },
-    "writeScopes": "none"
+    "writeAccess": "none"
   }
 };
 ```
 
-In the above example the `writeScopes` applies to the array itself, not individual fields. Note that for an array of primitives the correct syntax is:
+In the above example the `writeAccess` applies to the array itself, not individual fields. Note that for an array of primitives the correct syntax is:
 
 ```js
 {
   "tokens": {
     "type": ["String"],
-    "writeScopes": "none"
+    "writeAccess": "none"
   }
 };
 ```
@@ -196,8 +195,8 @@ One common need is to define multiple fields with the same options. A custom typ
 {
   "$private": {
     "type": "Scope",
-    "readScopes": "none",
-    "writeScopes": "none",
+    "readAccess": "none",
+    "writeAccess": "none",
     "attributes": {
       "firstName": "String",
       "lastName": "String",
@@ -212,13 +211,13 @@ This syntax expands into the following:
 {
   "firstName": {
     "type": "String",
-    "readScopes": "none",
-    "writeScopes": "none",
+    "readAccess": "none",
+    "writeAccess": "none",
   },
   "lastName": {
     "type": "String",
-    "readScopes": "none",
-    "writeScopes": "none",
+    "readAccess": "none",
+    "writeAccess": "none",
   }
 };
 ```
@@ -276,34 +275,6 @@ The above syntax will not do anything as the default for arrays is always `[]` s
 ```
 
 A custom validator will be created to enforce the array length, bringing parity with `minLength` and `maxLength` on strings.
-
-#### Scope Hoisting
-
-Defining read/write scopes on a field is often written:
-
-```js
-{
-  "tokens": [
-    {
-      "type": "String",
-      "readScopes": "none",
-    },
-  ],
-};
-```
-
-However this is not technically correct as the `readScopes` above is referring to the `tokens` array instead of individual elements. The correct schema is technically written:
-
-```js
-{
-  "tokens": {
-    "type": ["String"],
-    "readScopes": "none",
-  },
-}
-```
-
-However this is overhead and hard to remember, so `readScopes` and `writeScopes` will be hoisted to the array field itself as a special case. Note that only these two fields will be hoisted as other fields like `validate` and `default` are correctly defined on the string itself.
 
 ### Gotchas
 
@@ -706,34 +677,102 @@ The `getSearchValidation` will allow the `include` property to be passed, lettin
 
 ### Access Control
 
-1. Access by role
-2. Access by `authUser`
+This package applies two forms of access control:
 
-## Update
+- `read` access influences how document is serialized.
+- `write` access influences validation.
 
-### Self
+#### Defining Access
 
-A user is allowed to update their date of birth but not their name or email, which have to be verified:
+Access is defined in schemas with the `readAccess` and `writeAccess` options:
 
 ```js
-// user.json
 {
   "name": {
     "type": "String",
-    "writeScopes" "none"
-  },
-  "email": {
-    "type": "String",
-    "writeScopes" "none"
-  },
-  "dob": {
-    "type": "String",
-    "writeScopes" "self"
+    "readAccess": "none"
+    "writeAccess": "none"
   },
 }
 ```
 
-### Owner
+For multiple fields with the same access types, use a [scope](#scopes).
+
+##### Access on Arrays
+
+Note that on array fields the following schema is often used:
+
+```js
+{
+  "tokens": [
+    {
+      "type": "String",
+      "readAccess": "none",
+    },
+  ],
+};
+```
+
+However this is not technically correct as the `readAccess` above is referring to the `tokens` array instead of individual elements. The correct schema is technically written:
+
+```js
+{
+  "tokens": {
+    "type": ["String"],
+    "readAccess": "none",
+  },
+}
+```
+
+However this is overhead and hard to remember, so `readAccess` and `writeAccess` will be hoisted to the array field itself as a special case. Note that only these two fields will be hoisted as other fields like `validate` and `default` are correctly defined on the string itself.
+
+#### Access Types
+
+The types of access control tokens allowed for `readAccess` and `writeAccess` can generally come in two types:
+
+- Scope based, which is generally derived from the user roles.
+- Document based, which will compare a user's id against document fields.
+
+##### Scope Based Access
+
+TODO figure this out
+
+##### Document Based Access
+
+Document based access allows 3 different tokens:
+
+- `self` - Compares `authUser.id == document.id`.
+- `user` - Compares `authUser.id == document.user.id`.
+- `owner` - Compares `authUser.id == document.owner.id`.
+
+Using document based access comes with some requirements:
+
+1. Read access must use `.toObject({ authUser })`.
+2. Write access must use `schema.validate(body, { authUser, document })`.
+
+TODO: figure this out
+
+#### Examples
+
+##### Example 1
+
+A user is allowed to update their own date of birth, but not their email which is set after verification:
+
+```js
+// user.json
+{
+  "email": {
+    "type": "String",
+    "writeAccess": "none"
+  },
+  "dob": {
+    "type": "String",
+    "writeAccess": "self"
+  },
+}
+```
+
+##### Example 2
 
 A user is allowed to update the name of their own shop and admins can as well. However, only admins can set the owner of the shop:
 
@@ -742,17 +781,17 @@ A user is allowed to update the name of their own shop and admins can as well. H
 {
   "name": {
     "type": "String",
-    "writeScopes": ["owner", "admin"]
+    "writeAccess": ["owner", "admin"]
   },
   "owner": {
     "type": "ObjectId",
     "ref": "User",
-    "writeScopes": "admin"
+    "writeAccess": "admin"
   }
 }
 ```
 
-### User
+##### Example 3
 
 A user is allowed to update the fact that they have received their medical report, but nothing else. The medical report is received externally so even admins are not allowed to change the user they belong to.
 
@@ -763,23 +802,23 @@ The difference with `owner` here is the name only, however both options exist as
 {
   "received": {
     "type": "String",
-    "writeScopes": "user"
+    "writeAccess": "user"
   },
   "user": {
     "type": "ObjectId",
     "ref": "User",
-    "writeScopes": "none"
+    "writeAccess": "none"
   }
 }
 ```
 
-## Create
+#### Notes on Write Access
 
-Field `writeScopes` do affect document creation, as they will throw an error if the field is attempted to be set.
+Write access options will affect the result of `Model.getCreateValidation` and `Model.getUpdateValidation`. They are identical except that the create validation will error if restricted fields are passed, where update validation will instead strip them out. This allows `readAccess` and `writeAccess` to differ by discarding fields that have been exposed instead of throwing an error.
 
-### Self
+Note that `self` is generally only meaningful on a User model as it will always check the document is the same as `authUser`.
 
-Note that `self` is meaningless in a create schema as the created user does not exist yet so by definition cannot be an `authUser` to check against.
+Note also that `writeAccess: self` is effectively meaningless for create operations as the created user does not exist yet so by definition an `authUser` cannot be the same.
 
 ```js
 // user.json
@@ -791,42 +830,60 @@ Note that `self` is meaningless in a create schema as the created user does not 
 }
 ```
 
-### Owner
-
-A user is allowed to create new shops. This is meaning less as the document has not been created yet.
-
-```js
-// shop.json
-{
-  "attributes": {
-    "name":"String",
-    "owner": {
-      "type": "ObjectId",
-      "ref": "User",
-      "writeScopes": "admin"
-    }
-  },
-  "writeScopes": "owner"
-}
-```
-
-### User
-
-Same as above.
-
-TODO
-
 ### References
 
-TODO
+This module adds a single method `assertNoReferences` to the schema. This is useful on delete operations to throw an error if there are external references to the document. It takes an options object with a single option `except` as an array:
+
+```js
+router.delete('/:id', async (ctx) => {
+  const { shop } = ctx.state;
+  try {
+    await shop.assertNoReferences({
+      except: [AuditEntry],
+    });
+  } catch {
+    ctx.throw(400, 'Shop has external references.');
+  }
+  await user.delete();
+  ctx.status = 204;
+});
+```
+
+The above example will throw an error if shop is referenced externally (for example by a a `Product`), however it will not count `AuditEntry` references.
 
 ### Assign
 
-TODO
+Applies a single instance method `assign` to documents:
+
+```js
+user.assign(ctx.request.body);
+// Compare to:
+Object.assign(user, ctx.request.body);
+```
+
+This is functionally identical to `Object.assign` with the exception that `ObjectId` reference fields can be unset by passing falsy values. This method is provided as `undefined` cannot be represented in JSON which requires using either a `null` or empty string, both of which would be stored in the database if naively assigned with `Object.assign`.
 
 ### Slugs
 
-TODO
+A common requirement is to allow slugs on documents to serve as ids for human readable URLs. To load a single document this way the naive approach would be to run a search on all documents matching the `slug` then pull the first one off.
+
+This module simplifies this by assuming a `slug` field on a model and adding a `findByIdOrSlug` method that allows searching on both:
+
+```js
+const post = await Post.findByIdOrSlug(str);
+```
+
+Note that soft delete methods are also applied:
+
+- `findByIdOrSlugDeleted`
+- `findByIdOrSlugWithDeleted`
+
+Also note that as Mongo ids are represented as 24 byte hexadecimal a collision is possible:
+
+- `deadbeefdeadbeefdeadbeef`
+- `cafecafecafecafecafecafe`
+
+However the likelyhood of such collisions on a slug are acceptably small.
 
 ## Testing
 
@@ -838,6 +895,7 @@ const { createTestModel } = require('@bedrockio/model');
 const User = createTestModel({
   name: 'String',
 });
+mk;
 ```
 
 Note that a unique model name will be generated to prevent clashing with other models. This can be accessed with `Model.modelName` or to make tests more readable it can be overridden:
