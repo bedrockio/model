@@ -204,6 +204,8 @@ function getSchemaForType(type) {
     case 'Mixed':
     case 'Object':
       return yd.object();
+    case 'Array':
+      return yd.array();
     case 'ObjectId':
       return yd.custom(async (val) => {
         const id = String(val.id || val);

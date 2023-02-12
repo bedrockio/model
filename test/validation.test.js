@@ -1561,6 +1561,17 @@ describe('getValidationSchema', () => {
         tags: 'foo',
       });
     });
+
+    it('should allow a mixed type array field', async () => {
+      const schema = getValidationSchema({
+        categories: {
+          type: 'Array',
+        },
+      });
+      await assertPass(schema, { categories: ['foo'] });
+      await assertPass(schema, { categories: [] });
+      await assertFail(schema, { categories: 'foo' });
+    });
   });
 
   describe('nested fields', () => {
