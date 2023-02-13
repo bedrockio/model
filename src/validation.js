@@ -3,7 +3,7 @@ import yd from '@bedrockio/yada';
 
 import { get, omit, lowerFirst } from 'lodash';
 
-import { hasWriteAccess } from './access';
+import { hasAccess } from './access';
 import { searchValidation } from './search';
 import { PermissionsError } from './errors';
 import { isMongooseSchema, isSchemaTypedef } from './utils';
@@ -78,6 +78,7 @@ export function applyValidation(schema, definition) {
         skipRequired: true,
         allowMultiple: true,
         unwindArrayFields: true,
+        requireReadAccess: true,
         appendSchema: searchValidation(definition, searchOptions),
         modelName: this.modelName,
       });
@@ -187,8 +188,11 @@ function getSchemaForTypedef(typedef, options = {}) {
   if (options.allowMultiple) {
     schema = yd.allow(schema, yd.array(schema));
   }
+  if (typedef.readAccess && options.requireReadAccess) {
+    schema = validateReadAccess(schema, typedef.readAccess, options);
+  }
   if (typedef.writeAccess && options.requireWriteAccess) {
-    schema = validateWriteScopes(schema, typedef.writeAccess, options);
+    schema = validateWriteAccess(schema, typedef.writeAccess, options);
   }
   return schema;
 }
@@ -257,15 +261,23 @@ function isExcludedField(field, options) {
   }
 }
 
-function validateWriteScopes(schema, allowedScopes, options) {
+function validateReadAccess(schema, allowed, options) {
+  return validateAccess('read', schema, allowed, options);
+}
+
+function validateWriteAccess(schema, allowed, options) {
+  return validateAccess('write', schema, allowed, options);
+}
+
+function validateAccess(type, schema, allowed, options) {
   const { modelName } = options;
   return schema.custom((val, options) => {
     const document = options[lowerFirst(modelName)] || options['document'];
-    const hasAccess = hasWriteAccess(allowedScopes, {
+    const isAllowed = hasAccess(type, allowed, {
       ...options,
       document,
     });
-    if (!hasAccess) {
+    if (!isAllowed) {
       const currentValue = get(document, options.path);
       if (val !== currentValue) {
         throw new PermissionsError('requires write permissions.');

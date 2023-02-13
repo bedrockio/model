@@ -178,10 +178,6 @@ describe('serialization', () => {
         authUser: user2,
       });
       expect(data.password).toBeUndefined();
-
-      expect(() => {
-        user1.toObject();
-      }).toThrow('Read scope "self" requires .toObject({ authUser }).');
     });
 
     it('should allow owner read access', () => {
@@ -215,10 +211,6 @@ describe('serialization', () => {
         authUser: user2,
       });
       expect(data.earnings).toBeUndefined();
-
-      expect(() => {
-        shop.toObject();
-      }).toThrow('Read scope "owner" requires .toObject({ authUser }).');
     });
 
     it('should allow user read access', () => {
@@ -252,10 +244,24 @@ describe('serialization', () => {
         authUser: user2,
       });
       expect(data.likes).toBeUndefined();
+    });
 
-      expect(() => {
-        account.toObject();
-      }).toThrow('Read scope "user" requires .toObject({ authUser }).');
+    it('should not error if document cannot be checked', async () => {
+      const User = createTestModel({
+        name: 'String',
+        age: {
+          type: 'Number',
+          readAccess: 'self',
+        },
+      });
+      const user = new User({
+        name: 'Bob',
+        age: 30,
+      });
+      expect(user.toObject()).toEqual({
+        id: user.id,
+        name: 'Bob',
+      });
     });
 
     it('should allow string shortcut for scopes', () => {

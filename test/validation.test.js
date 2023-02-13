@@ -1041,6 +1041,24 @@ describe('validation', () => {
           age: 50,
         });
       });
+
+      it('should enforce read access', async () => {
+        const User = createTestModel({
+          name: 'String',
+          age: {
+            type: 'Number',
+            readAccess: 'none',
+          },
+        });
+        const schema = User.getSearchValidation();
+        await assertPass(schema, {
+          name: 'Barry',
+        });
+        await assertFail(schema, {
+          name: 'Barry',
+          age: 50,
+        });
+      });
     });
 
     describe('ranges', () => {

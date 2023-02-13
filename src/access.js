@@ -9,7 +9,7 @@ export function hasWriteAccess(allowed, options) {
   return hasAccess('write', allowed, options);
 }
 
-function hasAccess(type, allowed = 'all', options = {}) {
+export function hasAccess(type, allowed = 'all', options = {}) {
   if (allowed === 'all') {
     return true;
   } else if (allowed === 'none') {
@@ -20,18 +20,18 @@ function hasAccess(type, allowed = 'all', options = {}) {
       allowed = [allowed];
     }
     const scopes = resolveScopes(options);
-    return allowed.some((scope) => {
-      if (scope === 'self') {
-        assertOptions(type, scope, options);
+    return allowed.some((token) => {
+      if (token === 'self') {
+        assertOptions(type, token, options);
         return document.id == authUser.id;
-      } else if (scope === 'user') {
-        assertOptions(type, scope, options);
+      } else if (token === 'user') {
+        assertOptions(type, token, options);
         return document.user?.id == authUser.id;
-      } else if (scope === 'owner') {
-        assertOptions(type, scope, options);
+      } else if (token === 'owner') {
+        assertOptions(type, token, options);
         return document.owner?.id == authUser.id;
       } else {
-        return scopes?.includes(scope);
+        return scopes?.includes(token);
       }
     });
   }
@@ -45,15 +45,15 @@ function resolveScopes(options) {
   return scope ? [scope] : scopes;
 }
 
-function assertOptions(type, scope, options) {
+function assertOptions(type, token, options) {
   if (!options.authUser || !options.document) {
     if (type === 'read') {
       throw new ImplementationError(
-        `Read scope "${scope}" requires .toObject({ authUser }).`
+        `Read access "${token}" requires .toObject({ authUser }).`
       );
     } else {
       throw new ImplementationError(
-        `Write scope "${scope}" requires passing { document, authUser } to the validator.`
+        `Write access "${token}" requires passing { document, authUser } to the validator.`
       );
     }
   }

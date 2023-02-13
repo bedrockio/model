@@ -679,8 +679,13 @@ The `getSearchValidation` will allow the `include` property to be passed, lettin
 
 This package applies two forms of access control:
 
-- `read` access influences how document is serialized.
-- `write` access influences validation.
+#### Read Access
+
+Read access influences how documents are serialized. Fields that have been denied access will be stripped out. Additionally it will influence the validation schema for `getSearchValidation`. Fields that have been denied access are not allowed to be searched on and will throw an error.
+
+#### Write Access
+
+Write access influences validation in `getCreateValidation` and `getUpdateValidation`. Fields that have been denied access will throw an error unless they are identical to what is already set on the document. Note that in the case of `getCreateValidation` no document has been created yet so a denied field will always result in an error if passed.
 
 #### Defining Access
 
@@ -696,7 +701,7 @@ Access is defined in schemas with the `readAccess` and `writeAccess` options:
 }
 ```
 
-For multiple fields with the same access types, use a [scope](#scopes).
+This may be either a string or an array of strings. For multiple fields with the same access types, use a [scope](#scopes).
 
 ##### Access on Arrays
 
@@ -728,16 +733,41 @@ However this is overhead and hard to remember, so `readAccess` and `writeAccess`
 
 #### Access Types
 
-The types of access control tokens allowed for `readAccess` and `writeAccess` can generally come in two types:
+`readAccess` and `writeAccess` can specify any token. However a few special tokens exist:
 
-- Scope based, which is generally derived from the user roles.
-- Document based, which will compare a user's id against document fields.
+- `all` - Allows access to anyone. This token is reserved for clarity but is not required as it is the default.
+- `none` - Allows access to no-one.
+- `self` - See [document based access](#document-based-access).
+- `user` - See [document based access](#document-based-access).
+- `owner` - See [document based access](#document-based-access).
+
+Any other token will use [scope based access](#scope-based-access).
 
 ##### Scope Based Access
 
-TODO figure this out
+A non-reserved token specified in `readAccess` or `writeAccess` will test against scopes in the generated validations or when serializing:
+
+```js
+// In validation middleware:
+const schema = User.getCreateSchema();
+await schema.validate(ctx.request.body, {
+  scopes: authUser.getScopes(),
+  // Also accepted:
+  scope: '...',
+});
+// In routes:
+document.toObject({
+  scopes: authUser.getScopes(),
+  // Also accepted:
+  scope: '...',
+});
+```
+
+Note that scopes are just literal strings. For example a route already checking that the user is admin may simply pass `.toObject({ scope: 'admin' })`. However for more complex cases scopes are typically derived from the authUser's roles.
 
 ##### Document Based Access
+
+Will compare a `document` or it's properties against the id of an `authUser`.
 
 Document based access allows 3 different tokens:
 
@@ -747,12 +777,12 @@ Document based access allows 3 different tokens:
 
 Using document based access comes with some requirements:
 
-1. Read access must use `.toObject({ authUser })`.
+1. Read access must use `.toObject({ authUser })`. Note that the document is not required here as a reference is already kept.
 2. Write access must use `schema.validate(body, { authUser, document })`.
 
-TODO: figure this out
-
 #### Examples
+
+For clarity, here are a few examples about how document based access control should be used:
 
 ##### Example 1
 
@@ -812,23 +842,13 @@ The difference with `owner` here is the name only, however both options exist as
 }
 ```
 
+#### Notes on Read Access
+
+Note that all forms of read access require that `.toObject` is called on the document with special parameters, however this method is called on internal serialization including both `JSON.stringify` and logging to the console. For this reason it will never fail even if it cannot perform the correct access checks. Instead any fields with `readAccess` defined on them will be stripped out.
+
 #### Notes on Write Access
 
-Write access options will affect the result of `Model.getCreateValidation` and `Model.getUpdateValidation`. They are identical except that the create validation will error if restricted fields are passed, where update validation will instead strip them out. This allows `readAccess` and `writeAccess` to differ by discarding fields that have been exposed instead of throwing an error.
-
 Note that `self` is generally only meaningful on a User model as it will always check the document is the same as `authUser`.
-
-Note also that `writeAccess: self` is effectively meaningless for create operations as the created user does not exist yet so by definition an `authUser` cannot be the same.
-
-```js
-// user.json
-{
-  "attributes": {
-    "name": "String"
-  },
-  "writeAccess": "self"
-}
-```
 
 ### References
 

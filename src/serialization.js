@@ -40,6 +40,10 @@ function isAllowedField(key, field, options) {
     return false;
   } else {
     const { readAccess } = resolveField(field, key);
-    return hasReadAccess(readAccess, options);
+    try {
+      return hasReadAccess(readAccess, options);
+    } catch {
+      return false;
+    }
   }
 }
