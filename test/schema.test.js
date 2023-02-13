@@ -153,8 +153,7 @@ describe('normalizeAttributes', () => {
     };
     expect(normalizeAttributes(attributes)).toEqual({
       location: {
-        type: 'Tuple',
-        types: [
+        type: [
           {
             type: 'Number',
           },
@@ -166,17 +165,13 @@ describe('normalizeAttributes', () => {
     });
   });
 
-  it('should allow empty arrays as mixed types', async () => {
+  it('should allow empty arrays', async () => {
     const attributes = {
       tokens: [],
     };
     expect(normalizeAttributes(attributes)).toEqual({
       tokens: {
-        type: [
-          {
-            type: 'Object',
-          },
-        ],
+        type: [],
       },
     });
   });

@@ -879,3 +879,18 @@ describe('access control', () => {
     expect(shop.toObject().user.password).toBeUndefined();
   });
 });
+
+describe('other', () => {
+  it('should not populate a deleted document', async () => {
+    const user = await User.create({
+      password: 'fake password',
+    });
+    let shop = await Shop.create({
+      name: 'foo',
+      user,
+    });
+    await user.delete();
+    shop = await Shop.findById(shop.id).include('user');
+    expect(shop.user).toBe(null);
+  });
+});

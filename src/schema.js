@@ -65,16 +65,8 @@ export function normalizeAttributes(arg, path = []) {
   } else if (typeof arg === 'string') {
     return normalizeSchemaTypedef({ type: arg }, path);
   } else if (Array.isArray(arg)) {
-    if (arg.length > 1) {
-      // TODO: can this be an extension instead?
-      return {
-        type: 'Tuple',
-        types: normalizeArrayAttributes(arg, path),
-      };
-    } else {
-      const type = [arg[0] || 'Object'];
-      return normalizeSchemaTypedef({ type }, path);
-    }
+    const type = normalizeArrayAttributes(arg, path);
+    return normalizeSchemaTypedef({ type }, path);
   } else if (typeof arg === 'object') {
     assertRefs(arg, path);
 
@@ -239,10 +231,10 @@ function applyScopeExtension(scope, definition) {
 
 // Extended tuple syntax. Return mixed type and set validator.
 function applyTupleExtension(typedef) {
-  const { type, types } = typedef;
-  if (type === 'Tuple') {
+  const { type } = typedef;
+  if (Array.isArray(type) && type.length > 1) {
     typedef.type = ['Mixed'];
-    typedef.validate = getTupleValidator(types);
+    typedef.validate = getTupleValidator(type);
   }
 }
 

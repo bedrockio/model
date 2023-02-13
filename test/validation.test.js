@@ -930,7 +930,10 @@ describe('validation', () => {
           field: 'createdAt',
           order: 'desc',
         },
-        // TODO: validate better?
+        ids: ['6345a7f52773f7001d97c0d2'],
+      });
+
+      await assertFail(schema, {
         ids: ['12345'],
       });
     });

@@ -81,7 +81,7 @@ export function searchValidation(definition, options = {}) {
   };
 
   return {
-    ids: yd.array(yd.string()),
+    ids: yd.array(yd.string().mongo()),
     keyword: yd.string(),
     include: yd.string(),
     skip: yd.number().default(0),
