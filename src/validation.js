@@ -116,7 +116,9 @@ function getObjectSchema(arg, options) {
   } else if (typeof arg === 'object') {
     const map = {};
     for (let [key, field] of Object.entries(arg)) {
-      map[key] = getObjectSchema(field, options);
+      if (!isExcludedField(field, options)) {
+        map[key] = getObjectSchema(field, options);
+      }
     }
 
     let schema = yd.object(map);
@@ -244,6 +246,15 @@ function getRangeSchema(schema, type) {
 
 function isRequired(typedef, options) {
   return typedef.required && !typedef.default && !options.skipRequired;
+}
+
+function isExcludedField(field, options) {
+  if (isSchemaTypedef(field)) {
+    const { requireWriteAccess } = options;
+    return requireWriteAccess && field.writeAccess === 'none';
+  } else {
+    return false;
+  }
 }
 
 function validateWriteScopes(schema, allowedScopes, options) {

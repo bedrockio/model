@@ -5,6 +5,8 @@ import { pick, isEmpty, isPlainObject } from 'lodash';
 import { isDateField, isNumberField, resolveField } from './utils';
 import { SEARCH_DEFAULTS } from './const';
 
+import warn from './warn';
+
 const { ObjectId } = mongoose.Types;
 
 const SORT_SCHEMA = yd.object({
@@ -91,8 +93,7 @@ export function searchValidation(definition, options = {}) {
 
 function validateDefinition(definition) {
   if (Array.isArray(definition.search)) {
-    // eslint-disable-next-line
-    console.warn(
+    warn(
       [
         '"search" field on model definition must not be an array.',
         'Use "search.fields" to define fields for keyword queries.',

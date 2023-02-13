@@ -372,6 +372,25 @@ describe('validation', () => {
           { scopes: ['foo', 'bar'] }
         );
       });
+
+      it('should skip field entirely if no write access', async () => {
+        const User = createTestModel({
+          name: 'String',
+          apiKey: {
+            type: 'String',
+            required: true,
+            writeAccess: 'none',
+          },
+        });
+        const schema = User.getCreateValidation();
+        await assertPass(schema, {
+          name: 'Barry',
+        });
+        await assertFail(schema, {
+          name: 'Barry',
+          apiKey: 'foo',
+        });
+      });
     });
   });
 
@@ -621,7 +640,7 @@ describe('validation', () => {
     });
 
     describe('write access', () => {
-      it('should throw on attempt to update', async () => {
+      it('should strip field on attempt to update with no write scopes', async () => {
         const User = createTestModel({
           name: 'String',
           password: {
@@ -630,11 +649,37 @@ describe('validation', () => {
           },
         });
         const schema = User.getUpdateValidation();
-        await expect(
-          schema.validate({
+        await assertPass(
+          schema,
+          {
             name: 'Barry',
             password: 'fake password',
-          })
+          },
+          {
+            name: 'Barry',
+          }
+        );
+      });
+
+      it('should throw on attempt to update with invalid scopes', async () => {
+        const User = createTestModel({
+          name: 'String',
+          password: {
+            type: 'String',
+            writeAccess: 'admin',
+          },
+        });
+        const schema = User.getUpdateValidation();
+        await expect(
+          schema.validate(
+            {
+              name: 'Barry',
+              password: 'fake password',
+            },
+            {
+              scope: 'not admin',
+            }
+          )
         ).rejects.toThrow();
       });
 
@@ -642,12 +687,12 @@ describe('validation', () => {
         const User = createTestModel({
           name: {
             type: 'String',
-            writeAccess: 'none',
+            writeAccess: 'admin',
           },
           profile: {
             age: {
               type: 'Number',
-              writeAccess: 'none',
+              writeAccess: 'admin',
             },
           },
         });
