@@ -96,8 +96,6 @@ function normalizeSchemaTypedef(typedef, path) {
   return typedef;
 }
 
-// TODO: can yada just be a normal dep?
-
 function normalizeArrayAttributes(arr, path) {
   return arr.map((el, i) => {
     return normalizeAttributes(el, [...path, i]);

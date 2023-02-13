@@ -50,8 +50,6 @@ export function applyInclude(schema) {
   });
 }
 
-// TODO: can checkSelects somehow be more self contained?
-
 // "Selected" keys virtually project documents so that
 // they do not return the entire document down the wire.
 // This is to maintain parity with query projection used
