@@ -9,6 +9,9 @@ export function hasWriteAccess(allowed, options) {
   return hasAccess('write', allowed, options);
 }
 
+/**
+ * @param {string|string[]} allowed
+ */
 export function hasAccess(type, allowed = 'all', options = {}) {
   if (allowed === 'all') {
     return true;

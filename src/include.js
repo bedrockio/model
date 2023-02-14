@@ -4,6 +4,7 @@ import { escapeRegExp } from 'lodash';
 import { resolveInnerField } from './utils';
 import { POPULATE_MAX_DEPTH } from './const';
 
+// @ts-ignore
 // Overloading mongoose Query prototype to
 // allow an "include" method for queries.
 mongoose.Query.prototype.include = function include(paths) {

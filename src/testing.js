@@ -5,6 +5,13 @@ import { isMongooseSchema } from './utils';
 
 let counter = 0;
 
+/**
+ * Helper to quickly create models for testing.
+ * Accepts a definition's `attributes` object and
+ * an optional model name as the first argument.
+ * [Link](https://github.com/bedrockio/model#testing)
+ * @returns mongoose.Model
+ */
 export function createTestModel(...args) {
   let modelName, attributes, schema;
   if (typeof args[0] === 'string') {

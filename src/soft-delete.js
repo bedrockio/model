@@ -17,12 +17,14 @@ export function applySoftDelete(schema) {
   schema.method('delete', function () {
     this.deleted = true;
     this.deletedAt = new Date();
+    // @ts-ignore
     return this.save();
   });
 
   schema.method('restore', function restore() {
     this.deleted = false;
     this.deletedAt = undefined;
+    // @ts-ignore
     return this.save();
   });
 

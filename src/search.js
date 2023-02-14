@@ -74,11 +74,13 @@ export function applySearch(schema, definition) {
 }
 
 export function searchValidation(definition, options = {}) {
-  const { limit, sort, ...rest } = {
+  options = {
     ...SEARCH_DEFAULTS,
     ...pick(definition.search, 'limit', 'sort'),
     ...options,
   };
+
+  const { limit, sort, ...rest } = options;
 
   return {
     ids: yd.array(yd.string().mongo()),

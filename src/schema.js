@@ -23,6 +23,14 @@ export const RESERVED_FIELDS = [
   'deleted',
 ];
 
+/**
+ * Creates a new Mongoose schema with Bedrock extensions
+ * applied. For more about syntax and functionality see
+ * [the documentation](https://github.com/bedrockio/model#schemas).
+ * @param {object} definition
+ * @param {mongoose.SchemaOptions} options
+ * @returns mongoose.Schema
+ */
 export function createSchema(definition, options = {}) {
   const schema = new mongoose.Schema(
     attributesToMongoose(
@@ -46,13 +54,13 @@ export function createSchema(definition, options = {}) {
     }
   );
 
-  applySoftDelete(schema, definition);
   applyValidation(schema, definition);
-  applyReferences(schema, definition);
-  applyInclude(schema, definition);
   applySearch(schema, definition);
-  applyAssign(schema, definition);
-  applySlug(schema, definition);
+  applySoftDelete(schema);
+  applyReferences(schema);
+  applyInclude(schema);
+  applyAssign(schema);
+  applySlug(schema);
 
   return schema;
 }
