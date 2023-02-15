@@ -1,9 +1,6 @@
-import warn from './warn';
-
 export function applySoftDelete(schema) {
   applyQueries(schema);
   applyUniqueConstraints(schema);
-  applyDisallowedMethods(schema);
 }
 
 // Soft Delete Querying
@@ -388,51 +385,3 @@ function getCollisions(obj1, obj2) {
 }
 
 // Disallowed Methods
-
-function applyDisallowedMethods(schema) {
-  schema.method(
-    'remove',
-    function () {
-      warn(
-        'The "remove" method on documents is disallowed due to ambiguity.',
-        'To permanently delete a document use "destroy", otherwise "delete".'
-      );
-      throw new Error('Method not allowed.');
-    },
-    {
-      suppressWarning: true,
-    }
-  );
-
-  schema.method('deleteOne', function () {
-    warn(
-      'The "deleteOne" method on documents is disallowed due to ambiguity',
-      'Use either "delete" or "deleteOne" on the model.'
-    );
-    throw new Error('Method not allowed.');
-  });
-
-  schema.static('remove', function () {
-    warn(
-      'The "remove" method on models is disallowed due to ambiguity.',
-      'To permanently delete a document use "destroyMany", otherwise "deleteMany".'
-    );
-    throw new Error('Method not allowed.');
-  });
-
-  schema.static('findOneAndRemove', function () {
-    warn(
-      'The "findOneAndRemove" method on models is disallowed due to ambiguity.',
-      'To permanently delete a document use "findOneAndDestroy", otherwise "findOneAndDelete".'
-    );
-    throw new Error('Method not allowed.');
-  });
-
-  schema.static('findByIdAndRemove', function () {
-    warn(
-      'The "findByIdAndRemove" method on models is disallowed due to ambiguity.',
-      'To permanently delete a document use "findByIdAndDestroy", otherwise "findByIdAndDelete".'
-    );
-    throw new Error('Method not allowed.');
-  });
-}

@@ -10,6 +10,8 @@ import { applyAssign } from './assign';
 import { applyInclude } from './include';
 import { applyReferences } from './references';
 import { applySoftDelete } from './soft-delete';
+import { applyDisallowed } from './disallowed';
+
 import {
   applyValidation,
   getNamedValidator,
@@ -58,6 +60,7 @@ export function createSchema(definition, options = {}) {
   applySearch(schema, definition);
   applySoftDelete(schema);
   applyReferences(schema);
+  applyDisallowed(schema);
   applyInclude(schema);
   applyAssign(schema);
   applySlug(schema);
