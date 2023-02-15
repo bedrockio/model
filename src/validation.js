@@ -6,6 +6,7 @@ import { get, omit, lowerFirst } from 'lodash';
 import { hasAccess } from './access';
 import { searchValidation } from './search';
 import { PermissionsError } from './errors';
+import { hasUniqueConstraints, assertUnique } from './soft-delete';
 import { isMongooseSchema, isSchemaTypedef } from './utils';
 import { RESERVED_FIELDS } from './schema';
 
@@ -67,14 +68,22 @@ export function addValidators(schemas) {
 }
 
 export function applyValidation(schema, definition) {
+  const hasUnique = hasUniqueConstraints(schema);
+
   schema.static(
     'getCreateValidation',
     function getCreateValidation(appendSchema) {
       return getSchemaFromMongoose(schema, {
+        model: this,
         appendSchema,
         stripReserved: true,
         requireWriteAccess: true,
-        modelName: this.modelName,
+        ...(hasUnique && {
+          assertUniqueOptions: {
+            schema,
+            operation: 'create',
+          },
+        }),
       });
     }
   );
@@ -83,12 +92,18 @@ export function applyValidation(schema, definition) {
     'getUpdateValidation',
     function getUpdateValidation(appendSchema) {
       return getSchemaFromMongoose(schema, {
+        model: this,
         appendSchema,
         skipRequired: true,
         stripReserved: true,
         stripUnknown: true,
         requireWriteAccess: true,
-        modelName: this.modelName,
+        ...(hasUnique && {
+          assertUniqueOptions: {
+            schema,
+            operation: 'update',
+          },
+        }),
       });
     }
   );
@@ -102,7 +117,7 @@ export function applyValidation(schema, definition) {
         unwindArrayFields: true,
         requireReadAccess: true,
         appendSchema: searchValidation(definition, searchOptions),
-        modelName: this.modelName,
+        model: this,
       });
     }
   );
@@ -120,8 +135,16 @@ function getSchemaFromMongoose(schema, options) {
 
 // Exported for testing
 export function getValidationSchema(attributes, options = {}) {
-  const { appendSchema } = options;
+  const { appendSchema, assertUniqueOptions } = options;
   let schema = getObjectSchema(attributes, options);
+  if (assertUniqueOptions) {
+    schema = yd.custom(async (obj) => {
+      await assertUnique(obj, {
+        model: options.model,
+        ...assertUniqueOptions,
+      });
+    });
+  }
   if (appendSchema) {
     schema = schema.append(appendSchema);
   }
@@ -322,7 +345,7 @@ function validateWriteAccess(schema, allowed, options) {
 }
 
 function validateAccess(type, schema, allowed, options) {
-  const { modelName } = options;
+  const { modelName } = options.model;
   return schema.custom((val, options) => {
     const document = options[lowerFirst(modelName)] || options['document'];
     const isAllowed = hasAccess(type, allowed, {

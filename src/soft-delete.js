@@ -221,7 +221,7 @@ function getWithDeletedQuery() {
 // Unique Constraints
 
 function applyUniqueConstraints(schema) {
-  const hasUnique = hasUniquePaths(schema);
+  const hasUnique = hasUniqueConstraints(schema);
 
   if (!hasUnique) {
     return;
@@ -229,7 +229,7 @@ function applyUniqueConstraints(schema) {
 
   schema.pre('save', async function () {
     await assertUnique(this.toObject(), {
-      verb: this.isNew ? 'create' : 'update',
+      operation: this.isNew ? 'create' : 'update',
       model: this.constructor,
       schema,
     });
@@ -249,15 +249,15 @@ function applyUniqueConstraints(schema) {
     // function it appears to not stop the middleware if we
     // don't call it directly.
     await assertUnique(obj, {
-      verb: 'create',
+      operation: 'create',
       model: this,
       schema,
     });
   });
 }
 
-async function assertUnique(obj, options) {
-  const { model, verb, schema } = options;
+export async function assertUnique(obj, options) {
+  const { operation, model, schema } = options;
   const id = getId(obj);
   const objFields = resolveUnique(schema, obj);
   if (Object.keys(objFields).length === 0) {
@@ -275,7 +275,7 @@ async function assertUnique(obj, options) {
     const foundFields = resolveUnique(schema, found);
     const collisions = getCollisions(objFields, foundFields).join(', ');
     throw new Error(
-      `Cannot ${verb} ${modelName}. Duplicate fields exist: ${collisions}.`
+      `Cannot ${operation} ${modelName}. Duplicate fields exist: ${collisions}.`
     );
   }
 }
@@ -290,13 +290,13 @@ function getId(arg) {
 // within non-deleted documents.
 async function assertUniqueForQuery(query, options) {
   let update = query.getUpdate();
-  const verb = getQueryVerb(update);
+  const operation = getOperationForQuery(update);
   // Note: No need to check unique constraints
   // if the operation is a delete.
-  if (verb === 'restore' || verb === 'update') {
+  if (operation === 'restore' || operation === 'update') {
     const { model } = query;
     const filter = query.getFilter();
-    if (verb === 'restore') {
+    if (operation === 'restore') {
       // A restore operation is functionally identical to a new
       // insert so we need to fetch the deleted documents with
       // all fields available to check against.
@@ -310,13 +310,13 @@ async function assertUniqueForQuery(query, options) {
     }
     await assertUnique(update, {
       ...options,
-      verb,
+      operation,
       model,
     });
   }
 }
 
-function getQueryVerb(update) {
+function getOperationForQuery(update) {
   if (update?.deleted === false) {
     return 'restore';
   } else if (update?.deleted === true) {
@@ -326,7 +326,7 @@ function getQueryVerb(update) {
   }
 }
 
-function hasUniquePaths(schema) {
+export function hasUniqueConstraints(schema) {
   const paths = [...Object.keys(schema.paths), ...Object.keys(schema.subpaths)];
   return paths.some((key) => {
     return isUniquePath(schema, key);
