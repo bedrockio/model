@@ -9,13 +9,36 @@ import { PermissionsError } from './errors';
 import { isMongooseSchema, isSchemaTypedef } from './utils';
 import { RESERVED_FIELDS } from './schema';
 
+const DATE_SCHEMA = yd.date().iso().tag({
+  'x-schema': 'DateTime',
+  'x-description':
+    'A `string` in [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) format.',
+});
+
+const OBJECT_ID_DESCRIPTION = `
+A 24 character hexadecimal string representing a Mongo [ObjectId](https://bit.ly/3YPtGlU).
+An object with an \`id\` field may also be passed, which will be converted into a string.
+`;
+
+export const OBJECT_ID_SCHEMA = yd
+  .custom(async (val) => {
+    const id = String(val.id || val);
+    await namedSchemas.objectId.validate(id);
+    return id;
+  })
+  .tag({
+    type: 'ObjectId',
+    'x-schema': 'ObjectId',
+    'x-description': OBJECT_ID_DESCRIPTION.trim(),
+  });
+
 const namedSchemas = {
   // Email is special as we are assuming that in
   // all cases lowercase should be allowed but coerced.
   email: yd.string().lowercase().email(),
-  // Force "ObjectId" to have parity with refs.
+  // Force "objectId" to have parity with refs.
   // "mongo" is notably excluded here for this reason.
-  ObjectId: yd.string().mongo(),
+  objectId: yd.string().mongo(),
 
   ascii: yd.string().ascii(),
   base64: yd.string().base64(),
@@ -74,9 +97,8 @@ export function applyValidation(schema, definition) {
     'getSearchValidation',
     function getSearchValidation(searchOptions) {
       return getSchemaFromMongoose(schema, {
-        allowRanges: true,
+        allowSearch: true,
         skipRequired: true,
-        allowMultiple: true,
         unwindArrayFields: true,
         requireReadAccess: true,
         appendSchema: searchValidation(definition, searchOptions),
@@ -182,11 +204,8 @@ function getSchemaForTypedef(typedef, options = {}) {
   if (typedef.max != null || typedef.maxLength != null) {
     schema = schema.max(typedef.max ?? typedef.maxLength);
   }
-  if (options.allowRanges) {
-    schema = getRangeSchema(schema, type);
-  }
-  if (options.allowMultiple) {
-    schema = yd.allow(schema, yd.array(schema));
+  if (options.allowSearch) {
+    schema = getSearchSchema(schema, type);
   }
   if (typedef.readAccess && options.requireReadAccess) {
     schema = validateReadAccess(schema, typedef.readAccess, options);
@@ -206,46 +225,79 @@ function getSchemaForType(type) {
     case 'Boolean':
       return yd.boolean();
     case 'Date':
-      return yd.date().iso();
+      return DATE_SCHEMA;
     case 'Mixed':
     case 'Object':
       return yd.object();
     case 'Array':
       return yd.array();
     case 'ObjectId':
-      return yd.custom(async (val) => {
-        const id = String(val.id || val);
-        await namedSchemas['ObjectId'].validate(id);
-        return id;
-      });
+      return OBJECT_ID_SCHEMA;
     default:
       throw new TypeError(`Unknown schema type ${type}`);
   }
 }
 
-function getRangeSchema(schema, type) {
+function getSearchSchema(schema, type) {
   if (type === 'Number') {
-    schema = yd.allow(
-      schema,
-      yd.object({
-        lt: yd.number(),
-        gt: yd.number(),
-        lte: yd.number(),
-        gte: yd.number(),
-      })
-    );
+    return yd
+      .allow(
+        schema,
+        yd.array(schema),
+        yd
+          .object({
+            lt: yd.number().description('Select values less than.'),
+            gt: yd.number().description('Select values greater than.'),
+            lte: yd.number().description('Select values less than or equal.'),
+            gte: yd
+              .number()
+              .description('Select values greater than or equal.'),
+          })
+          .tag({
+            'x-schema': 'NumberRange',
+            'x-description':
+              'An object representing numbers falling within a range.',
+          })
+      )
+      .description(
+        'Allows searching by a value, array of values, or a numeric range.'
+      );
   } else if (type === 'Date') {
-    return yd.allow(
-      schema,
-      yd.object({
-        lt: yd.date().iso(),
-        gt: yd.date().iso(),
-        lte: yd.date().iso(),
-        gte: yd.date().iso(),
-      })
-    );
+    return yd
+      .allow(
+        schema,
+        yd.array(schema),
+        yd
+          .object({
+            lt: yd.date().iso().tag({
+              'x-ref': 'DateTime',
+              description: 'Select dates occurring before.',
+            }),
+            gt: yd.date().iso().tag({
+              'x-ref': 'DateTime',
+              description: 'Select dates occurring after.',
+            }),
+            lte: yd.date().iso().tag({
+              'x-ref': 'DateTime',
+              description: 'Select dates occurring on or before.',
+            }),
+            gte: yd.date().iso().tag({
+              'x-ref': 'DateTime',
+              description: 'Select dates occurring on or after.',
+            }),
+          })
+          .tag({
+            'x-schema': 'DateRange',
+            'x-description':
+              'An object representing dates falling within a range.',
+          })
+      )
+      .description('Allows searching by a date, array of dates, or a range.');
+  } else if (type === 'String' || type === 'ObjectId') {
+    return yd.allow(schema, yd.array(schema));
+  } else {
+    return schema;
   }
-  return schema;
 }
 
 function isRequired(typedef, options) {

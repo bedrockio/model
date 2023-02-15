@@ -4,15 +4,18 @@ import { pick, isEmpty, isPlainObject } from 'lodash';
 
 import { isDateField, isNumberField, resolveField } from './utils';
 import { SEARCH_DEFAULTS } from './const';
+import { OBJECT_ID_SCHEMA } from './validation';
 
 import warn from './warn';
 
 const { ObjectId } = mongoose.Types;
 
-const SORT_SCHEMA = yd.object({
-  field: yd.string().required(),
-  order: yd.string().allow('desc', 'asc').required(),
-});
+const SORT_SCHEMA = yd
+  .object({
+    field: yd.string().required(),
+    order: yd.string().allow('desc', 'asc').required(),
+  })
+  .description('An object describing the sort order of results.');
 
 export function applySearch(schema, definition) {
   validateDefinition(definition);
@@ -83,12 +86,18 @@ export function searchValidation(definition, options = {}) {
   const { limit, sort, ...rest } = options;
 
   return {
-    ids: yd.array(yd.string().mongo()),
-    keyword: yd.string(),
-    include: yd.string(),
-    skip: yd.number().default(0),
+    ids: yd.array(OBJECT_ID_SCHEMA),
+    keyword: yd
+      .string()
+      .description('A keyword to perform a text search against.'),
+    include: yd.string().description('Fields to be selected or populated.'),
+    skip: yd.number().default(0).description('Number of records to skip.'),
     sort: yd.allow(SORT_SCHEMA, yd.array(SORT_SCHEMA)).default(sort),
-    limit: yd.number().positive().default(limit),
+    limit: yd
+      .number()
+      .positive()
+      .default(limit)
+      .description('Limits the number of results.'),
     ...rest,
   };
 }

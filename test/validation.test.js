@@ -1299,7 +1299,7 @@ describe('getValidationSchema', () => {
       await assertFail(schema, { name: 'baz' });
     });
 
-    it('should optionally allow an array on an enum field', async () => {
+    it('should allow an array on an enum field with allowSearch', async () => {
       const schema = getValidationSchema(
         {
           name: {
@@ -1308,7 +1308,7 @@ describe('getValidationSchema', () => {
           },
         },
         {
-          allowMultiple: true,
+          allowSearch: true,
         }
       );
       await assertPass(schema, { name: ['foo', 'bar'] });
