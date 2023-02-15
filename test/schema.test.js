@@ -365,6 +365,21 @@ describe('createSchema', () => {
     });
   });
 
+  describe('extensions', () => {
+    it('should flag a unique field as soft', async () => {
+      const User = createTestModel({
+        email: {
+          type: 'String',
+          unique: true,
+        },
+      });
+      expect(User.schema.obj.email).toEqual({
+        type: 'String',
+        softUnique: true,
+      });
+    });
+  });
+
   describe('arrays', () => {
     it('should create a schema with an array field', async () => {
       const User = createTestModel({

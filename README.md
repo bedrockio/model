@@ -378,6 +378,30 @@ Due to ambiguity with the soft delete module, the following methods will throw a
 - `Model.findOneAndRemove` - Use `Model.findOneAndDelete` instead.
 - `Model.findByIdAndRemove` - Use `Model.findByIdAndDelete` instead.
 
+#### Unique Constraints
+
+Note that although monogoose allows a `unique` option on fields, this will add a unique index to the mongo collection itself which is incompatible with soft deletion.
+
+This package will intercept `unique: true` to create a soft delete compatible validation which will:
+
+- Throw an error if other non-deleted documents with the same fields exist when calling:
+  - `Document.save`
+  - `Document.update`
+  - `Document.restore`
+  - `Model.updateOne` (see note below)
+  - `Model.updateMany` (see note below)
+  - `Model.restoreOne`
+  - `Model.restoreMany`
+  - `Model.insertMany`
+  - `Model.replaceOne`
+- Append the same validation to `Model.getCreateSchema` and `Model.getUpdateSchema` to allow this constraint to trickle down to the API.
+
+> :warning: updateOne and updateMany
+>
+> Note that calling `Model.updateOne` will throw an error when a unique field exists on any document **including the document being updated**. This is an intentional constraint that allows `updateOne` better peformance by not having to fetch the ids of the documents being updated in order to exclude them. To avoid this call `Document.save` instead.
+>
+> Note also that calling `Model.updateMany` with a unique field passed will always throw an error as the result would inherently be non-unique.
+
 ### Validation
 
 Models are extended with methods that allow complex validation that derives from the schema. Bedrock validation is generally used at the API level:

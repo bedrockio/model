@@ -193,6 +193,7 @@ function isMongooseType(type) {
 
 function applyExtensions(typedef) {
   applySyntaxExtensions(typedef);
+  applyUniqueExtension(typedef);
   applyTupleExtension(typedef);
 }
 
@@ -241,6 +242,14 @@ function applyTupleExtension(typedef) {
   if (Array.isArray(type) && type.length > 1) {
     typedef.type = ['Mixed'];
     typedef.validate = getTupleValidator(type);
+  }
+}
+
+// Intercepts "unique" options and changes to "softUnique".
+function applyUniqueExtension(typedef) {
+  if (typedef.unique === true) {
+    typedef.softUnique = true;
+    delete typedef.unique;
   }
 }
 

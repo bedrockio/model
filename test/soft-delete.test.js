@@ -275,6 +275,482 @@ describe('soft delete', () => {
     });
   });
 
+  describe('soft unique', () => {
+    it('should enforce uniqueness', async () => {
+      const User = createTestModel({
+        email: {
+          type: 'String',
+          unique: true,
+        },
+      });
+      await User.create({
+        email: 'foo@bar.com',
+      });
+
+      await expect(
+        User.create({
+          email: 'foo@bar.com',
+        })
+      ).rejects.toThrow(
+        `Cannot create ${User.modelName}. Duplicate fields exist: email.`
+      );
+
+      await expect(
+        User.create({
+          email: 'foo2@bar.com',
+        })
+      ).resolves.not.toThrow();
+    });
+
+    it('should enforce uniqueness on multiple fields', async () => {
+      const User = createTestModel({
+        name: {
+          type: 'String',
+          unique: true,
+        },
+        email: {
+          type: 'String',
+          unique: true,
+        },
+      });
+      await User.create({
+        name: 'Foo',
+        email: 'foo@bar.com',
+      });
+
+      await expect(
+        User.create({
+          name: 'Foo',
+          email: 'foo@bar.com',
+        })
+      ).rejects.toThrow(
+        `Cannot create ${User.modelName}. Duplicate fields exist: name, email.`
+      );
+
+      await expect(
+        User.create({
+          name: 'Charlie',
+          email: 'foo@bar.com',
+        })
+      ).rejects.toThrow(
+        `Cannot create ${User.modelName}. Duplicate fields exist: email.`
+      );
+
+      await expect(
+        User.create({
+          name: 'Foo',
+          email: 'foo2@bar.com',
+        })
+      ).rejects.toThrow(
+        `Cannot create ${User.modelName}. Duplicate fields exist: name.`
+      );
+
+      // User 2 created. Has no name.
+      await expect(
+        User.create({
+          email: 'foo2@bar.com',
+        })
+      ).resolves.not.toThrow();
+
+      await expect(
+        User.create({
+          email: 'foo2@bar.com',
+        })
+      ).rejects.toThrow(
+        `Cannot create ${User.modelName}. Duplicate fields exist: email.`
+      );
+
+      // User 3 created. Allowed to have no name but different email.
+      await expect(
+        User.create({
+          email: 'foo3@bar.com',
+        })
+      ).resolves.not.toThrow();
+
+      await expect(
+        User.create({
+          name: 'Bar',
+          email: 'bar@bar.com',
+        })
+      ).resolves.not.toThrow();
+    });
+
+    it('should enforce uniqueness on nested field', async () => {
+      const User = createTestModel({
+        profile: {
+          email: {
+            type: 'String',
+            unique: true,
+          },
+        },
+      });
+      await User.create({
+        profile: {
+          email: 'foo@bar.com',
+        },
+      });
+
+      await expect(
+        User.create({
+          profile: {
+            email: 'foo@bar.com',
+          },
+        })
+      ).rejects.toThrow(
+        `Cannot create ${User.modelName}. Duplicate fields exist: profile.email.`
+      );
+
+      await expect(
+        User.create({
+          profile: {
+            email: 'foo2@bar.com',
+          },
+        })
+      ).resolves.not.toThrow();
+    });
+
+    it('should enforce uniqueness on array field', async () => {
+      const User = createTestModel({
+        profiles: [
+          {
+            email: {
+              type: 'String',
+              unique: true,
+            },
+          },
+        ],
+      });
+      await User.create({
+        profiles: [
+          {
+            email: 'foo@bar.com',
+          },
+        ],
+      });
+
+      await expect(
+        User.create({
+          profiles: [
+            {
+              email: 'foo@bar.com',
+            },
+          ],
+        })
+      ).rejects.toThrow(
+        `Cannot create ${User.modelName}. Duplicate fields exist: profiles.email.`
+      );
+
+      await expect(
+        User.create({
+          profiles: [
+            {
+              email: 'foo2@bar.com',
+            },
+          ],
+        })
+      ).resolves.not.toThrow();
+    });
+
+    it('should error on save and update', async () => {
+      const User = createTestModel({
+        email: {
+          type: 'String',
+          unique: true,
+        },
+      });
+      let user = await User.create({
+        email: 'foo@bar.com',
+      });
+      await User.create({
+        email: 'bar@bar.com',
+      });
+
+      user.email = 'bar@bar.com';
+      await expect(user.save()).rejects.toThrow(
+        `Cannot update ${User.modelName}. Duplicate fields exist: email.`
+      );
+
+      await expect(
+        user.updateOne({
+          email: 'bar@bar.com',
+        })
+      ).rejects.toThrow(
+        `Cannot update ${User.modelName}. Duplicate fields exist: email.`
+      );
+    });
+
+    it('should exclude self on save', async () => {
+      const User = createTestModel({
+        email: {
+          type: 'String',
+          unique: true,
+        },
+      });
+      let user = await User.create({
+        email: 'foo@bar.com',
+      });
+
+      await user.save();
+
+      user = await User.findById(user.id);
+      expect(user.email).toBe('foo@bar.com');
+
+      user.email = 'foo2@bar.com';
+      await user.save();
+      user = await User.findById(user.id);
+      expect(user.email).toBe('foo2@bar.com');
+    });
+
+    it('should no consider deleted documents', async () => {
+      const User = createTestModel({
+        email: {
+          type: 'String',
+          unique: true,
+        },
+      });
+      const user = await User.create({
+        email: 'foo@bar.com',
+      });
+      await user.delete();
+
+      await expect(
+        User.create({
+          email: 'foo@bar.com',
+        })
+      ).resolves.not.toThrow();
+    });
+
+    it('should error when attempting to restore', async () => {
+      const User = createTestModel({
+        email: {
+          type: 'String',
+          unique: true,
+        },
+      });
+      const user = await User.create({
+        email: 'foo@bar.com',
+      });
+      await user.delete();
+
+      await User.create({
+        email: 'foo@bar.com',
+      });
+
+      await expect(user.restore()).rejects.toThrow(
+        `Cannot update ${User.modelName}. Duplicate fields exist: email.`
+      );
+    });
+
+    it('should error when using updateOne', async () => {
+      const User = createTestModel({
+        email: {
+          type: 'String',
+          unique: true,
+        },
+      });
+      const user = await User.create({
+        email: 'user1@foo.com',
+      });
+
+      await User.create({
+        email: 'user2@foo.com',
+      });
+
+      await expect(
+        User.updateOne(
+          {
+            _id: user.id,
+          },
+          {
+            email: 'user2@foo.com',
+          }
+        )
+      ).rejects.toThrow(
+        `Cannot update ${User.modelName}. Duplicate fields exist: email.`
+      );
+    });
+
+    it('should not error when using updateOne on a non-unique field', async () => {
+      const User = createTestModel({
+        name: 'String',
+        email: {
+          type: 'String',
+          unique: true,
+        },
+      });
+      const user = await User.create({
+        name: 'Foo',
+        email: 'user@foo.com',
+      });
+
+      await expect(
+        User.updateOne(
+          {
+            _id: user.id,
+          },
+          {
+            name: 'Bar',
+          }
+        )
+      ).resolves.not.toThrow();
+    });
+
+    it('should error when using updateOne on a unique field', async () => {
+      // This is a known and intentional restriction.
+      // See README for more.
+      const User = createTestModel({
+        email: {
+          type: 'String',
+          unique: true,
+        },
+      });
+      const user = await User.create({
+        email: 'user@foo.com',
+      });
+
+      await expect(
+        User.updateOne(
+          {
+            _id: user.id,
+          },
+          {
+            email: 'user@foo.com',
+          }
+        )
+      ).rejects.toThrow(
+        `Cannot update ${User.modelName}. Duplicate fields exist: email.`
+      );
+    });
+
+    it('should error when using updateMany', async () => {
+      const User = createTestModel({
+        email: {
+          type: 'String',
+          unique: true,
+        },
+      });
+      const user1 = await User.create({
+        email: 'user1@foo.com',
+      });
+
+      const user2 = await User.create({
+        email: 'user2@foo.com',
+      });
+
+      await expect(
+        User.updateOne(
+          {
+            _id: { $in: [user1.id, user2.id] },
+          },
+          {
+            email: 'user2@foo.com',
+          }
+        )
+      ).rejects.toThrow(
+        `Cannot update ${User.modelName}. Duplicate fields exist: email.`
+      );
+    });
+
+    it('should error when using restoreOne', async () => {
+      const User = createTestModel({
+        email: {
+          type: 'String',
+          unique: true,
+        },
+      });
+      const user = await User.create({
+        email: 'user@foo.com',
+      });
+      await user.delete();
+
+      await User.create({
+        email: 'user@foo.com',
+      });
+
+      await expect(
+        User.restoreOne({
+          _id: user.id,
+        })
+      ).rejects.toThrow(
+        `Cannot restore ${User.modelName}. Duplicate fields exist: email.`
+      );
+    });
+
+    it('should error when using restoreMany', async () => {
+      const User = createTestModel({
+        email: {
+          type: 'String',
+          unique: true,
+        },
+      });
+      const user1 = await User.create({
+        email: 'user1@foo.com',
+      });
+      const user2 = await User.create({
+        email: 'user2@foo.com',
+      });
+      await user1.delete();
+      await user2.delete();
+
+      await User.create({
+        email: 'user1@foo.com',
+      });
+
+      await expect(
+        User.restoreMany({
+          _id: { $in: [user1.id, user2.id] },
+        })
+      ).rejects.toThrow(
+        `Cannot restore ${User.modelName}. Duplicate fields exist: email.`
+      );
+    });
+
+    it('should error when using insertMany', async () => {
+      const User = createTestModel({
+        email: {
+          type: 'String',
+          unique: true,
+        },
+      });
+      await User.create({
+        email: 'user@foo.com',
+      });
+
+      await expect(
+        User.insertMany({
+          email: 'user@foo.com',
+        })
+      ).rejects.toThrow(
+        `Cannot create ${User.modelName}. Duplicate fields exist: email.`
+      );
+    });
+
+    it('should error when using replaceOne', async () => {
+      const User = createTestModel({
+        email: {
+          type: 'String',
+          unique: true,
+        },
+      });
+      const user = await User.create({
+        email: 'user@foo.com',
+      });
+
+      await expect(
+        User.replaceOne(
+          {
+            _id: user.id,
+          },
+          {
+            email: 'user@foo.com',
+          }
+        )
+      ).rejects.toThrow(
+        `Cannot update ${User.modelName}. Duplicate fields exist: email.`
+      );
+    });
+  });
+
   describe('other', () => {
     it('should not allow remove method', async () => {
       const User = createTestModel({
