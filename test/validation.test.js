@@ -164,6 +164,52 @@ describe('getCreateValidation', () => {
     });
   });
 
+  it('should apply a named validator', async () => {
+    const User = createTestModel({
+      email: {
+        type: 'String',
+        validate: 'email',
+      },
+    });
+    const schema = User.getCreateValidation();
+    await assertPass(schema, {
+      email: 'foo@bar.com',
+    });
+
+    await assertFailWithError(
+      schema,
+      {
+        email: 'foo',
+      },
+      'Must be an email address.'
+    );
+  });
+
+  it('should apply a custom validator', async () => {
+    const User = createTestModel({
+      name: {
+        type: 'String',
+        validate: (val) => {
+          if (val === 'bar') {
+            throw new Error('No bars!');
+          }
+        },
+      },
+    });
+    const schema = User.getCreateValidation();
+    await assertPass(schema, {
+      name: 'foo',
+    });
+
+    await assertFailWithError(
+      schema,
+      {
+        name: 'bar',
+      },
+      'No bars!'
+    );
+  });
+
   describe('write access', () => {
     it('should deny access', async () => {
       const User = createTestModel({

@@ -214,7 +214,10 @@ function getSchemaForTypedef(typedef, options = {}) {
   }
   if (typedef.validate?.schema) {
     schema = schema.append(typedef.validate.schema);
+  } else if (typeof typedef.validate === 'function') {
+    schema = schema.custom(wrapMongooseValidator(typedef.validate));
   }
+
   if (typedef.enum) {
     schema = schema.allow(...typedef.enum);
   }
@@ -364,14 +367,14 @@ function validateAccess(type, schema, allowed, options) {
 // Mongoose Validators
 
 export function getNamedValidator(name) {
-  return wrapMongooseValidator(getNamedSchema(name));
+  return wrapSchemaAsValidator(getNamedSchema(name));
 }
 
 export function getTupleValidator(types) {
   types = types.map((type) => {
     return getSchemaForTypedef(type);
   });
-  return wrapMongooseValidator(yd.array(types).length(types.length));
+  return wrapSchemaAsValidator(yd.array(types).length(types.length));
 }
 
 // Returns an async function that will error on failure.
@@ -387,12 +390,21 @@ export function getTupleValidator(types) {
 // the first style here.
 //
 // https://mongoosejs.com/docs/api/schematype.html#schematype_SchemaType-validate
-function wrapMongooseValidator(schema) {
+function wrapSchemaAsValidator(schema) {
   const validator = async (val) => {
     await schema.validate(val);
   };
   validator.schema = schema;
   return validator;
+}
+
+function wrapMongooseValidator(validator) {
+  return async (val) => {
+    const result = await validator(val);
+    if (!result && result !== undefined) {
+      throw new Error('Validation failed.');
+    }
+  };
 }
 
 function getNamedSchema(name) {
