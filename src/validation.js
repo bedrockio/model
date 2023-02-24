@@ -185,15 +185,22 @@ function getObjectSchema(arg, options) {
   }
 }
 
-function getArraySchema(obj, options) {
-  // Nested array fields may not skip required
-  // validations as they are a new context.
-  let schema = getObjectSchema(obj[0], {
-    ...options,
-    skipRequired: false,
-  });
-  if (!options.unwindArrayFields) {
-    schema = yd.array(schema);
+function getArraySchema(arr, options) {
+  let schema;
+  if (arr.length === 0) {
+    schema = yd.array();
+  } else if (arr.length === 1) {
+    // Nested array fields may not skip required
+    // validations as they are a new context.
+    schema = getObjectSchema(arr[0], {
+      ...options,
+      skipRequired: false,
+    });
+    if (!options.unwindArrayFields) {
+      schema = yd.array(schema);
+    }
+  } else {
+    throw new Error('Array schema may not have more than 1 element.');
   }
   return schema;
 }
@@ -378,7 +385,7 @@ export function getTupleValidator(types) {
   types = types.map((type) => {
     return getSchemaForTypedef(type);
   });
-  return wrapSchemaAsValidator(yd.array(types).length(types.length));
+  return wrapSchemaAsValidator(yd.tuple(types));
 }
 
 // Returns an async function that will error on failure.

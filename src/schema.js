@@ -243,7 +243,12 @@ function applyScopeExtension(scope, definition) {
 function applyTupleExtension(typedef) {
   const { type } = typedef;
   if (Array.isArray(type) && type.length > 1) {
-    typedef.type = ['Mixed'];
+    // Note that mongoose appears to have a bug where passing
+    // "Array" as a string will become a double nested array.
+    // Compare to Array (native function) which will not result
+    // in this nesting. Using an empty array instead to signal
+    // mixed types. https://mongoosejs.com/docs/schematypes.html#arrays
+    typedef.type = [];
     typedef.validate = getTupleValidator(type);
   }
 }

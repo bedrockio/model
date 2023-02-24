@@ -2059,6 +2059,64 @@ describe('getValidationSchema', () => {
   });
 });
 
+describe('tuples', () => {
+  it('should build correct validations for tuples', async () => {
+    const User = createTestModel({
+      address: {
+        geometry: {
+          type: {
+            type: 'String',
+            default: 'Point',
+          },
+          coordinates: ['Number', 'Number'],
+        },
+      },
+    });
+
+    await expect(
+      User.create({
+        address: {
+          geometry: {
+            type: 'Point',
+            coordinates: [35, 140],
+          },
+        },
+      })
+    ).resolves.not.toThrow();
+
+    await expect(
+      User.create({
+        address: {
+          geometry: {
+            type: 'Point',
+            coordinates: [35],
+          },
+        },
+      })
+    ).rejects.toThrow();
+
+    const schema = User.getUpdateValidation();
+
+    await assertPass(schema, {
+      address: {
+        geometry: {
+          type: 'Point',
+          coordinates: [35, 140],
+        },
+      },
+    });
+
+    await assertFail(schema, {
+      address: {
+        geometry: {
+          type: 'Point',
+          coordinates: [35],
+        },
+      },
+    });
+  });
+});
+
 describe('getNamedValidator', () => {
   it('should get an email validator', async () => {
     const emailValidator = getNamedValidator('email');
