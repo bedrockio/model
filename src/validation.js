@@ -121,6 +121,10 @@ export function applyValidation(schema, definition) {
       });
     }
   );
+
+  schema.static('getBaseSchema', function getBaseSchema() {
+    return getSchemaFromMongoose(schema);
+  });
 }
 
 // Yada schemas
