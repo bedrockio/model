@@ -2073,6 +2073,8 @@ describe('tuples', () => {
       },
     });
 
+    await expect(User.create({})).resolves.not.toThrow();
+
     await expect(
       User.create({
         address: {

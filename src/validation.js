@@ -385,7 +385,9 @@ export function getTupleValidator(types) {
   types = types.map((type) => {
     return getSchemaForTypedef(type);
   });
-  return wrapSchemaAsValidator(yd.tuple(types));
+  // Using "loose" here to allow empty arrays through,
+  // which mongoose defaults to for array fields.
+  return wrapSchemaAsValidator(yd.tuple(types).loose());
 }
 
 // Returns an async function that will error on failure.

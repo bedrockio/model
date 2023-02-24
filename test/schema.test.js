@@ -534,7 +534,7 @@ describe('createSchema', () => {
           User.create({
             location: [],
           })
-        ).rejects.toThrow();
+        ).resolves.not.toThrow();
 
         await expect(
           User.create({

@@ -26,17 +26,18 @@
   },
   "dependencies": {
     "@bedrockio/logger": "^1.0.5",
-    "@bedrockio/yada": "^1.0.17",
     "lodash": "^4.17.21"
   },
   "peerDependencies": {
-    "mongoose": "^6.9.0"
+    "mongoose": "^6.9.0",
+    "@bedrockio/yada": "^1.0.18"
   },
   "devDependencies": {
     "@babel/cli": "^7.20.7",
     "@babel/core": "^7.20.12",
     "@babel/preset-env": "^7.20.2",
     "@bedrockio/prettier-config": "^1.0.2",
+    "@bedrockio/yada": "^1.0.18",
     "@shelf/jest-mongodb": "^4.1.6",
     "babel-plugin-import-replacement": "^1.0.1",
     "eslint": "^8.33.0",
