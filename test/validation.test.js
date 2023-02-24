@@ -1296,6 +1296,23 @@ describe('getSearchValidation', () => {
   });
 });
 
+describe('getBaseSchema', () => {
+  it('should get the base model schema', async () => {
+    const User = createTestModel({
+      name: {
+        type: 'String',
+        required: true,
+      },
+    });
+    const schema = User.getBaseSchema();
+    expect(yd.isSchema(schema)).toBe(true);
+    await assertPass(schema, {
+      name: 'foo',
+    });
+    await assertFail(schema, {});
+  });
+});
+
 describe('getValidationSchema', () => {
   describe('alternate type forms', () => {
     it('should get a schema for a basic string field', async () => {

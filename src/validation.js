@@ -129,7 +129,7 @@ export function applyValidation(schema, definition) {
 
 // Yada schemas
 
-function getSchemaFromMongoose(schema, options) {
+function getSchemaFromMongoose(schema, options = {}) {
   let { obj } = schema;
   if (options.stripReserved) {
     obj = omit(obj, RESERVED_FIELDS);
