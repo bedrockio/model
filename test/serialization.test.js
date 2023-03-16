@@ -110,7 +110,7 @@ describe('serialization', () => {
     });
   });
 
-  describe('read scopes', () => {
+  describe('read access', () => {
     it('should deny all read access', () => {
       const User = createTestModel({
         password: {
@@ -625,6 +625,22 @@ describe('serialization', () => {
           ],
         },
       });
+    });
+
+    it('should deny read access on simple array', () => {
+      const User = createTestModel({
+        tokens: [
+          {
+            type: 'String',
+            readAccess: 'none',
+          },
+        ],
+      });
+      const user = new User({
+        tokens: ['foo'],
+      });
+      expect(user.tokens).toMatchObject(['foo']);
+      expect(user.toObject().tokens).toBeUndefined();
     });
 
     it('should deny read access on extended array', () => {

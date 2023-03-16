@@ -255,6 +255,31 @@ describe('getCreateValidation', () => {
       });
     });
 
+    it('should deny access to simple array field', async () => {
+      const User = createTestModel({
+        name: 'String',
+        tokens: [
+          {
+            type: 'String',
+            writeAccess: 'none',
+          },
+        ],
+      });
+
+      const schema = User.getCreateValidation();
+      await assertPass(schema, {
+        name: 'Barry',
+      });
+      await assertFail(schema, {
+        name: 'Barry',
+        tokens: ['fake token'],
+      });
+      await assertFail(schema, {
+        name: 'Barry',
+        tokens: [],
+      });
+    });
+
     it('should deny access on a deep field', async () => {
       const User = createTestModel({
         name: 'String',
