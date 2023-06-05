@@ -523,6 +523,36 @@ describe('getCreateValidation', () => {
         email: 'foo@bar.com',
       });
     });
+
+    it('should enforce other constraints with unique', async () => {
+      const User = createTestModel({
+        email: {
+          type: 'String',
+          unique: true,
+        },
+        name: {
+          type: 'String',
+          required: true,
+        },
+      });
+      const user = await User.create({
+        name: 'foo',
+        email: 'foo@bar.com',
+      });
+      const schema = User.getCreateValidation();
+
+      // Does not exist -> can create.
+      await assertFail(schema, {
+        email: 'foo@foo.com',
+      });
+
+      await assertPass(schema, {
+        name: 'foo',
+        email: 'foo@foo.com',
+      });
+
+      await user.destroy();
+    });
   });
 });
 
@@ -1165,7 +1195,21 @@ describe('getSearchValidation', () => {
     });
   });
 
-  it('should allow search on a nested field', async () => {
+  it('should allow search on a nested object field', async () => {
+    const User = createTestModel({
+      profile: {
+        name: 'String',
+      },
+    });
+    const schema = User.getSearchValidation();
+    await assertPass(schema, {
+      profile: {
+        name: 'foo',
+      },
+    });
+  });
+
+  it('should allow search on a nested array field', async () => {
     const User = createTestModel({
       roles: [
         {

@@ -85,7 +85,7 @@ export function searchValidation(definition, options = {}) {
 
   const { limit, sort, ...rest } = options;
 
-  return {
+  return yd.object({
     ids: yd.array(OBJECT_ID_SCHEMA),
     keyword: yd
       .string()
@@ -99,7 +99,7 @@ export function searchValidation(definition, options = {}) {
       .default(limit)
       .description('Limits the number of results.'),
     ...rest,
-  };
+  });
 }
 
 function validateDefinition(definition) {

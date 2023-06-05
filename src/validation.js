@@ -142,12 +142,14 @@ export function getValidationSchema(attributes, options = {}) {
   const { appendSchema, assertUniqueOptions } = options;
   let schema = getObjectSchema(attributes, options);
   if (assertUniqueOptions) {
-    schema = yd.custom(async (obj) => {
-      await assertUnique(obj, {
-        model: options.model,
-        ...assertUniqueOptions,
-      });
-    });
+    schema = schema.append(
+      yd.custom(async (obj, { root }) => {
+        await assertUnique(root, {
+          model: options.model,
+          ...assertUniqueOptions,
+        });
+      })
+    );
   }
   if (appendSchema) {
     schema = schema.append(appendSchema);
