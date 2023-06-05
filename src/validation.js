@@ -114,6 +114,7 @@ export function applyValidation(schema, definition) {
       return getSchemaFromMongoose(schema, {
         allowSearch: true,
         skipRequired: true,
+        expandDotSyntax: true,
         unwindArrayFields: true,
         requireReadAccess: true,
         appendSchema: searchValidation(definition, searchOptions),
@@ -156,7 +157,6 @@ export function getValidationSchema(attributes, options = {}) {
 }
 
 function getObjectSchema(arg, options) {
-  const { stripUnknown } = options;
   if (isSchemaTypedef(arg)) {
     return getSchemaForTypedef(arg, options);
   } else if (arg instanceof mongoose.Schema) {
@@ -164,6 +164,7 @@ function getObjectSchema(arg, options) {
   } else if (Array.isArray(arg)) {
     return getArraySchema(arg, options);
   } else if (typeof arg === 'object') {
+    const { stripUnknown, expandDotSyntax } = options;
     const map = {};
     for (let [key, field] of Object.entries(arg)) {
       if (!isExcludedField(field, options)) {
@@ -176,6 +177,11 @@ function getObjectSchema(arg, options) {
     if (stripUnknown) {
       schema = schema.options({
         stripUnknown: true,
+      });
+    }
+    if (expandDotSyntax) {
+      schema = schema.options({
+        expandDotSyntax: true,
       });
     }
 

@@ -1253,6 +1253,21 @@ describe('getSearchValidation', () => {
     });
   });
 
+  it('should expand dot syntax', async () => {
+    const User = createTestModel({
+      profile: {
+        name: 'String',
+      },
+    });
+    const schema = User.getSearchValidation();
+    await assertPass(schema, {
+      'profile.name': 'foo',
+    });
+    await assertFail(schema, {
+      'profile.age': 22,
+    });
+  });
+
   describe('write access', () => {
     it('should not enforce write access', async () => {
       const User = createTestModel({
