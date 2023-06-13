@@ -5,7 +5,7 @@ import { get, omit, lowerFirst } from 'lodash';
 
 import { hasAccess } from './access';
 import { searchValidation } from './search';
-import { PermissionsError } from './errors';
+import { PermissionsError, ImplementationError } from './errors';
 import { hasUniqueConstraints, assertUnique } from './soft-delete';
 import { isMongooseSchema, isSchemaTypedef } from './utils';
 import { RESERVED_FIELDS } from './schema';
@@ -368,10 +368,31 @@ function validateAccess(type, schema, allowed, options) {
   const { modelName } = options.model;
   return schema.custom((val, options) => {
     const document = options[lowerFirst(modelName)] || options['document'];
-    const isAllowed = hasAccess(type, allowed, {
-      ...options,
-      document,
-    });
+
+    let isAllowed;
+    try {
+      isAllowed = hasAccess(type, allowed, {
+        ...options,
+        document,
+      });
+    } catch (error) {
+      if (error instanceof ImplementationError) {
+        if (type === 'read') {
+          // Read access validation for search means that "self" access
+          // cannot be fulfilled as there is no single document to test
+          // against, so continue on to throw a normal permissions error
+          // here instead of raising a problem with the implementation.
+          isAllowed = false;
+        } else if (type === 'write') {
+          throw new Error(
+            `Write access "${error.name}" requires passing { document, authUser } to the validator.`
+          );
+        }
+      } else {
+        throw error;
+      }
+    }
+
     if (!isAllowed) {
       const currentValue = get(document, options.path);
       if (val !== currentValue) {

@@ -19,19 +19,18 @@ export function hasAccess(type, allowed = 'all', options = {}) {
     return false;
   } else {
     const { document, authUser } = options;
-    if (!Array.isArray(allowed)) {
-      allowed = [allowed];
-    }
     const scopes = resolveScopes(options);
+
+    allowed = resolveAllowed(allowed);
     return allowed.some((token) => {
       if (token === 'self') {
-        assertOptions(type, token, options);
+        assertOptions(token, options);
         return document.id == authUser.id;
       } else if (token === 'user') {
-        assertOptions(type, token, options);
+        assertOptions(token, options);
         return document.user?.id == authUser.id;
       } else if (token === 'owner') {
-        assertOptions(type, token, options);
+        assertOptions(token, options);
         return document.owner?.id == authUser.id;
       } else {
         return scopes?.includes(token);
@@ -44,20 +43,39 @@ function resolveScopes(options) {
   if (!options.scope && !options.scopes) {
     warn('Scopes were requested but not provided.');
   }
-  const { scope, scopes = [] } = options;
-  return scope ? [scope] : scopes;
+
+  let scopes;
+  if (options.scopes) {
+    scopes = options.scopes;
+  } else if (options.scope) {
+    scopes = [options.scope];
+  } else {
+    scopes = [];
+  }
+
+  return scopes;
 }
 
-function assertOptions(type, token, options) {
-  if (!options.authUser || !options.document) {
-    if (type === 'read') {
-      throw new ImplementationError(
-        `Read access "${token}" requires .toObject({ authUser }).`
-      );
+function resolveAllowed(arg) {
+  const allowed = Array.isArray(arg) ? arg : [arg];
+
+  // Sort allowed scopes to put "self" last allowing
+  // role based scopes to be fulfilled first.
+  allowed.sort((a, b) => {
+    if (a === b) {
+      return 0;
+    } else if (a === 'self') {
+      return 1;
     } else {
-      throw new ImplementationError(
-        `Write access "${token}" requires passing { document, authUser } to the validator.`
-      );
+      return -1;
     }
+  });
+
+  return allowed;
+}
+
+function assertOptions(token, options) {
+  if (!options.authUser || !options.document) {
+    throw new ImplementationError(token);
   }
 }

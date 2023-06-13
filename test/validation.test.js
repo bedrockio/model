@@ -37,16 +37,16 @@ async function assertFail(schema, obj, options, message) {
   }
 }
 
-function assertPassOptions(schema, obj, options) {
-  assertPass(schema, obj, undefined, options);
+async function assertPassOptions(schema, obj, options) {
+  await assertPass(schema, obj, undefined, options);
 }
 
-function assertFailOptions(schema, obj, options) {
-  assertFail(schema, obj, options);
+async function assertFailOptions(schema, obj, options) {
+  await assertFail(schema, obj, options);
 }
 
-function assertFailWithError(schema, obj, message) {
-  assertFail(schema, obj, undefined, message);
+async function assertFailWithError(schema, obj, message) {
+  await assertFail(schema, obj, undefined, message);
 }
 
 describe('getCreateValidation', () => {
@@ -1265,7 +1265,9 @@ describe('getSearchValidation', () => {
         age: 50,
       });
     });
+  });
 
+  describe('read access', () => {
     it('should enforce read access', async () => {
       const User = createTestModel({
         name: 'String',
@@ -1283,6 +1285,42 @@ describe('getSearchValidation', () => {
         {
           name: 'Barry',
           age: 50,
+        },
+        'requires read permissions.'
+      );
+    });
+
+    it('should not error on "self" if other access level is met', async () => {
+      const User = createTestModel({
+        name: {
+          type: 'String',
+          readAccess: ['self', 'admin'],
+        },
+      });
+      const schema = User.getSearchValidation();
+      await assertPassOptions(
+        schema,
+        {
+          name: 'Barry',
+        },
+        {
+          scope: 'admin',
+        }
+      );
+    });
+
+    it('should throw standard permissions error on "self"', async () => {
+      const User = createTestModel({
+        name: {
+          type: 'String',
+          readAccess: 'self',
+        },
+      });
+      const schema = User.getSearchValidation();
+      await assertFailWithError(
+        schema,
+        {
+          name: 'Barry',
         },
         'requires read permissions.'
       );
