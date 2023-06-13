@@ -24,6 +24,13 @@ module.exports = {
                   match: 'mongoose',
                   replacement: path.resolve(BUILD_DIR, 'node_modules/mongoose'),
                 },
+                {
+                  match: '@bedrockio/yada',
+                  replacement: path.resolve(
+                    BUILD_DIR,
+                    'node_modules/@bedrockio/yada'
+                  ),
+                },
               ],
             },
           ],
