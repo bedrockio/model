@@ -31,30 +31,9 @@ async function assertFail(schema, obj, options, message) {
     if (!error.details) {
       throw error;
     } else if (message) {
-      assertErrorMessage(error, message);
+      expect(error).toHaveMessage(message);
     }
     expect(error).not.toBeUndefined();
-  }
-}
-
-function assertErrorMessage(error, message) {
-  const found = findError(error, message);
-  try {
-    expect(found?.message).toBe(message);
-  } catch (err) {
-    // eslint-disable-next-line
-    console.error(error);
-    throw err;
-  }
-}
-
-function findError(error, message) {
-  if (error.details) {
-    return error.details.find((err) => {
-      return findError(err, message);
-    });
-  } else if (error.message === message) {
-    return error;
   }
 }
 
@@ -1299,10 +1278,14 @@ describe('getSearchValidation', () => {
       await assertPass(schema, {
         name: 'Barry',
       });
-      await assertFail(schema, {
-        name: 'Barry',
-        age: 50,
-      });
+      await assertFailWithError(
+        schema,
+        {
+          name: 'Barry',
+          age: 50,
+        },
+        'requires read permissions.'
+      );
     });
   });
 

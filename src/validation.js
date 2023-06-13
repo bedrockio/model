@@ -375,7 +375,7 @@ function validateAccess(type, schema, allowed, options) {
     if (!isAllowed) {
       const currentValue = get(document, options.path);
       if (val !== currentValue) {
-        throw new PermissionsError('requires write permissions.');
+        throw new PermissionsError(`requires ${type} permissions.`);
       }
     }
   });
