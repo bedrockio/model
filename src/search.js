@@ -90,7 +90,6 @@ export function searchValidation(definition, options = {}) {
     keyword: yd
       .string()
       .description('A keyword to perform a text search against.'),
-    include: yd.string().description('Fields to be selected or populated.'),
     skip: yd.number().default(0).description('Number of records to skip.'),
     sort: yd.allow(SORT_SCHEMA, yd.array(SORT_SCHEMA)).default(sort),
     limit: yd
@@ -230,8 +229,9 @@ function isNestedQuery(key, value) {
   });
 }
 
+// Exclude "include" here as a special case.
 function isArrayQuery(key, value) {
-  return !isMongoOperator(key) && Array.isArray(value);
+  return !isMongoOperator(key) && !isInclude(key) && Array.isArray(value);
 }
 
 function isRangeQuery(schema, key, value) {
@@ -252,6 +252,10 @@ function mapOperatorQuery(obj) {
 
 function isMongoOperator(str) {
   return str.startsWith('$');
+}
+
+function isInclude(str) {
+  return str === 'include';
 }
 
 // Regex queries

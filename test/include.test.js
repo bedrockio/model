@@ -74,6 +74,13 @@ Product.schema.virtual('comments', {
   justOne: false,
 });
 
+afterEach(async () => {
+  await User.deleteMany({});
+  await Shop.deleteMany({});
+  await Product.deleteMany({});
+  await Comment.deleteMany({});
+});
+
 describe('getIncludes', () => {
   it('should have select for single field', async () => {
     const data = getIncludes(Shop.modelName, 'name');
@@ -877,6 +884,96 @@ describe('access control', () => {
     shop = await Shop.findById(shop.id).include('user');
     expect(shop.user.password).toBe('fake password');
     expect(shop.toObject().user.password).toBeUndefined();
+  });
+});
+
+describe('search integration', () => {
+  it('should allow include field in search', async () => {
+    const user = await User.create({
+      name: 'Bob',
+    });
+    await Shop.create({
+      name: 'foo',
+      user: user.id,
+    });
+
+    const { data } = await Shop.search({
+      name: 'foo',
+      include: 'user',
+    });
+    expect(data.length).toBe(1);
+    expect(data[0].user.name).toBe('Bob');
+  });
+
+  it('should allow include field as array in search', async () => {
+    const user = await User.create({
+      name: 'Bob',
+    });
+    await Shop.create({
+      name: 'foo',
+      user: user.id,
+    });
+
+    const { data } = await Shop.search({
+      name: 'foo',
+      include: ['user'],
+    });
+    expect(data.length).toBe(1);
+    expect(data[0].user.name).toBe('Bob');
+  });
+});
+
+describe('validaton integration', () => {
+  describe('getCreateValidation', () => {
+    it('should allow include as string', async () => {
+      const schema = Shop.getCreateValidation();
+      const result = await schema.validate({
+        name: 'foo',
+        include: 'user',
+      });
+      expect(result).toMatchObject({
+        name: 'foo',
+        include: 'user',
+      });
+    });
+
+    it('should allow include as array', async () => {
+      const schema = Shop.getCreateValidation();
+      const result = await schema.validate({
+        name: 'foo',
+        include: ['user'],
+      });
+      expect(result).toMatchObject({
+        name: 'foo',
+        include: ['user'],
+      });
+    });
+  });
+
+  describe('getSearchValidation', () => {
+    it('should allow include as string', async () => {
+      const schema = Shop.getSearchValidation();
+      const result = await schema.validate({
+        name: 'foo',
+        include: 'user',
+      });
+      expect(result).toMatchObject({
+        name: 'foo',
+        include: 'user',
+      });
+    });
+
+    it('should allow include as array', async () => {
+      const schema = Shop.getSearchValidation();
+      const result = await schema.validate({
+        name: 'foo',
+        include: ['user'],
+      });
+      expect(result).toMatchObject({
+        name: 'foo',
+        include: ['user'],
+      });
+    });
   });
 });
 

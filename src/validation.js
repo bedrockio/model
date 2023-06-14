@@ -9,6 +9,7 @@ import { PermissionsError, ImplementationError } from './errors';
 import { hasUniqueConstraints, assertUnique } from './soft-delete';
 import { isMongooseSchema, isSchemaTypedef } from './utils';
 import { RESERVED_FIELDS } from './schema';
+import { INCLUDE_FIELD_SCHEMA } from './include';
 
 const DATE_SCHEMA = yd.date().iso().tag({
   'x-schema': 'DateTime',
@@ -76,6 +77,7 @@ export function applyValidation(schema, definition) {
       return getSchemaFromMongoose(schema, {
         model: this,
         appendSchema,
+        allowIncludes: true,
         stripReserved: true,
         requireWriteAccess: true,
         ...(hasUnique && {
@@ -114,6 +116,7 @@ export function applyValidation(schema, definition) {
       return getSchemaFromMongoose(schema, {
         allowSearch: true,
         skipRequired: true,
+        allowIncludes: true,
         expandDotSyntax: true,
         unwindArrayFields: true,
         requireReadAccess: true,
@@ -140,7 +143,7 @@ function getSchemaFromMongoose(schema, options = {}) {
 
 // Exported for testing
 export function getValidationSchema(attributes, options = {}) {
-  const { appendSchema, assertUniqueOptions } = options;
+  const { appendSchema, assertUniqueOptions, allowIncludes } = options;
   let schema = getObjectSchema(attributes, options);
   if (assertUniqueOptions) {
     schema = schema.custom(async (obj, { root }) => {
@@ -152,6 +155,9 @@ export function getValidationSchema(attributes, options = {}) {
   }
   if (appendSchema) {
     schema = schema.append(appendSchema);
+  }
+  if (allowIncludes) {
+    schema = schema.append(INCLUDE_FIELD_SCHEMA);
   }
   return schema;
 }

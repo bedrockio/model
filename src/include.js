@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { escapeRegExp } from 'lodash';
+import yd from '@bedrockio/yada';
 
 import { resolveInnerField } from './utils';
 import { POPULATE_MAX_DEPTH } from './const';
@@ -12,6 +13,15 @@ mongoose.Query.prototype.include = function include(paths) {
   filter.include = paths;
   return this;
 };
+
+const DESCRIPTION = 'Field to be selected or populated.';
+
+export const INCLUDE_FIELD_SCHEMA = yd.object({
+  include: yd.allow(
+    yd.string().description(DESCRIPTION),
+    yd.array(yd.string().description(DESCRIPTION))
+  ),
+});
 
 export function applyInclude(schema) {
   schema.virtual('include').set(function (include) {
@@ -126,6 +136,9 @@ function nodeToPopulates(node) {
 function pathsToNode(paths, modelName) {
   const node = {};
   for (let str of paths) {
+    if (typeof str !== 'string') {
+      throw new Error('Provided include path was not as string.');
+    }
     let exclude = false;
     if (str.startsWith('-')) {
       exclude = true;
