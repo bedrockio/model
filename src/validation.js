@@ -126,6 +126,10 @@ export function applyValidation(schema, definition) {
     }
   );
 
+  schema.static('getIncludeValidation', function getIncludeValidation() {
+    return INCLUDE_FIELD_SCHEMA;
+  });
+
   schema.static('getBaseSchema', function getBaseSchema() {
     return getSchemaFromMongoose(schema);
   });

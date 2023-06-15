@@ -633,6 +633,19 @@ describe('query includes', () => {
     });
     expect(shop.user.id).toBe(user.id);
   });
+
+  it('should not fail if nothing passed', async () => {
+    const user = await User.create({
+      name: 'Bob',
+    });
+    let shop = await Shop.create({
+      name: 'foo',
+      user: user.id,
+    });
+
+    shop = await Shop.findById(shop.id).include(undefined);
+    expect(shop.user).toBeInstanceOf(Types.ObjectId);
+  });
 });
 
 describe('document includes', () => {
@@ -971,6 +984,28 @@ describe('validaton integration', () => {
       });
       expect(result).toMatchObject({
         name: 'foo',
+        include: ['user'],
+      });
+    });
+  });
+
+  describe('getIncludeValidation', () => {
+    it('should allow include as string', async () => {
+      const schema = Shop.getIncludeValidation();
+      const result = await schema.validate({
+        include: 'user',
+      });
+      expect(result).toMatchObject({
+        include: 'user',
+      });
+    });
+
+    it('should allow include as array', async () => {
+      const schema = Shop.getSearchValidation();
+      const result = await schema.validate({
+        include: ['user'],
+      });
+      expect(result).toMatchObject({
         include: ['user'],
       });
     });

@@ -8,9 +8,11 @@ import { POPULATE_MAX_DEPTH } from './const';
 // @ts-ignore
 // Overloading mongoose Query prototype to
 // allow an "include" method for queries.
-mongoose.Query.prototype.include = function include(paths) {
-  const filter = this.getFilter();
-  filter.include = paths;
+mongoose.Query.prototype.include = function include(arg) {
+  if (arg) {
+    const filter = this.getFilter();
+    filter.include = arg;
+  }
   return this;
 };
 
