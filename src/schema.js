@@ -18,13 +18,6 @@ import {
   getTupleValidator,
 } from './validation';
 
-export const RESERVED_FIELDS = [
-  'createdAt',
-  'updatedAt',
-  'deletedAt',
-  'deleted',
-];
-
 /**
  * Creates a new Mongoose schema with Bedrock extensions
  * applied. For more about syntax and functionality see

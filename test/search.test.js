@@ -649,4 +649,18 @@ describe('search', () => {
       },
     ]);
   });
+
+  it('should error on unknown sort field', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    expect(() => {
+      User.search({
+        sort: {
+          field: 'foo',
+          order: 'asc',
+        },
+      });
+    }).toThrow('Unknown sort field "foo".');
+  });
 });

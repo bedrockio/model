@@ -1399,6 +1399,75 @@ describe('getSearchValidation', () => {
     });
     await assertPass(schema, {});
   });
+
+  it('should strip deleted fields', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const schema = User.getSearchValidation();
+    await assertPass(schema, {
+      name: 'foo',
+      createdAt: '2020-01-01T00:00:00Z',
+      updatedAt: '2020-01-01T00:00:00Z',
+    });
+    await assertFail(schema, {
+      deletedAt: '2020-01-01T00:00:00Z',
+    });
+    await assertFail(schema, {
+      deleted: true,
+    });
+  });
+
+  it('should be able to pass defaults as options', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const schema = User.getSearchValidation({
+      defaults: {
+        limit: 5,
+        sort: {
+          field: 'name',
+          order: 'desc',
+        },
+      },
+    });
+
+    const result = await schema.validate({});
+    expect(result).toEqual({
+      limit: 5,
+      skip: 0,
+      sort: {
+        field: 'name',
+        order: 'desc',
+      },
+    });
+  });
+
+  it('should provide a way to include deleted', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const schema = User.getSearchValidation({
+      includeDeleted: true,
+    });
+    await assertPass(schema, {
+      deleted: true,
+      deletedAt: '2020-01-01T00:00:00Z',
+    });
+  });
+
+  it('should still be able to pass an append schema', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const schema = User.getSearchValidation({
+      age: yd.number(),
+    });
+    await assertPass(schema, {
+      name: 'foo',
+      age: 25,
+    });
+  });
 });
 
 describe('getBaseSchema', () => {
@@ -1415,6 +1484,33 @@ describe('getBaseSchema', () => {
       name: 'foo',
     });
     await assertFail(schema, {});
+  });
+
+  it('should describe timestamp fields in OpenApi', async () => {
+    const User = createTestModel({
+      name: {
+        type: 'String',
+        required: true,
+      },
+    });
+    const schema = User.getBaseSchema();
+    expect(schema.toOpenApi()).toMatchObject({
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+          required: true,
+        },
+        createdAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+        updatedAt: {
+          type: 'string',
+          format: 'date-time',
+        },
+      },
+    });
   });
 });
 

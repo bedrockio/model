@@ -10,13 +10,6 @@ import warn from './warn';
 
 const { ObjectId } = mongoose.Types;
 
-const SORT_SCHEMA = yd
-  .object({
-    field: yd.string().required(),
-    order: yd.string().allow('desc', 'asc').required(),
-  })
-  .description('An object describing the sort order of results.');
-
 export function applySearch(schema, definition) {
   validateDefinition(definition);
 
@@ -42,7 +35,7 @@ export function applySearch(schema, definition) {
     Object.assign(query, normalizeQuery(rest, schema.obj));
 
     const mQuery = this.find(query)
-      .sort(resolveSort(sort))
+      .sort(resolveSort(sort, schema))
       .skip(skip)
       .limit(limit);
 
@@ -76,14 +69,16 @@ export function applySearch(schema, definition) {
   });
 }
 
-export function searchValidation(definition, options = {}) {
-  options = {
+export function searchValidation(options = {}) {
+  const { defaults, definition, appendSchema } = options;
+
+  const searchOptions = {
     ...SEARCH_DEFAULTS,
     ...pick(definition.search, 'limit', 'sort'),
-    ...options,
+    ...defaults,
   };
 
-  const { limit, sort, ...rest } = options;
+  const { limit, sort } = searchOptions;
 
   return yd.object({
     ids: yd.array(OBJECT_ID_SCHEMA),
@@ -91,14 +86,24 @@ export function searchValidation(definition, options = {}) {
       .string()
       .description('A keyword to perform a text search against.'),
     skip: yd.number().default(0).description('Number of records to skip.'),
-    sort: yd.allow(SORT_SCHEMA, yd.array(SORT_SCHEMA)).default(sort),
+    sort: getSortSchema(sort),
     limit: yd
       .number()
       .positive()
       .default(limit)
       .description('Limits the number of results.'),
-    ...rest,
+    ...appendSchema,
   });
+}
+
+function getSortSchema(sort) {
+  const schema = yd
+    .object({
+      field: yd.string().required(),
+      order: yd.string().allow('desc', 'asc').required(),
+    })
+    .description('An object describing the sort order of results.');
+  return yd.allow(schema, yd.array(schema)).default(sort);
 }
 
 function validateDefinition(definition) {
@@ -113,9 +118,14 @@ function validateDefinition(definition) {
   }
 }
 
-function resolveSort(sort) {
+function resolveSort(sort, schema) {
   if (!Array.isArray(sort)) {
     sort = [sort];
+  }
+  for (let { field } of sort) {
+    if (!schema.path(field)) {
+      throw new Error(`Unknown sort field "${field}".`);
+    }
   }
   return sort.map(({ field, order }) => {
     return [field, order === 'desc' ? -1 : 1];

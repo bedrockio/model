@@ -8,7 +8,6 @@ import { searchValidation } from './search';
 import { PermissionsError, ImplementationError } from './errors';
 import { hasUniqueConstraints, assertUnique } from './soft-delete';
 import { isMongooseSchema, isSchemaTypedef } from './utils';
-import { RESERVED_FIELDS } from './schema';
 import { INCLUDE_FIELD_SCHEMA } from './include';
 
 const DATE_SCHEMA = yd.date().iso().tag({
@@ -78,7 +77,8 @@ export function applyValidation(schema, definition) {
         model: this,
         appendSchema,
         allowIncludes: true,
-        stripReserved: true,
+        stripDeleted: true,
+        stripTimestamps: true,
         requireWriteAccess: true,
         ...(hasUnique && {
           assertUniqueOptions: {
@@ -97,8 +97,9 @@ export function applyValidation(schema, definition) {
         model: this,
         appendSchema,
         skipRequired: true,
-        stripReserved: true,
         stripUnknown: true,
+        stripDeleted: true,
+        stripTimestamps: true,
         requireWriteAccess: true,
         ...(hasUnique && {
           assertUniqueOptions: {
@@ -112,16 +113,23 @@ export function applyValidation(schema, definition) {
 
   schema.static(
     'getSearchValidation',
-    function getSearchValidation(searchOptions) {
+    function getSearchValidation(options = {}) {
+      const { defaults, includeDeleted, ...appendSchema } = options;
+
       return getSchemaFromMongoose(schema, {
+        model: this,
         allowSearch: true,
         skipRequired: true,
         allowIncludes: true,
         expandDotSyntax: true,
         unwindArrayFields: true,
         requireReadAccess: true,
-        appendSchema: searchValidation(definition, searchOptions),
-        model: this,
+        stripDeleted: !includeDeleted,
+        appendSchema: searchValidation({
+          defaults,
+          definition,
+          appendSchema,
+        }),
       });
     }
   );
@@ -131,18 +139,29 @@ export function applyValidation(schema, definition) {
   });
 
   schema.static('getBaseSchema', function getBaseSchema() {
-    return getSchemaFromMongoose(schema);
+    return getSchemaFromMongoose(schema, {
+      stripDeleted: true,
+    });
   });
 }
 
 // Yada schemas
 
 function getSchemaFromMongoose(schema, options = {}) {
-  let { obj } = schema;
-  if (options.stripReserved) {
-    obj = omit(obj, RESERVED_FIELDS);
+  const fields = getMongooseFields(schema, options);
+  return getValidationSchema(fields, options);
+}
+
+function getMongooseFields(schema, options) {
+  const { stripTimestamps, stripDeleted } = options;
+  let fields = schema.obj;
+  if (stripTimestamps) {
+    fields = omit(fields, ['createdAt', 'updatedAt']);
   }
-  return getValidationSchema(obj, options);
+  if (stripDeleted) {
+    fields = omit(fields, ['deleted', 'deletedAt']);
+  }
+  return fields;
 }
 
 // Exported for testing
