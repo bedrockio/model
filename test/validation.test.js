@@ -533,6 +533,64 @@ describe('getCreateValidation', () => {
       await user.destroy();
     });
   });
+
+  describe('OpenAPI', () => {
+    it('should correctly describe its schema', async () => {
+      const User = createTestModel({
+        name: {
+          type: 'String',
+          required: true,
+        },
+        shop: {
+          ref: 'Shop',
+          type: 'ObjectId',
+          required: true,
+        },
+      });
+      const schema = User.getCreateValidation();
+      expect(schema.toOpenApi()).toMatchObject({
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            required: true,
+          },
+          shop: {
+            oneOf: [
+              {
+                type: 'string',
+                format: 'mongo-object-id',
+              },
+              {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    required: true,
+                    format: 'mongo-object-id',
+                  },
+                },
+              },
+            ],
+            required: true,
+          },
+          include: {
+            oneOf: [
+              {
+                type: 'string',
+              },
+              {
+                type: 'array',
+                items: {
+                  type: 'string',
+                },
+              },
+            ],
+          },
+        },
+      });
+    });
+  });
 });
 
 describe('getUpdateValidation', () => {
@@ -1090,6 +1148,49 @@ describe('getUpdateValidation', () => {
       });
     });
   });
+
+  describe('OpenAPI', () => {
+    it('should correctly describe its schema', async () => {
+      const User = createTestModel({
+        name: {
+          type: 'String',
+          required: true,
+        },
+        shop: {
+          ref: 'Shop',
+          type: 'ObjectId',
+          required: true,
+        },
+      });
+      const schema = User.getUpdateValidation();
+      expect(schema.toOpenApi()).toMatchObject({
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+          },
+          shop: {
+            oneOf: [
+              {
+                type: 'string',
+                format: 'mongo-object-id',
+              },
+              {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                    required: true,
+                    format: 'mongo-object-id',
+                  },
+                },
+              },
+            ],
+          },
+        },
+      });
+    });
+  });
 });
 
 describe('getSearchValidation', () => {
@@ -1486,30 +1587,41 @@ describe('getBaseSchema', () => {
     await assertFail(schema, {});
   });
 
-  it('should describe timestamp fields in OpenApi', async () => {
-    const User = createTestModel({
-      name: {
-        type: 'String',
-        required: true,
-      },
-    });
-    const schema = User.getBaseSchema();
-    expect(schema.toOpenApi()).toMatchObject({
-      type: 'object',
-      properties: {
+  describe('OpenAPI', () => {
+    it('should correctly describe its schema', async () => {
+      const User = createTestModel({
         name: {
-          type: 'string',
+          type: 'String',
           required: true,
         },
-        createdAt: {
-          type: 'string',
-          format: 'date-time',
+        shop: {
+          ref: 'Shop',
+          type: 'ObjectId',
+          required: true,
         },
-        updatedAt: {
-          type: 'string',
-          format: 'date-time',
+      });
+      const schema = User.getBaseSchema();
+      expect(schema.toOpenApi()).toMatchObject({
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            required: true,
+          },
+          shop: {
+            type: 'string',
+            required: true,
+          },
+          createdAt: {
+            type: 'string',
+            format: 'date-time',
+          },
+          updatedAt: {
+            type: 'string',
+            format: 'date-time',
+          },
         },
-      },
+      });
     });
   });
 });
@@ -1835,12 +1947,17 @@ describe('getValidationSchema', () => {
       });
 
       it('should transform an object with a valid id', async () => {
-        const schema = getValidationSchema({
-          image: {
-            type: 'ObjectId',
-            ref: 'Upload',
+        const schema = getValidationSchema(
+          {
+            image: {
+              type: 'ObjectId',
+              ref: 'Upload',
+            },
           },
-        });
+          {
+            allowExpandedRefs: true,
+          }
+        );
         await assertPass(schema, { image: '5fd396fac80fa73203bd9554' });
         await assertPass(schema, { image: { id: '5fd396fac80fa73203bd9554' } });
         await assertFail(schema, { image: { id: '5fd396fac80fa73203bd9xyz' } });
@@ -1850,14 +1967,19 @@ describe('getValidationSchema', () => {
       });
 
       it('should transform an array of objects or ids', async () => {
-        const schema = getValidationSchema({
-          categories: [
-            {
-              type: 'ObjectId',
-              ref: 'Upload',
-            },
-          ],
-        });
+        const schema = getValidationSchema(
+          {
+            categories: [
+              {
+                type: 'ObjectId',
+                ref: 'Upload',
+              },
+            ],
+          },
+          {
+            allowExpandedRefs: true,
+          }
+        );
         await assertPass(schema, { categories: ['5fd396fac80fa73203bd9554'] });
         await assertPass(schema, {
           categories: [{ id: '5fd396fac80fa73203bd9554' }],
@@ -1885,16 +2007,21 @@ describe('getValidationSchema', () => {
 
     describe('nested', () => {
       it('should transform a deeply nested ObjectId', async () => {
-        const schema = getValidationSchema({
-          user: {
-            manager: {
-              category: {
-                type: 'ObjectId',
-                ref: 'Upload',
+        const schema = getValidationSchema(
+          {
+            user: {
+              manager: {
+                category: {
+                  type: 'ObjectId',
+                  ref: 'Upload',
+                },
               },
             },
           },
-        });
+          {
+            allowExpandedRefs: true,
+          }
+        );
         await assertPass(schema, {
           user: {
             manager: {
@@ -1941,22 +2068,27 @@ describe('getValidationSchema', () => {
       });
 
       it('should transform a deeply nested array ObjectId', async () => {
-        const schema = getValidationSchema({
-          users: [
-            {
-              managers: [
-                {
-                  categories: [
-                    {
-                      type: 'ObjectId',
-                      ref: 'Upload',
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        });
+        const schema = getValidationSchema(
+          {
+            users: [
+              {
+                managers: [
+                  {
+                    categories: [
+                      {
+                        type: 'ObjectId',
+                        ref: 'Upload',
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            allowExpandedRefs: true,
+          }
+        );
         await assertPass(schema, {
           users: [
             {

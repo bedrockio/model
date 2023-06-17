@@ -10,27 +10,35 @@ import { hasUniqueConstraints, assertUnique } from './soft-delete';
 import { isMongooseSchema, isSchemaTypedef } from './utils';
 import { INCLUDE_FIELD_SCHEMA } from './include';
 
-const DATE_SCHEMA = yd.date().iso().tag({
+const DATE_TAGS = {
   'x-schema': 'DateTime',
   'x-description':
     'A `string` in [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) format.',
+};
+
+export const OBJECT_ID_SCHEMA = yd.string().mongo().tag({
+  'x-schema': 'ObjectId',
+  'x-description':
+    'A 24 character hexadecimal string representing a Mongo [ObjectId](https://bit.ly/3YPtGlU).',
 });
 
-const OBJECT_ID_DESCRIPTION = `
+const REFERENCE_SCHEMA = yd
+  .allow(
+    OBJECT_ID_SCHEMA,
+    yd
+      .object({
+        id: OBJECT_ID_SCHEMA.required(),
+      })
+      .custom((obj) => {
+        return obj.id;
+      })
+  )
+  .tag({
+    'x-schema': 'Reference',
+    'x-description': `
 A 24 character hexadecimal string representing a Mongo [ObjectId](https://bit.ly/3YPtGlU).
 An object with an \`id\` field may also be passed, which will be converted into a string.
-`;
-
-export const OBJECT_ID_SCHEMA = yd
-  .custom(async (val) => {
-    const id = String(val.id || val);
-    await namedSchemas.objectId.validate(id);
-    return id;
-  })
-  .tag({
-    type: 'ObjectId',
-    'x-schema': 'ObjectId',
-    'x-description': OBJECT_ID_DESCRIPTION.trim(),
+    `.trim(),
   });
 
 const namedSchemas = {
@@ -39,7 +47,7 @@ const namedSchemas = {
   email: yd.string().lowercase().email(),
   // Force "objectId" to have parity with refs.
   // "mongo" is notably excluded here for this reason.
-  objectId: yd.string().mongo(),
+  objectId: OBJECT_ID_SCHEMA,
 
   ascii: yd.string().ascii(),
   base64: yd.string().base64(),
@@ -79,6 +87,7 @@ export function applyValidation(schema, definition) {
         allowIncludes: true,
         stripDeleted: true,
         stripTimestamps: true,
+        allowExpandedRefs: true,
         requireWriteAccess: true,
         ...(hasUnique && {
           assertUniqueOptions: {
@@ -100,6 +109,7 @@ export function applyValidation(schema, definition) {
         stripUnknown: true,
         stripDeleted: true,
         stripTimestamps: true,
+        allowExpandedRefs: true,
         requireWriteAccess: true,
         ...(hasUnique && {
           assertUniqueOptions: {
@@ -216,7 +226,7 @@ function getObjectSchema(arg, options) {
 
     return schema;
   } else {
-    return getSchemaForType(arg);
+    return getSchemaForType(arg, options);
   }
 }
 
@@ -252,7 +262,7 @@ function getSchemaForTypedef(typedef, options = {}) {
   } else if (typeof type === 'object') {
     schema = getObjectSchema(type, options);
   } else {
-    schema = getSchemaForType(type);
+    schema = getSchemaForType(type, options);
   }
 
   if (isRequired(typedef, options)) {
@@ -288,7 +298,7 @@ function getSchemaForTypedef(typedef, options = {}) {
   return schema;
 }
 
-function getSchemaForType(type) {
+function getSchemaForType(type, options) {
   switch (type) {
     case 'String':
       return yd.string();
@@ -297,14 +307,18 @@ function getSchemaForType(type) {
     case 'Boolean':
       return yd.boolean();
     case 'Date':
-      return DATE_SCHEMA;
+      return yd.date().iso().tag(DATE_TAGS);
     case 'Mixed':
     case 'Object':
       return yd.object();
     case 'Array':
       return yd.array();
     case 'ObjectId':
-      return OBJECT_ID_SCHEMA;
+      if (options.allowExpandedRefs) {
+        return REFERENCE_SCHEMA;
+      } else {
+        return OBJECT_ID_SCHEMA;
+      }
     default:
       throw new TypeError(`Unknown schema type ${type}`);
   }
@@ -341,22 +355,34 @@ function getSearchSchema(schema, type) {
         yd.array(schema),
         yd
           .object({
-            lt: yd.date().iso().tag({
-              'x-ref': 'DateTime',
-              description: 'Select dates occurring before.',
-            }),
-            gt: yd.date().iso().tag({
-              'x-ref': 'DateTime',
-              description: 'Select dates occurring after.',
-            }),
-            lte: yd.date().iso().tag({
-              'x-ref': 'DateTime',
-              description: 'Select dates occurring on or before.',
-            }),
-            gte: yd.date().iso().tag({
-              'x-ref': 'DateTime',
-              description: 'Select dates occurring on or after.',
-            }),
+            lt: yd
+              .date()
+              .iso()
+              .tag({
+                ...DATE_TAGS,
+                description: 'Select dates occurring before.',
+              }),
+            gt: yd
+              .date()
+              .iso()
+              .tag({
+                ...DATE_TAGS,
+                description: 'Select dates occurring after.',
+              }),
+            lte: yd
+              .date()
+              .iso()
+              .tag({
+                ...DATE_TAGS,
+                description: 'Select dates occurring on or before.',
+              }),
+            gte: yd
+              .date()
+              .iso()
+              .tag({
+                ...DATE_TAGS,
+                description: 'Select dates occurring on or after.',
+              }),
           })
           .tag({
             'x-schema': 'DateRange',
