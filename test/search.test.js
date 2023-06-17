@@ -663,4 +663,34 @@ describe('search', () => {
       });
     }).toThrow('Unknown sort field "foo".');
   });
+
+  it('should error on incorrect sort format', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    expect(() => {
+      User.search({
+        sort: {
+          name: 'foo',
+          order: 'asc',
+        },
+      });
+    }).toThrow('Unknown sort field "undefined".');
+  });
+
+  it('should not error on null sort field', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    await User.create({
+      name: 'foo',
+    });
+    await User.create({
+      name: 'bar',
+    });
+    const users = await User.search({
+      sort: null,
+    });
+    expect(users.data.length).toBe(2);
+  });
 });

@@ -119,11 +119,13 @@ function validateDefinition(definition) {
 }
 
 function resolveSort(sort, schema) {
-  if (!Array.isArray(sort)) {
+  if (!sort) {
+    sort = [];
+  } else if (!Array.isArray(sort)) {
     sort = [sort];
   }
   for (let { field } of sort) {
-    if (!schema.path(field)) {
+    if (!field || !schema.path(field)) {
       throw new Error(`Unknown sort field "${field}".`);
     }
   }
