@@ -268,6 +268,9 @@ function getSchemaForTypedef(typedef, options = {}) {
   if (isRequired(typedef, options)) {
     schema = schema.required();
   }
+  if (typedef.default) {
+    schema = schema.default(typedef.default);
+  }
   if (typedef.validate?.schema) {
     schema = schema.append(typedef.validate.schema);
   } else if (typeof typedef.validate === 'function') {

@@ -541,6 +541,14 @@ describe('getCreateValidation', () => {
           type: 'String',
           required: true,
         },
+        status: {
+          type: 'String',
+          default: 'active',
+        },
+        profileImage: {
+          type: 'ObjectId',
+          ref: 'Upload',
+        },
         shop: {
           ref: 'Shop',
           type: 'ObjectId',
@@ -554,6 +562,25 @@ describe('getCreateValidation', () => {
           name: {
             type: 'string',
             required: true,
+          },
+          status: {
+            type: 'string',
+            default: 'active',
+          },
+          profileImage: {
+            oneOf: [
+              {
+                type: 'string',
+              },
+              {
+                type: 'object',
+                properties: {
+                  id: {
+                    type: 'string',
+                  },
+                },
+              },
+            ],
           },
           shop: {
             oneOf: [
