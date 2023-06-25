@@ -1,10 +1,12 @@
 import yd from '@bedrockio/yada';
+import logger from '@bedrockio/logger';
 import mongoose from 'mongoose';
 import { pick, isEmpty, isPlainObject } from 'lodash';
 
 import { isDateField, isNumberField, resolveField } from './utils';
 import { SEARCH_DEFAULTS } from './const';
 import { OBJECT_ID_SCHEMA } from './validation';
+import { debug } from './env';
 
 import warn from './warn';
 
@@ -33,6 +35,13 @@ export function applySearch(schema, definition) {
     }
 
     Object.assign(query, normalizeQuery(rest, schema.obj));
+
+    if (debug) {
+      logger.info(
+        `Search query for ${this.modelName}:\n`,
+        JSON.stringify(query, null, 2)
+      );
+    }
 
     const mQuery = this.find(query)
       .sort(resolveSort(sort, schema))
