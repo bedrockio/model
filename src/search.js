@@ -29,7 +29,7 @@ export function applySearch(schema, definition) {
     }
 
     if (keyword) {
-      Object.assign(query, buildKeywordQuery(keyword, fields));
+      Object.assign(query, buildKeywordQuery(schema, keyword, fields));
     }
 
     Object.assign(query, normalizeQuery(rest, schema.obj));
@@ -165,16 +165,28 @@ function resolveSort(sort, schema) {
 // https://stackoverflow.com/questions/44833817/mongodb-full-and-partial-text-search
 // https://jira.mongodb.org/browse/SERVER-15090
 
-function buildKeywordQuery(keyword, fields) {
+function buildKeywordQuery(schema, keyword, fields) {
+  let queries;
+
+  // Prefer defined search fields over
+  // text indexes to perform keyword search.
   if (fields) {
-    return buildRegexQuery(keyword, fields);
+    queries = buildRegexQuery(keyword, fields);
+  } else if (hasTextIndex(schema)) {
+    queries = [getTextQuery(keyword)];
   } else {
-    return buildTextIndexQuery(keyword);
+    queries = [];
   }
+
+  if (ObjectId.isValid(keyword)) {
+    queries.push({ _id: keyword });
+  }
+
+  return { $or: queries };
 }
 
 function buildRegexQuery(keyword, fields) {
-  const queries = fields.map((field) => {
+  return fields.map((field) => {
     const regexKeyword = keyword.replace(/\+/g, '\\+');
     return {
       [field]: {
@@ -183,24 +195,22 @@ function buildRegexQuery(keyword, fields) {
       },
     };
   });
-  if (ObjectId.isValid(keyword)) {
-    queries.push({ _id: keyword });
-  }
-  return { $or: queries };
 }
 
-function buildTextIndexQuery(keyword) {
-  if (ObjectId.isValid(keyword)) {
-    return {
-      $or: [{ $text: { $search: keyword } }, { _id: keyword }],
-    };
-  } else {
-    return {
-      $text: {
-        $search: keyword,
-      },
-    };
-  }
+function hasTextIndex(schema) {
+  return schema.indexes().some(([spec]) => {
+    return Object.values(spec).some((type) => {
+      return type === 'text';
+    });
+  });
+}
+
+function getTextQuery(keyword) {
+  return {
+    $text: {
+      $search: keyword,
+    },
+  };
 }
 
 // Normalizes mongo queries. Flattens plain nested paths

@@ -146,6 +146,27 @@ describe('search', () => {
     expect(result.meta.total).toBe(1);
   });
 
+  it('should allow id search when no fields are defined', async () => {
+    let result;
+    const schema = createSchema({
+      attributes: {
+        name: {
+          type: 'String',
+          required: true,
+        },
+      },
+    });
+    const User = createTestModel(schema);
+    const [billy] = await Promise.all([
+      User.create({ name: 'Billy', role: 'user' }),
+      User.create({ name: 'Willy', role: 'manager' }),
+    ]);
+
+    result = await User.search({ keyword: billy.id });
+    expect(result.data).toMatchObject([{ name: 'Billy' }]);
+    expect(result.meta.total).toBe(1);
+  });
+
   it('should search on an array field', async () => {
     const User = createTestModel({
       order: 'Number',
