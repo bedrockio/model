@@ -276,7 +276,11 @@ function isRangeQuery(schema, key, value) {
 function mapOperatorQuery(obj) {
   const query = {};
   for (let [key, val] of Object.entries(obj)) {
-    query[`$${key}`] = val;
+    if (isMongoOperator(key)) {
+      query[key] = val;
+    } else {
+      query[`$${key}`] = val;
+    }
   }
   return query;
 }

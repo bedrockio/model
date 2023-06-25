@@ -522,6 +522,22 @@ describe('search', () => {
     expect(result.meta.total).toBe(1);
   });
 
+  it('should still allow a date range query with mongo operators', async () => {
+    let result;
+    const User = createTestModel({
+      name: 'String',
+      archivedAt: 'Date',
+    });
+    await Promise.all([
+      User.create({ name: 'Billy', archivedAt: '2020-01-01' }),
+      User.create({ name: 'Willy', archivedAt: '2021-01-01' }),
+    ]);
+
+    result = await User.search({ archivedAt: { $lte: '2020-06-01' } });
+    expect(result.data).toMatchObject([{ name: 'Billy' }]);
+    expect(result.meta.total).toBe(1);
+  });
+
   it('should allow number range search', async () => {
     let result;
     const User = createTestModel({
