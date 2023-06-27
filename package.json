@@ -30,7 +30,7 @@
   },
   "peerDependencies": {
     "@bedrockio/yada": "^1.0.27",
-    "mongoose": "^6.9.0"
+    "mongoose": ">=6.9.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.20.7",
