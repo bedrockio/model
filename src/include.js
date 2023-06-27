@@ -26,9 +26,7 @@ export const INCLUDE_FIELD_SCHEMA = yd.object({
 });
 
 export function applyInclude(schema) {
-  schema.virtual('include').set(function (include) {
-    this.$locals.include = include;
-  });
+  // Query Includes
 
   schema.pre(/^find/, function (next) {
     const filter = this.getFilter();
@@ -41,14 +39,32 @@ export function applyInclude(schema) {
     return next();
   });
 
-  schema.pre('save', function () {
-    const { include } = this.$locals;
+  // Static Methods
+
+  // Async method runs the create first then calls into
+  // the instance method to run the populate.
+  schema.static(
+    'createWithInclude',
+    async function createWithInclude(attributes) {
+      const { include, ...rest } = attributes;
+      const doc = await this.create(rest);
+      if (include) {
+        await doc.include(include);
+      }
+      return doc;
+    }
+  );
+
+  // Synchronous method assigns the includes to locals.
+  // Population will be performed on the post save hook below.
+  // Selects will be performed during serialization.
+  schema.method('assignWithInclude', function assignWithInclude(attributes) {
+    const { include, ...rest } = attributes;
+
+    this.assign(rest);
+
     if (include) {
-      let { select, populate } = getDocumentIncludes(this, include);
-      const modifiedPaths = this.modifiedPaths();
-      populate = populate.filter((p) => {
-        return modifiedPaths.includes(p.path);
-      });
+      const { select, populate } = getDocumentIncludes(this, include);
       this.$locals.select = select;
       this.$locals.populate = populate;
     }
@@ -59,6 +75,19 @@ export function applyInclude(schema) {
     if (populate) {
       await this.populate(populate);
       delete this.$locals.populate;
+    }
+  });
+
+  // Instance Methods
+
+  // Perform population immediately when instance method is called.
+  // Store selects as a local variable which will be checked
+  // during serialization.
+  schema.method('include', async function include(include) {
+    if (include) {
+      const { select, populate } = getDocumentIncludes(this, include);
+      this.$locals.select = select;
+      await this.populate(populate);
     }
   });
 }

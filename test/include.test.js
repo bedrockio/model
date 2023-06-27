@@ -648,196 +648,259 @@ describe('query includes', () => {
   });
 });
 
-describe('document includes', () => {
-  it('should include after create', async () => {
-    const user = await User.create({
-      name: 'Bob',
+describe('instance methods', () => {
+  describe('include', () => {
+    it('should have include method that performs a populate', async () => {
+      const user = await User.create({
+        name: 'Bob',
+      });
+      const shop = await Shop.create({
+        name: 'foo',
+        user: user.id,
+      });
+      await shop.include('user');
+      expect(shop.user.name).toBe('Bob');
     });
-    const shop = await Shop.create({
-      name: 'foo',
-      user: user.id,
-      include: ['user'],
-    });
-    expect(shop.user.name).toBe('Bob');
-  });
 
-  it('should include after save assign', async () => {
-    const user = await User.create({
-      name: 'Bob',
+    it('should perform no actions if passed undefined', async () => {
+      const user = await User.create({
+        name: 'Bob',
+      });
+      const shop = await Shop.create({
+        name: 'foo',
+        user: user.id,
+      });
+      await shop.include(undefined);
+      expect(shop.user.name).toBeUndefined();
     });
-    const shop = new Shop({
-      name: 'foo',
-    });
-    shop.assign({
-      user: user.id,
-      include: 'user',
-    });
-    await shop.save();
-    expect(shop.user.name).toBe('Bob');
-  });
 
-  it('should include after manual update', async () => {
-    const user = await User.create({
-      name: 'Bob',
+    it('should functionally perform a select on serialize', async () => {
+      const user = await User.create({
+        name: 'Bob',
+        email: 'bob@bar.com',
+      });
+      await user.include('name');
+      expect(user.toObject().email).toBeUndefined();
     });
-    const shop = await Shop.create({
-      name: 'foo',
-    });
-    shop.name = 'butts';
-    shop.user = user.id;
-    shop.include = 'user';
-    await shop.save();
-    expect(shop.user.name).toBe('Bob');
   });
+});
 
-  it('should populate after insert', async () => {
-    const user = await User.create({
-      name: 'Bob',
+describe('static methods', () => {
+  describe('createWithInclude', () => {
+    it('should include after create', async () => {
+      const user = await User.create({
+        name: 'Bob',
+      });
+      const shop = await Shop.createWithInclude({
+        name: 'foo',
+        user: user.id,
+        include: ['user'],
+      });
+      expect(shop.user.name).toBe('Bob');
     });
-    const shop = new Shop({
-      name: 'foo',
-      user: user.id,
-      include: 'user',
-    });
-    await shop.save();
-    expect(shop.user.name).toBe('Bob');
-  });
 
-  it('should perform complex populate after insert', async () => {
-    const user = await User.create({
-      name: 'Bob',
-    });
-    const shop = await Shop.create({
-      name: 'Shop',
-      user: user.id,
-    });
-    const product = await Product.create({
-      name: 'Product',
-      shop: shop.id,
-      include: ['name', 'shop.user'],
-    });
-    const data = JSON.parse(JSON.stringify(product));
-    expect(data).toEqual({
-      id: product.id,
-      name: 'Product',
-      shop: {
-        id: shop.id,
+    it('should perform complex populate after insert', async () => {
+      const user = await User.create({
+        name: 'Bob',
+      });
+      const shop = await Shop.create({
         name: 'Shop',
-        tags: [],
-        customers: [],
+        user: user.id,
+      });
+      const product = await Product.createWithInclude({
+        name: 'Product',
+        shop: shop.id,
+        include: ['name', 'shop.user'],
+      });
+      const data = JSON.parse(JSON.stringify(product));
+      expect(data).toEqual({
+        id: product.id,
+        name: 'Product',
+        shop: {
+          id: shop.id,
+          name: 'Shop',
+          tags: [],
+          customers: [],
+          user: {
+            id: user.id,
+            name: 'Bob',
+            tags: [],
+            likedProducts: [],
+            createdAt: user.createdAt.toISOString(),
+            updatedAt: user.updatedAt.toISOString(),
+          },
+          createdAt: shop.createdAt.toISOString(),
+          updatedAt: shop.updatedAt.toISOString(),
+        },
+      });
+    });
+
+    it('should virtually project fields on a created document', async () => {
+      const user = await User.create({
+        name: 'Bob',
+        email: 'bob@bar.com',
+      });
+      const shop = await Shop.createWithInclude({
+        name: 'foo',
+        email: 'foo@bar.com',
+        user: user.id,
+        include: ['name', 'user'],
+      });
+      const data = JSON.parse(JSON.stringify(shop));
+      expect(data).toEqual({
+        id: shop.id,
+        name: 'foo',
         user: {
           id: user.id,
           name: 'Bob',
+          email: 'bob@bar.com',
           tags: [],
           likedProducts: [],
           createdAt: user.createdAt.toISOString(),
           updatedAt: user.updatedAt.toISOString(),
         },
+      });
+    });
+
+    it('should exclude fields', async () => {
+      const user = await User.createWithInclude({
+        name: 'Bob',
+        email: 'foo@bar.com',
+        tags: ['a', 'b', 'c'],
+        include: ['-name', '-tags'],
+      });
+      const data = JSON.parse(JSON.stringify(user));
+      expect(data).toEqual({
+        id: user.id,
+        email: 'foo@bar.com',
+        likedProducts: [],
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+      });
+    });
+
+    it('should exclude a populated field', async () => {
+      const user = await User.create({
+        name: 'Bob',
+        email: 'foo@bar.com',
+      });
+      const shop = await Shop.createWithInclude({
+        name: 'Shop',
+        email: 'shop@bar.com',
+        user: user.id,
+        include: ['-name', '-user'],
+      });
+      const data = JSON.parse(JSON.stringify(shop));
+      expect(data).toEqual({
+        id: shop.id,
+        email: 'shop@bar.com',
+        tags: [],
+        customers: [],
         createdAt: shop.createdAt.toISOString(),
         updatedAt: shop.updatedAt.toISOString(),
-      },
+      });
     });
-  });
 
-  it('should virtually project fields on a created document', async () => {
-    const user = await User.create({
-      name: 'Bob',
-      email: 'bob@bar.com',
-    });
-    const shop = await Shop.create({
-      name: 'foo',
-      email: 'foo@bar.com',
-      user: user.id,
-      include: ['name', 'user'],
-    });
-    const data = JSON.parse(JSON.stringify(shop));
-    expect(data).toEqual({
-      id: shop.id,
-      name: 'foo',
-      user: {
-        id: user.id,
+    it('should exclude a deep field', async () => {
+      const user = await User.create({
         name: 'Bob',
-        email: 'bob@bar.com',
-        tags: [],
-        likedProducts: [],
-        createdAt: user.createdAt.toISOString(),
-        updatedAt: user.updatedAt.toISOString(),
-      },
-    });
-  });
-
-  it('should exclude fields', async () => {
-    const user = await User.create({
-      name: 'Bob',
-      email: 'foo@bar.com',
-      tags: ['a', 'b', 'c'],
-      include: ['-name', '-tags'],
-    });
-    const data = JSON.parse(JSON.stringify(user));
-    expect(data).toEqual({
-      id: user.id,
-      email: 'foo@bar.com',
-      likedProducts: [],
-      createdAt: user.createdAt.toISOString(),
-      updatedAt: user.updatedAt.toISOString(),
-    });
-  });
-
-  it('should exclude a populated field', async () => {
-    const user = await User.create({
-      name: 'Bob',
-      email: 'foo@bar.com',
-    });
-    const shop = await Shop.create({
-      name: 'Shop',
-      email: 'shop@bar.com',
-      user: user.id,
-      include: ['-name', '-user'],
-    });
-    const data = JSON.parse(JSON.stringify(shop));
-    expect(data).toEqual({
-      id: shop.id,
-      email: 'shop@bar.com',
-      tags: [],
-      customers: [],
-      createdAt: shop.createdAt.toISOString(),
-      updatedAt: shop.updatedAt.toISOString(),
-    });
-  });
-
-  it('should exclude a deep field', async () => {
-    const user = await User.create({
-      name: 'Bob',
-      email: 'foo@bar.com',
-      address: {
-        line1: 'line1',
-        line2: 'line2',
-      },
-    });
-    const shop = await Shop.create({
-      name: 'Shop',
-      user: user.id,
-      include: ['user', '-user.name', '-user.address.line1'],
-    });
-    const data = JSON.parse(JSON.stringify(shop));
-    expect(data).toEqual({
-      id: shop.id,
-      name: 'Shop',
-      user: {
-        id: user.id,
-        tags: [],
         email: 'foo@bar.com',
         address: {
+          line1: 'line1',
           line2: 'line2',
         },
-        likedProducts: [],
-        createdAt: user.createdAt.toISOString(),
-        updatedAt: user.updatedAt.toISOString(),
-      },
-      tags: [],
-      customers: [],
-      createdAt: shop.createdAt.toISOString(),
-      updatedAt: shop.updatedAt.toISOString(),
+      });
+      const shop = await Shop.createWithInclude({
+        name: 'Shop',
+        user: user.id,
+        include: ['user', '-user.name', '-user.address.line1'],
+      });
+      const data = JSON.parse(JSON.stringify(shop));
+      expect(data).toEqual({
+        id: shop.id,
+        name: 'Shop',
+        user: {
+          id: user.id,
+          tags: [],
+          email: 'foo@bar.com',
+          address: {
+            line2: 'line2',
+          },
+          likedProducts: [],
+          createdAt: user.createdAt.toISOString(),
+          updatedAt: user.updatedAt.toISOString(),
+        },
+        tags: [],
+        customers: [],
+        createdAt: shop.createdAt.toISOString(),
+        updatedAt: shop.updatedAt.toISOString(),
+      });
+    });
+  });
+
+  describe('assignWithInclude', () => {
+    it('should include after save assign', async () => {
+      const user = await User.create({
+        name: 'Bob',
+      });
+      const shop = new Shop({
+        name: 'foo',
+      });
+      shop.assignWithInclude({
+        user: user.id,
+        include: 'user',
+      });
+      await shop.save();
+      expect(shop.user.name).toBe('Bob');
+    });
+
+    it('should include on an unmodified path', async () => {
+      const user = await User.create({
+        name: 'Bob',
+      });
+      const shop = new Shop({
+        user: user.id,
+      });
+      shop.assignWithInclude({
+        name: 'Jack',
+        include: 'user',
+      });
+      await shop.save();
+      expect(shop.user.name).toBe('Bob');
+    });
+
+    it('should virtually project fields on an updated document', async () => {
+      const user = await User.create({
+        name: 'Bob',
+        email: 'bob@bar.com',
+      });
+
+      const shop = new Shop({
+        user: user.id,
+      });
+
+      shop.assignWithInclude({
+        name: 'Jack',
+        email: 'foo@bar.com',
+        include: ['name', 'user'],
+      });
+
+      await shop.save();
+
+      const data = JSON.parse(JSON.stringify(shop));
+      expect(data).toEqual({
+        id: shop.id,
+        name: 'Jack',
+        user: {
+          id: user.id,
+          name: 'Bob',
+          email: 'bob@bar.com',
+          tags: [],
+          likedProducts: [],
+          createdAt: user.createdAt.toISOString(),
+          updatedAt: user.updatedAt.toISOString(),
+        },
+      });
     });
   });
 });
