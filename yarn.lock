@@ -1694,10 +1694,10 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@bedrockio/logger@^1.0.5":
-  version "1.0.5"
-  resolved "https://registry.yarnpkg.com/@bedrockio/logger/-/logger-1.0.5.tgz#a39501c9ac6ff04262b4e480c805d2df1d71dd25"
-  integrity sha512-2L2ANJwsXZs1P2aMSmER6myZKMNsIhiYDfdGtuqzw0EGPk5JMjQ9v0GNwDVwDetq1fV24HAXcrpwRJTgHzj2kQ==
+"@bedrockio/logger@^1.0.6":
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/@bedrockio/logger/-/logger-1.0.6.tgz#35b983b5541f06b97a15e2e68374b2392ab453c8"
+  integrity sha512-Ru2Aem3QtNBjBFiqVqVlJSQ9SwfL3aJa7Ek0i0svrEeEqRnwFlqT7+DxZPj38F1dP6Lwj1OuXpuLtF0X7D1xtQ==
   dependencies:
     "@google-cloud/opentelemetry-cloud-trace-exporter" "^2.0.0"
     "@opentelemetry/api" "^1.4.0"
@@ -1719,10 +1719,10 @@
   resolved "https://registry.yarnpkg.com/@bedrockio/prettier-config/-/prettier-config-1.0.2.tgz#89878381d3059b810f97514ee6b69f946a6d1654"
   integrity sha512-Ebcx/D9FcV6WEQH2gXA4SkN62fus/aVMW46MYFm1/y+S0GVYj+OCuBbRMM4F8YAq9ntJ+B/z9fLiOheNpEpRzA==
 
-"@bedrockio/yada@^1.0.26":
-  version "1.0.26"
-  resolved "https://registry.yarnpkg.com/@bedrockio/yada/-/yada-1.0.26.tgz#64e414058b2badc4fdd191988e2063d3ed7fc4ca"
-  integrity sha512-LmXVn+SnoLeU78EYyKYUEqYQUjZkugP2ZLFigHf2OOJMsMIvOykuzWc+QhPs5w0gcWl6ZpPRRMb+kYdT0wgpbA==
+"@bedrockio/yada@^1.0.27":
+  version "1.0.27"
+  resolved "https://registry.yarnpkg.com/@bedrockio/yada/-/yada-1.0.27.tgz#e91fc278b1113fa15af41f8200e25896e2f66f6b"
+  integrity sha512-DV9zzF0kc5mGnue/ip9+GpPjcXdJgpuRgqbIxRsgCeTtbOyS3SQ7euE9fhpwszgwhuJo2cdA60QH+PS4fd/+7w==
   dependencies:
     validator "^13.9.0"
 
@@ -3341,10 +3341,10 @@ eslint-module-utils@^2.7.4:
   dependencies:
     debug "^3.2.7"
 
-eslint-plugin-bedrock@^1.0.24:
-  version "1.0.24"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-bedrock/-/eslint-plugin-bedrock-1.0.24.tgz#25fb01f381aff38163a2d063f8dd9c0e2b209e4a"
-  integrity sha512-/J/UtGq4rrEVBadWysG378GFvjK1sbIuhPZvUduUSOi2TbtBRCjwAETuXscwej8U41xUkEUq5Nc9hZ9oylVwxA==
+eslint-plugin-bedrock@^1.0.26:
+  version "1.0.26"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-bedrock/-/eslint-plugin-bedrock-1.0.26.tgz#f3e80f58f34855e9c2f7df6f650c63ce2bcbee29"
+  integrity sha512-DjAaT4cNo4fLdqgqwTjmnl/2RPG09BaoariByqki0jeeQ1ezWHDyu6dT5y40RZmq7U8LmnlfFWrclmehstSBkg==
   dependencies:
     eslint-plugin-import "^2.27.5"
     eslint-plugin-jest "^27.2.1"
