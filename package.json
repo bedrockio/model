@@ -1,6 +1,6 @@
 {
   "name": "@bedrockio/model",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "description": "Bedrock utilities for model creation.",
   "type": "module",
   "scripts": {
