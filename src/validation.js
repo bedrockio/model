@@ -16,11 +16,15 @@ const DATE_TAGS = {
     'A `string` in [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) format.',
 };
 
-export const OBJECT_ID_SCHEMA = yd.string().mongo().tag({
-  'x-schema': 'ObjectId',
-  'x-description':
-    'A 24 character hexadecimal string representing a Mongo [ObjectId](https://bit.ly/3YPtGlU).',
-});
+export const OBJECT_ID_SCHEMA = yd
+  .string()
+  .mongo()
+  .message('Must be an ObjectId.')
+  .tag({
+    'x-schema': 'ObjectId',
+    'x-description':
+      'A 24 character hexadecimal string representing a Mongo [ObjectId](https://bit.ly/3YPtGlU).',
+  });
 
 const REFERENCE_SCHEMA = yd
   .allow(
@@ -29,10 +33,14 @@ const REFERENCE_SCHEMA = yd
       .object({
         id: OBJECT_ID_SCHEMA.required(),
       })
+      .options({
+        stripUnknown: true,
+      })
       .custom((obj) => {
         return obj.id;
       })
   )
+  .message('Must be an ObjectId or object containing "id" field.')
   .tag({
     'x-schema': 'Reference',
     'x-description': `

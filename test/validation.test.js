@@ -189,6 +189,33 @@ describe('getCreateValidation', () => {
     );
   });
 
+  it('should coerce id field to a string', async () => {
+    const User = createTestModel({
+      shop: {
+        type: 'ObjectId',
+        ref: 'Shop',
+      },
+    });
+    const schema = User.getCreateValidation();
+    const result = await schema.validate({
+      shop: {
+        foo: 'bar',
+        id: '5fd396fac80fa73203bd9554',
+      },
+    });
+    expect(result.shop).toBe('5fd396fac80fa73203bd9554');
+
+    await assertFailWithError(
+      schema,
+      {
+        shop: {
+          id: 'bad-id',
+        },
+      },
+      'Must be an ObjectId or object containing "id" field.'
+    );
+  });
+
   describe('write access', () => {
     it('should deny access', async () => {
       const User = createTestModel({
@@ -875,10 +902,21 @@ describe('getUpdateValidation', () => {
     const schema = User.getUpdateValidation();
     const result = await schema.validate({
       shop: {
+        foo: 'bar',
         id: '5fd396fac80fa73203bd9554',
       },
     });
     expect(result.shop).toBe('5fd396fac80fa73203bd9554');
+
+    await assertFailWithError(
+      schema,
+      {
+        shop: {
+          id: 'bad-id',
+        },
+      },
+      'Must be an ObjectId or object containing "id" field.'
+    );
   });
 
   describe('write access', () => {
