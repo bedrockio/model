@@ -2,7 +2,7 @@ import { isPlainObject } from 'lodash';
 
 import { checkSelects } from './include';
 import { hasReadAccess } from './access';
-import { resolveField } from './utils';
+import { getField, getInnerField } from './utils';
 
 export const serializeOptions = {
   getters: true,
@@ -24,7 +24,7 @@ function transformField(obj, field, options) {
       if (!isAllowedField(key, field, options)) {
         delete obj[key];
       } else {
-        transformField(val, resolveField(field, key), options);
+        transformField(val, getInnerField(field, key), options);
       }
     }
   }
@@ -39,7 +39,7 @@ function isAllowedField(key, field, options) {
     // to false and should not be exposed.
     return false;
   } else {
-    const { readAccess } = resolveField(field, key);
+    const { readAccess } = getField(field, key);
     try {
       return hasReadAccess(readAccess, options);
     } catch {

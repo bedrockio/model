@@ -1,6 +1,6 @@
 import { isPlainObject } from 'lodash';
 
-import { isReferenceField, resolveField } from './utils';
+import { isReferenceField, getField } from './utils';
 
 export function applyAssign(schema) {
   schema.method('assign', function assign(fields) {
@@ -24,7 +24,7 @@ function unsetReferenceFields(fields, schema = {}) {
     if (!value && isReferenceField(schema, key)) {
       fields[key] = undefined;
     } else if (value && typeof value === 'object') {
-      unsetReferenceFields(value, resolveField(schema, key));
+      unsetReferenceFields(value, getField(schema, key));
     }
   }
 }

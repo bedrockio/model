@@ -3,7 +3,7 @@ import logger from '@bedrockio/logger';
 import mongoose from 'mongoose';
 import { pick, isEmpty, isPlainObject } from 'lodash';
 
-import { isDateField, isNumberField, resolveField } from './utils';
+import { isDateField, isNumberField, getField } from './utils';
 import { SEARCH_DEFAULTS } from './const';
 import { OBJECT_ID_SCHEMA } from './validation';
 import { debug } from './env';
@@ -239,7 +239,7 @@ function normalizeQuery(query, schema, root = {}, rootPath = []) {
         root[path.join('.')] = mapOperatorQuery(value);
       }
     } else if (isNestedQuery(key, value)) {
-      normalizeQuery(value, resolveField(schema, key), root, path);
+      normalizeQuery(value, getField(schema, key), root, path);
     } else if (isRegexQuery(key, value)) {
       root[path.join('.')] = parseRegexQuery(value);
     } else if (isArrayQuery(key, value)) {

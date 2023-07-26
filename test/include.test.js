@@ -20,15 +20,16 @@ const Shop = createTestModel({
       type: 'ObjectId',
     },
   ],
-  inventory: [
-    {
+  inventory: {
+    type: 'Array',
+    attributes: {
       quantity: 'Number',
       product: {
         ref: productModelName,
         type: 'ObjectId',
       },
     },
-  ],
+  },
   deep: {
     user: {
       ref: userModelName,

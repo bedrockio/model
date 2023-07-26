@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { escapeRegExp } from 'lodash';
 import yd from '@bedrockio/yada';
 
-import { resolveInnerField, isSchemaTypedef } from './utils';
+import { getInnerField, isSchemaTypedef } from './utils';
 import { POPULATE_MAX_DEPTH } from './const';
 
 // @ts-ignore
@@ -202,7 +202,7 @@ function setNodePath(node, options) {
 
     for (let [key, type] of resolvePaths(schema, str)) {
       if (type === 'real') {
-        const field = resolveInnerField(schema.obj, key);
+        const field = getInnerField(schema.obj, key);
         // Only exclude the field if the match is exact, ie:
         // -name - Exclude "name"
         // -user.name - Implies population of "user" but exclude "user.name",

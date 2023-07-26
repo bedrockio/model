@@ -17,47 +17,63 @@ export function isNumberField(obj, path) {
 }
 
 function isType(obj, path, test) {
-  const { type } = resolveInnerField(obj, path);
+  const { type } = getInnerField(obj, path);
   return type === test || type === mongoose.Schema.Types[test];
 }
 
 export function isSchemaTypedef(arg) {
   // Has a type defined and is not a literal type field.
-  return arg?.type && !arg.type?.type;
+  return !!arg?.type && !arg.type?.type;
 }
 
-// Note: Resolved field may be an object or a function
-// from mongoose.Schema.Types that is resolved from the
-// shorthand: field: 'String'.
-export function resolveField(obj, path) {
-  let typedef = obj;
-  for (let key of path.split('.')) {
-    typedef = resolveFieldForKey(typedef, key);
+// Gets the schema "field". For a structure like below:
+// {
+//   products: {
+//     type: [
+//       {
+//         inventory: {
+//           type: [
+//             {
+//               type: 'Number',
+//             },
+//           ],
+//           writeAccess: 'none',
+//         },
+//       },
+//     ],
+//   },
+// }
+//
+// Given a path "products.inventory" it will return the inner
+// "inventory" field. It must traverse into arrays and other mongoose
+// schemas along the way except for the final field.
+export function getField(obj, path) {
+  let field = obj;
+  if (typeof path === 'string') {
+    path = path.split('.');
   }
-  return typedef;
-}
-
-// The same as resolveField but gets the element
-// typedef in the case of arrays.
-export function resolveInnerField(obj, path) {
-  let typedef = resolveField(obj, path);
-  if (Array.isArray(typedef.type)) {
-    typedef = typedef.type[0];
-  }
-  return typedef;
-}
-
-function resolveFieldForKey(obj, key) {
-  let typedef;
-  if (isSchemaTypedef(obj)) {
-    const { type } = obj;
-    if (Array.isArray(type)) {
-      typedef = type[0][key];
-    } else {
-      typedef = type[key];
+  path.forEach((key, i) => {
+    field = field[key];
+    if (i < path.length - 1) {
+      field = resolveInnerField(field);
     }
-  } else {
-    typedef = obj[key];
+  });
+  return field || {};
+}
+
+// The same as getField but traverses into the final field
+// as well. In the above example this will return:
+// { type: 'Number' }, given "product.inventory"
+export function getInnerField(obj, path) {
+  return resolveInnerField(getField(obj, path));
+}
+
+function resolveInnerField(field) {
+  if (Array.isArray(field?.type)) {
+    field = field.type[0];
   }
-  return typedef || {};
+  if (field instanceof mongoose.Schema) {
+    field = field.obj;
+  }
+  return field;
 }
