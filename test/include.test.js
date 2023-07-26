@@ -4,6 +4,7 @@ import { getIncludes } from '../src/include';
 import { createTestModel, getTestModelName } from '../src/testing';
 
 const userModelName = getTestModelName();
+const productModelName = getTestModelName();
 
 const Shop = createTestModel({
   name: 'String',
@@ -19,6 +20,15 @@ const Shop = createTestModel({
       type: 'ObjectId',
     },
   ],
+  inventory: [
+    {
+      quantity: 'Number',
+      product: {
+        ref: productModelName,
+        type: 'ObjectId',
+      },
+    },
+  ],
   deep: {
     user: {
       ref: userModelName,
@@ -27,7 +37,7 @@ const Shop = createTestModel({
   },
 });
 
-const Product = createTestModel({
+const Product = createTestModel(productModelName, {
   name: 'String',
   email: 'String',
   tags: ['String'],
@@ -37,7 +47,7 @@ const Product = createTestModel({
   },
 });
 
-const userSchema = {
+const User = createTestModel(userModelName, {
   name: 'String',
   email: 'String',
   tags: ['String'],
@@ -55,9 +65,7 @@ const userSchema = {
     ref: userModelName,
     type: 'ObjectId',
   },
-};
-
-const User = createTestModel(userModelName, userSchema);
+});
 
 const Comment = createTestModel({
   body: 'String',
@@ -594,6 +602,20 @@ describe('getIncludes', () => {
       ],
     });
   });
+
+  it('should have populate for nested ref field on array', async () => {
+    const data = getIncludes(Shop.modelName, 'inventory.product');
+    expect(data).toEqual({
+      select: [],
+      populate: [
+        {
+          path: 'inventory.product',
+          populate: [],
+          select: [],
+        },
+      ],
+    });
+  });
 });
 
 describe('query includes', () => {
@@ -721,6 +743,7 @@ describe('static methods', () => {
           name: 'Shop',
           tags: [],
           customers: [],
+          inventory: [],
           user: {
             id: user.id,
             name: 'Bob',
@@ -796,6 +819,7 @@ describe('static methods', () => {
         email: 'shop@bar.com',
         tags: [],
         customers: [],
+        inventory: [],
         createdAt: shop.createdAt.toISOString(),
         updatedAt: shop.updatedAt.toISOString(),
       });
@@ -832,6 +856,7 @@ describe('static methods', () => {
         },
         tags: [],
         customers: [],
+        inventory: [],
         createdAt: shop.createdAt.toISOString(),
         updatedAt: shop.updatedAt.toISOString(),
       });

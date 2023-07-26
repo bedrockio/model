@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { escapeRegExp } from 'lodash';
 import yd from '@bedrockio/yada';
 
-import { resolveInnerField } from './utils';
+import { resolveInnerField, isSchemaTypedef } from './utils';
 import { POPULATE_MAX_DEPTH } from './const';
 
 // @ts-ignore
@@ -218,7 +218,7 @@ function setNodePath(node, options) {
             exclude,
           });
           halt = true;
-        } else {
+        } else if (isSchemaTypedef(field)) {
           node[key] = null;
         }
       } else if (type === 'virtual') {
