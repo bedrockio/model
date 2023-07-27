@@ -72,7 +72,9 @@ function resolveInnerField(field) {
   if (Array.isArray(field?.type)) {
     field = field.type[0];
   }
-  if (field instanceof mongoose.Schema) {
+  if (field?.type instanceof mongoose.Schema) {
+    field = field.type.obj;
+  } else if (field instanceof mongoose.Schema) {
     field = field.obj;
   }
   return field;

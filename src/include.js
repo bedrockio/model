@@ -242,13 +242,27 @@ function resolvePaths(schema, str) {
     source = source.replaceAll('\\*', '[^.]+');
     source = `^${source}$`;
     const reg = RegExp(source);
-    paths = Object.keys(schema.paths || {}).filter((path) => {
-      return !path.startsWith('_') && reg.test(path);
+    paths = getSchemaPaths(schema).filter((path) => {
+      return reg.test(path);
     });
   } else {
     paths = [str];
   }
   return paths.map((path) => {
     return [path, schema.pathType(path)];
+  });
+}
+
+function getSchemaPaths(schema) {
+  return Object.entries(schema.paths || {}).flatMap(([key, schema]) => {
+    if (key.startsWith('_')) {
+      return [];
+    } else if (schema.schema) {
+      return getSchemaPaths(schema.schema).map((path) => {
+        return [key, path].join('.');
+      });
+    } else {
+      return [key];
+    }
   });
 }

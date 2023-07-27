@@ -31,9 +31,12 @@ const Shop = createTestModel({
     },
   },
   deep: {
-    user: {
-      ref: userModelName,
-      type: 'ObjectId',
+    type: 'Object',
+    attributes: {
+      user: {
+        ref: userModelName,
+        type: 'ObjectId',
+      },
     },
   },
 });
@@ -590,6 +593,11 @@ describe('getIncludes', () => {
             },
             {
               path: 'customers',
+              populate: [],
+              select: [],
+            },
+            {
+              path: 'inventory.product',
               populate: [],
               select: [],
             },
