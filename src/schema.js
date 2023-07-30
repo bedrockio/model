@@ -131,6 +131,8 @@ function attributesToMongoose(attributes) {
       } else if (key === 'attributes' && type === 'object') {
         val = attributesToMongoose(val);
       }
+    } else if (Array.isArray(val)) {
+      val = val.map(attributesToMongoose);
     } else if (isPlainObject(val)) {
       if (isScopeExtension(val)) {
         applyScopeExtension(val, definition);

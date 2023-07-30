@@ -539,6 +539,45 @@ describe('createSchema', () => {
         ).resolves.not.toThrow();
       });
 
+      it('should allow mixed nested syntax', async () => {
+        const User = createTestModel({
+          auth: {
+            type: 'Object',
+            attributes: {
+              tokens: [
+                {
+                  types: {
+                    type: 'Array',
+                    attributes: {
+                      name: 'String',
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        });
+
+        const user = await User.create({
+          auth: {
+            tokens: [
+              {
+                types: [
+                  {
+                    name: 'test',
+                  },
+                ],
+              },
+            ],
+          },
+        });
+
+        const data = user.toObject();
+        expect(data.auth.tokens[0].types[0]).toEqual({
+          name: 'test',
+        });
+      });
+
       it('should validate array min/max length', async () => {
         const User = createTestModel({
           names: {
