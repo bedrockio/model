@@ -491,6 +491,54 @@ describe('createSchema', () => {
         ).resolves.not.toThrow();
       });
 
+      it('should allow double nested extended syntax', async () => {
+        const User = createTestModel({
+          auth: {
+            type: 'Object',
+            attributes: {
+              tokens: {
+                type: 'Array',
+                attributes: {
+                  id: {
+                    type: 'String',
+                    required: true,
+                  },
+                  name: {
+                    type: 'String',
+                    required: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        await expect(
+          User.create({
+            auth: {
+              tokens: [
+                {
+                  id: 'foo',
+                },
+              ],
+            },
+          })
+        ).rejects.toThrow();
+
+        await expect(
+          User.create({
+            auth: {
+              tokens: [
+                {
+                  id: 'foo',
+                  name: 'bar',
+                },
+              ],
+            },
+          })
+        ).resolves.not.toThrow();
+      });
+
       it('should validate array min/max length', async () => {
         const User = createTestModel({
           names: {

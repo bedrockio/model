@@ -128,6 +128,8 @@ function attributesToMongoose(attributes) {
       } else if (key === 'validate' && type === 'string') {
         // Allow custom mongoose validation function that derives from the schema.
         val = getNamedValidator(val);
+      } else if (key === 'attributes' && type === 'object') {
+        val = attributesToMongoose(val);
       }
     } else if (isPlainObject(val)) {
       if (isScopeExtension(val)) {
