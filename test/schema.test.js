@@ -903,6 +903,117 @@ describe('createSchema', () => {
     });
   });
 
+  describe('dates', () => {
+    it('should be able to set default now', async () => {
+      const User = createTestModel({
+        name: 'String',
+        lastAccessedAt: {
+          type: 'Date',
+          default: 'now',
+        },
+      });
+      const user = await User.create({
+        name: 'foo',
+      });
+
+      expect(user.lastAccessedAt.getTime()).toBeCloseTo(Date.now(), -20);
+    });
+
+    it('should be able to set default now in array', async () => {
+      const User = createTestModel({
+        tokens: [
+          {
+            name: 'String',
+            lastAccessedAt: {
+              type: 'Date',
+              default: 'now',
+            },
+          },
+        ],
+      });
+      const user = await User.create({
+        tokens: [
+          {
+            name: 'foo',
+          },
+        ],
+      });
+
+      expect(user.tokens[0].lastAccessedAt.getTime()).toBeCloseTo(
+        Date.now(),
+        -20
+      );
+    });
+
+    it('should be able to set default now in extended array', async () => {
+      const User = createTestModel({
+        tokens: {
+          type: 'Array',
+          attributes: {
+            name: 'String',
+            lastAccessedAt: {
+              type: 'Date',
+              default: 'now',
+            },
+          },
+        },
+      });
+      const user = await User.create({
+        tokens: [
+          {
+            name: 'foo',
+          },
+        ],
+      });
+
+      expect(user.tokens[0].lastAccessedAt.getTime()).toBeCloseTo(
+        Date.now(),
+        -20
+      );
+    });
+
+    it('should be able to set default now in object', async () => {
+      const User = createTestModel({
+        token: {
+          name: 'String',
+          lastAccessedAt: {
+            type: 'Date',
+            default: 'now',
+          },
+        },
+      });
+      const user = await User.create({
+        token: {
+          name: 'foo',
+        },
+      });
+
+      expect(user.token.lastAccessedAt.getTime()).toBeCloseTo(Date.now(), -20);
+    });
+
+    it('should be able to set default now in extended object', async () => {
+      const User = createTestModel({
+        token: {
+          type: 'Object',
+          attributes: {
+            name: 'String',
+            lastAccessedAt: {
+              type: 'Date',
+              default: 'now',
+            },
+          },
+        },
+      });
+      const user = await User.create({
+        token: {
+          name: 'foo',
+        },
+      });
+
+      expect(user.token.lastAccessedAt.getTime()).toBeCloseTo(Date.now(), -20);
+    });
+  });
+
   describe('defaults', () => {
     it('should add timestamps by default', async () => {
       const User = createTestModel();

@@ -195,6 +195,7 @@ function applyExtensions(typedef) {
   applySyntaxExtensions(typedef);
   applyUniqueExtension(typedef);
   applyTupleExtension(typedef);
+  applyDateExtension(typedef);
 }
 
 function applySyntaxExtensions(typedef) {
@@ -247,6 +248,13 @@ function applyTupleExtension(typedef) {
     // mixed types. https://mongoosejs.com/docs/schematypes.html#arrays
     typedef.type = [];
     typedef.validate = getTupleValidator(type);
+  }
+}
+
+function applyDateExtension(typedef) {
+  const { type, default: defaultValue } = typedef;
+  if (type === 'Date' && defaultValue === 'now') {
+    typedef.default = Date.now;
   }
 }
 
