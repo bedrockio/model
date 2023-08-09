@@ -900,6 +900,26 @@ describe('createSchema', () => {
           },
         });
       });
+
+      it('should apply a scope to a nested field', async () => {
+        const User = createTestModel({
+          private: {
+            type: 'Scope',
+            writeAccess: 'none',
+            attributes: {
+              profile: {
+                name: 'String',
+              },
+            },
+          },
+        });
+        const user = await User.create({
+          profile: {
+            name: 'foo',
+          },
+        });
+        expect(user.profile.name).toBe('foo');
+      });
     });
   });
 

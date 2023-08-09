@@ -230,10 +230,18 @@ function isScopeExtension(obj) {
 function applyScopeExtension(scope, definition) {
   const { type, attributes, ...options } = scope;
   for (let [key, val] of Object.entries(normalizeAttributes(attributes))) {
-    definition[key] = {
-      ...val,
-      ...options,
-    };
+    if (isSchemaTypedef(val)) {
+      definition[key] = {
+        ...val,
+        ...options,
+      };
+    } else {
+      definition[key] = {
+        type: 'Object',
+        attributes: val,
+        ...options,
+      };
+    }
   }
 }
 
