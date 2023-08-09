@@ -1035,8 +1035,20 @@ describe('search integration', () => {
 
 describe('validaton integration', () => {
   describe('getCreateValidation', () => {
-    it('should allow include as string', async () => {
+    it('should not have include by default', async () => {
       const schema = Shop.getCreateValidation();
+      await expect(async () => {
+        await schema.validate({
+          name: 'foo',
+          include: 'user',
+        });
+      }).rejects.toThrow();
+    });
+
+    it('should optionally allow include', async () => {
+      const schema = Shop.getCreateValidation({
+        allowInclude: true,
+      });
       const result = await schema.validate({
         name: 'foo',
         include: 'user',
@@ -1048,7 +1060,36 @@ describe('validaton integration', () => {
     });
 
     it('should allow include as array', async () => {
-      const schema = Shop.getCreateValidation();
+      const schema = Shop.getCreateValidation({
+        allowInclude: true,
+      });
+      const result = await schema.validate({
+        name: 'foo',
+        include: ['user'],
+      });
+      expect(result).toMatchObject({
+        name: 'foo',
+        include: ['user'],
+      });
+    });
+  });
+
+  describe('getUpdateValidation', () => {
+    it('should not have include by default', async () => {
+      const schema = Shop.getUpdateValidation();
+      const result = await schema.validate({
+        name: 'foo',
+        include: ['user'],
+      });
+      expect(result).toMatchObject({
+        name: 'foo',
+      });
+    });
+
+    it('should optionally allow includes', async () => {
+      const schema = Shop.getUpdateValidation({
+        allowInclude: true,
+      });
       const result = await schema.validate({
         name: 'foo',
         include: ['user'],

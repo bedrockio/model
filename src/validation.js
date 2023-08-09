@@ -88,11 +88,12 @@ export function applyValidation(schema, definition) {
 
   schema.static(
     'getCreateValidation',
-    function getCreateValidation(appendSchema) {
+    function getCreateValidation(options = {}) {
+      const { allowInclude, ...appendSchema } = options;
       return getSchemaFromMongoose(schema, {
         model: this,
         appendSchema,
-        allowIncludes: true,
+        allowInclude,
         stripDeleted: true,
         stripTimestamps: true,
         allowExpandedRefs: true,
@@ -109,10 +110,12 @@ export function applyValidation(schema, definition) {
 
   schema.static(
     'getUpdateValidation',
-    function getUpdateValidation(appendSchema) {
+    function getUpdateValidation(options = {}) {
+      const { allowInclude, ...appendSchema } = options;
       return getSchemaFromMongoose(schema, {
         model: this,
         appendSchema,
+        allowInclude,
         skipRequired: true,
         stripUnknown: true,
         stripDeleted: true,
@@ -138,7 +141,7 @@ export function applyValidation(schema, definition) {
         model: this,
         allowSearch: true,
         skipRequired: true,
-        allowIncludes: true,
+        allowInclude: true,
         expandDotSyntax: true,
         unwindArrayFields: true,
         requireReadAccess: true,
@@ -184,7 +187,7 @@ function getMongooseFields(schema, options) {
 
 // Exported for testing
 export function getValidationSchema(attributes, options = {}) {
-  const { appendSchema, assertUniqueOptions, allowIncludes } = options;
+  const { appendSchema, assertUniqueOptions, allowInclude } = options;
   let schema = getObjectSchema(attributes, options);
   if (assertUniqueOptions) {
     schema = schema.custom(async (obj, { root }) => {
@@ -197,7 +200,7 @@ export function getValidationSchema(attributes, options = {}) {
   if (appendSchema) {
     schema = schema.append(appendSchema);
   }
-  if (allowIncludes) {
+  if (allowInclude) {
     schema = schema.append(INCLUDE_FIELD_SCHEMA);
   }
   return schema;

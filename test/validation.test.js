@@ -628,6 +628,20 @@ describe('getCreateValidation', () => {
             ],
             required: true,
           },
+        },
+      });
+    });
+
+    it('should correctly describe its schema with includes', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      const schema = User.getCreateValidation({
+        allowInclude: true,
+      });
+      expect(schema.toOpenApi()).toMatchObject({
+        type: 'object',
+        properties: {
           include: {
             oneOf: [
               {
