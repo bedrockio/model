@@ -289,6 +289,25 @@ describe('normalizeAttributes', () => {
       },
     });
   });
+
+  it('should normalize an object type', async () => {
+    const attributes = {
+      profile: {
+        type: {
+          name: 'String',
+        },
+      },
+    };
+    expect(normalizeAttributes(attributes)).toEqual({
+      profile: {
+        type: {
+          name: {
+            type: 'String',
+          },
+        },
+      },
+    });
+  });
 });
 
 describe('createSchema', () => {
@@ -874,7 +893,7 @@ describe('createSchema', () => {
         });
       });
 
-      it('should apply a scope attributes to all properties', async () => {
+      it('should apply scope attributes to all properties', async () => {
         const User = createTestModel({
           private: {
             type: 'Scope',
@@ -919,6 +938,23 @@ describe('createSchema', () => {
           },
         });
         expect(user.profile.name).toBe('foo');
+      });
+
+      it('should correctly reflect a nested path with a scope', async () => {
+        const User = createTestModel({
+          private: {
+            type: 'Scope',
+            attributes: {
+              profile: {
+                name: {
+                  type: 'String',
+                },
+              },
+            },
+          },
+        });
+        const schema = User.schema.path('profile.name');
+        expect(schema instanceof mongoose.SchemaTypes.String).toBe(true);
       });
     });
   });

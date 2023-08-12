@@ -28,19 +28,17 @@ import {
  */
 export function createSchema(definition, options = {}) {
   const schema = new mongoose.Schema(
-    attributesToMongoose(
-      normalizeAttributes({
-        ...definition.attributes,
+    attributesToMongoose({
+      ...definition.attributes,
 
-        // Although timestamps are being set below, we still need to add
-        // them to the schema so that validation can be generated for them,
-        // namely in getSearchValidation.
-        createdAt: 'Date',
-        updatedAt: 'Date',
-        deletedAt: 'Date',
-        deleted: { type: 'Boolean', default: false },
-      })
-    ),
+      // Although timestamps are being set below, we still need to add
+      // them to the schema so that validation can be generated for them,
+      // namely in getSearchValidation.
+      createdAt: 'Date',
+      updatedAt: 'Date',
+      deletedAt: 'Date',
+      deleted: { type: 'Boolean', default: false },
+    }),
     {
       timestamps: true,
       toJSON: serializeOptions,
@@ -69,8 +67,7 @@ export function normalizeAttributes(arg, path = []) {
   } else if (typeof arg === 'string') {
     return normalizeSchemaTypedef({ type: arg }, path);
   } else if (Array.isArray(arg)) {
-    const type = normalizeArrayAttributes(arg, path);
-    return normalizeSchemaTypedef({ type }, path);
+    return normalizeSchemaTypedef({ type: arg }, path);
   } else if (typeof arg === 'object') {
     assertRefs(arg, path);
 
@@ -112,6 +109,8 @@ function attributesToMongoose(attributes) {
   } else if (Array.isArray(attributes)) {
     return attributes.map(attributesToMongoose);
   }
+
+  attributes = normalizeAttributes(attributes);
 
   let definition = {};
 
@@ -223,25 +222,26 @@ function isExtendedSyntax(typedef) {
   return attributes && (type === 'Object' || type === 'Array');
 }
 
-function isScopeExtension(obj) {
-  return isSchemaTypedef(obj) && obj.type === 'Scope';
+function isScopeExtension(arg) {
+  return isSchemaTypedef(arg) && arg.type === 'Scope';
 }
 
-function applyScopeExtension(scope, definition) {
-  const { type, attributes, ...options } = scope;
+function applyScopeExtension(typedef, definition) {
+  const { type, attributes, ...options } = typedef;
   for (let [key, val] of Object.entries(normalizeAttributes(attributes))) {
     if (isSchemaTypedef(val)) {
-      definition[key] = {
+      val = {
         ...val,
         ...options,
       };
     } else {
-      definition[key] = {
+      val = attributesToMongoose({
         type: 'Object',
         attributes: val,
         ...options,
-      };
+      });
     }
+    definition[key] = val;
   }
 }
 

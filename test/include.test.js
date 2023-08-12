@@ -580,6 +580,7 @@ describe('getIncludes', () => {
             'name',
             'email',
             'tags',
+            'inventory.quantity',
             'createdAt',
             'updatedAt',
             'deletedAt',
