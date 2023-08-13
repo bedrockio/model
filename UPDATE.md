@@ -16,7 +16,8 @@ yarn add @bedrockio/logger
 yarn add @bedrockio/model
 ```
 
-Replace all references to `src/utils/schema.js` and `src/utils/validation.js` to `@bedrockio/model`.
+Replace all references to `src/utils/schema.js` and `src/utils/validation.js` to
+`@bedrockio/model`.
 
 In the model definitions:
 
