@@ -1,7 +1,7 @@
 import yd from '@bedrockio/yada';
 import logger from '@bedrockio/logger';
 import mongoose from 'mongoose';
-import { pick, isEmpty, isPlainObject } from 'lodash';
+import { pick, isEmpty, escapeRegExp, isPlainObject } from 'lodash';
 
 import { isDateField, isNumberField, getField } from './utils';
 import { SEARCH_DEFAULTS } from './const';
@@ -196,7 +196,7 @@ function buildKeywordQuery(schema, keyword, fields) {
 
 function buildRegexQuery(keyword, fields) {
   return fields.map((field) => {
-    const regexKeyword = keyword.replace(/\+/g, '\\+');
+    const regexKeyword = escapeRegExp(keyword);
     return {
       [field]: {
         $regex: `${regexKeyword}`,

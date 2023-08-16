@@ -730,4 +730,22 @@ describe('search', () => {
     });
     expect(users.data.length).toBe(2);
   });
+
+  it('should not error on regex tokens', async () => {
+    const schema = createSchema({
+      attributes: {
+        name: 'String',
+      },
+      search: {
+        fields: ['name'],
+      },
+    });
+    const User = createTestModel(schema);
+
+    await expect(
+      User.search({
+        keyword: 'billy(*$?.^|',
+      })
+    ).resolves.not.toThrow();
+  });
 });
