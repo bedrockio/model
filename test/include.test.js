@@ -678,6 +678,23 @@ describe('query includes', () => {
     shop = await Shop.findById(shop.id).include(undefined);
     expect(shop.user).toBeInstanceOf(Types.ObjectId);
   });
+
+  it('should disregard include in exists', async () => {
+    const user = await User.create({
+      name: 'Bob',
+    });
+    let shop = await Shop.create({
+      name: 'foo',
+      user: user.id,
+    });
+
+    const found = await Shop.exists({
+      name: 'foo',
+      include: 'user',
+    });
+
+    expect(found._id.toString()).toBe(shop.id);
+  });
 });
 
 describe('instance methods', () => {
@@ -1032,6 +1049,22 @@ describe('search integration', () => {
     expect(data.length).toBe(1);
     expect(data[0].user.name).toBe('Bob');
   });
+
+  it('should report appropriate totals with include', async () => {
+    const user = await User.create({
+      name: 'Bob',
+    });
+    await Shop.create({
+      name: 'foo',
+      user: user.id,
+    });
+
+    const { meta } = await Shop.search({
+      name: 'foo',
+      include: 'user',
+    });
+    expect(meta.total).toBe(1);
+  });
 });
 
 describe('validaton integration', () => {
@@ -1163,5 +1196,39 @@ describe('other', () => {
     await user.delete();
     shop = await Shop.findById(shop.id).include('user');
     expect(shop.user).toBe(null);
+  });
+
+  it('should not interfere with countDocuments', async () => {
+    const user = await User.create({
+      name: 'Bob',
+    });
+    await Shop.create({
+      name: 'foo',
+      user: user.id,
+    });
+
+    const count = await Shop.countDocuments({
+      name: 'foo',
+      include: 'user',
+    });
+
+    expect(count).toBe(1);
+  });
+
+  it('should not interfere with estimatedDocumentCount', async () => {
+    const user = await User.create({
+      name: 'Bob',
+    });
+    await Shop.create({
+      name: 'foo',
+      user: user.id,
+    });
+
+    const count = await Shop.estimatedDocumentCount({
+      name: 'foo',
+      include: 'user',
+    });
+
+    expect(count).toBeGreaterThan(0);
   });
 });

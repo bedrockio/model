@@ -39,6 +39,12 @@ export function applyInclude(schema) {
     return next();
   });
 
+  schema.pre(/^count/, function (next) {
+    const filter = this.getFilter();
+    delete filter.include;
+    return next();
+  });
+
   // Static Methods
 
   // Async method runs the create first then calls into
