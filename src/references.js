@@ -21,7 +21,7 @@ export function applyReferences(schema) {
           return e === model || e === model.modelName;
         });
         if (isAllowed) {
-          return;
+          continue;
         }
 
         const query = {

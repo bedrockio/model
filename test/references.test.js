@@ -8,7 +8,15 @@ const User = createTestModel({
     required: true,
   },
 });
+
 const Shop = createTestModel({
+  user: {
+    ref: User.modelName,
+    type: mongoose.Schema.Types.ObjectId,
+  },
+});
+
+const Product = createTestModel({
   user: {
     ref: User.modelName,
     type: mongoose.Schema.Types.ObjectId,
@@ -17,8 +25,8 @@ const Shop = createTestModel({
 
 describe('assertNoReferences', () => {
   it('should throw error if document is referenced externally', async () => {
-    const user1 = await User.create({ name: 'foo ' });
-    const user2 = await User.create({ name: 'foo ' });
+    const user1 = await User.create({ name: 'foo' });
+    const user2 = await User.create({ name: 'foo' });
     await Shop.create({ user: user1 });
 
     await expect(async () => {
@@ -41,8 +49,8 @@ describe('assertNoReferences', () => {
   });
 
   it('should expose references on the error object', async () => {
-    const user1 = await User.create({ name: 'foo ' });
-    await User.create({ name: 'foo ' });
+    const user1 = await User.create({ name: 'foo' });
+    await User.create({ name: 'foo' });
     const shop = await Shop.create({ user: user1 });
 
     try {
@@ -59,13 +67,32 @@ describe('assertNoReferences', () => {
   });
 
   it('should throw error exception is unknown model', async () => {
-    const User = createTestModel();
-    const user = await User.create({});
+    const user = await User.create({
+      name: 'foo',
+    });
 
     await expect(
       user.assertNoReferences({
         except: ['BadModelName'],
       })
     ).rejects.toThrow('Unknown model "BadModelName".');
+  });
+
+  it('should not stop on excepted model', async () => {
+    const user = await User.create({
+      name: 'foo',
+    });
+    await Shop.create({
+      user,
+    });
+    await Product.create({
+      user,
+    });
+
+    await expect(
+      user.assertNoReferences({
+        except: [Shop],
+      })
+    ).rejects.toThrow('Refusing to delete.');
   });
 });
