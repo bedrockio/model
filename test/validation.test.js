@@ -216,6 +216,23 @@ describe('getCreateValidation', () => {
     );
   });
 
+  it('should not fail on a dynamic default', async () => {
+    const User = createTestModel({
+      name: 'String',
+      lastAccessedAt: {
+        type: 'Date',
+        default: 'now',
+      },
+    });
+
+    const schema = User.getCreateValidation();
+    await expect(
+      schema.validate({
+        name: 'foo',
+      })
+    ).resolves.not.toThrow();
+  });
+
   describe('write access', () => {
     it('should deny access', async () => {
       const User = createTestModel({
