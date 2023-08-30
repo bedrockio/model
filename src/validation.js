@@ -282,12 +282,9 @@ function getSchemaForTypedef(typedef, options = {}) {
   if (typedef.default) {
     // Note that adding a default in the validation is
     // technically unnecessary as this will be handled
-    // at the model level, however fixed values can be
-    // reported to the OpenAPI definition to enrich
-    // documentation.
-    if (typeof typedef.default !== 'function') {
-      schema = schema.default(typedef.default);
-    }
+    // at the model level, however passing this on will
+    // enrich OpenAPI documentation.
+    schema = schema.default(typedef.default);
   }
   if (typedef.validate?.schema) {
     schema = schema.append(typedef.validate.schema);
