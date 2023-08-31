@@ -1068,6 +1068,28 @@ describe('createSchema', () => {
 
       expect(user.token.lastAccessedAt.getTime()).toBeCloseTo(Date.now(), -20);
     });
+
+    it('should allow default now to be mocked', async () => {
+      const User = createTestModel({
+        date: {
+          type: 'Date',
+          default: 'now',
+        },
+      });
+      const NativeDate = Date;
+      function MockDate(...args) {
+        return new NativeDate(...args);
+      }
+      MockDate.now = () => {
+        return 0;
+      };
+      global.Date = MockDate;
+
+      const user = await User.create({});
+      expect(user.date.getTime()).toBe(0);
+
+      global.Date = NativeDate;
+    });
   });
 
   describe('defaults', () => {

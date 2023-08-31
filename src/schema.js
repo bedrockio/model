@@ -262,7 +262,11 @@ function applyTupleExtension(typedef) {
 function applyDateExtension(typedef) {
   const { type, default: defaultValue } = typedef;
   if (type === 'Date' && defaultValue === 'now') {
-    typedef.default = Date.now;
+    // Allow mocking which would modify the global
+    // Date after the schema has been set up.
+    typedef.default = () => {
+      return Date.now();
+    };
   }
 }
 
