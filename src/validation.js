@@ -96,6 +96,7 @@ export function applyValidation(schema, definition) {
         allowInclude,
         stripDeleted: true,
         stripTimestamps: true,
+        allowDefaultTags: true,
         allowExpandedRefs: true,
         requireWriteAccess: true,
         ...(hasUnique && {
@@ -279,13 +280,18 @@ function getSchemaForTypedef(typedef, options = {}) {
   if (isRequired(typedef, options)) {
     schema = schema.required();
   }
-  if (typedef.default) {
-    // Note that adding a default in the validation is
-    // technically unnecessary as this will be handled
-    // at the model level, however passing this on will
-    // enrich OpenAPI documentation.
-    schema = schema.default(typedef.default);
+
+  if (typedef.default && options.allowDefaultTags) {
+    // Tag the default value to allow OpenAPI description
+    // of the field but do not actually set the default as it will
+    // be handled on the schema level. The tags are being appended
+    // for the create validation only as a convenience to describe
+    // the default value on creation in OpenApi.
+    schema = schema.tag({
+      default: typedef.default,
+    });
   }
+
   if (typedef.validate?.schema) {
     schema = schema.append(typedef.validate.schema);
   } else if (typeof typedef.validate === 'function') {
@@ -304,6 +310,7 @@ function getSchemaForTypedef(typedef, options = {}) {
   if (typedef.max != null || typedef.maxLength != null) {
     schema = schema.max(typedef.max ?? typedef.maxLength);
   }
+
   if (options.allowSearch) {
     schema = getSearchSchema(schema, type);
   }
