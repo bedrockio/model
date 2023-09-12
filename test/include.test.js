@@ -453,6 +453,26 @@ describe('getIncludes', () => {
     });
   });
 
+  it('should populate into virtual nested fields', async () => {
+    const data = getIncludes(Product.modelName, 'comments.product');
+    expect(data).toEqual({
+      select: [],
+      populate: [
+        {
+          path: 'comments',
+          select: [],
+          populate: [
+            {
+              path: 'product',
+              select: [],
+              populate: [],
+            },
+          ],
+        },
+      ],
+    });
+  });
+
   it('should throw an error on unknown path', async () => {
     expect(() => {
       getIncludes(User.modelName, 'name.foo');

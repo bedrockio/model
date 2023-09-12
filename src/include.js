@@ -228,7 +228,16 @@ function setNodePath(node, options) {
           node[key] = null;
         }
       } else if (type === 'virtual') {
-        node[key] = {};
+        node[key] ||= {};
+        const virtual = schema.virtual(key);
+        setNodePath(node[key], {
+          // @ts-ignore
+          modelName: virtual.options.ref,
+          path: path.slice(parts.length),
+          depth: depth + 1,
+          exclude,
+        });
+        halt = true;
       } else if (type !== 'nested') {
         throw new Error(`Unknown path on ${modelName}: ${key}.`);
       }
