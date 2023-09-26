@@ -690,6 +690,42 @@ describe('createSchema', () => {
         },
       });
     });
+
+    it('should allow arrays of ids to have a minLength', async () => {
+      const Category = createTestModel({
+        name: 'String',
+      });
+      const Product = createTestModel({
+        categories: {
+          type: [
+            {
+              type: 'ObjectId',
+              ref: 'Category',
+            },
+          ],
+          minLength: 2,
+        },
+      });
+      const category1 = await Category.create({
+        name: 'foo',
+      });
+      const category2 = await Category.create({
+        name: 'bar',
+      });
+
+      await expect(async () => {
+        await Product.create({
+          categories: [category1.id],
+        });
+      }).rejects.toThrow();
+
+      const product = await Product.create({
+        categories: [category1.id, category2.id],
+      });
+
+      expect(product.categories[0]._id).toEqual(category1._id);
+      expect(product.categories[1]._id).toEqual(category2._id);
+    });
   });
 
   describe('objects', () => {
