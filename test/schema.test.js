@@ -397,6 +397,31 @@ describe('createSchema', () => {
         softUnique: true,
       });
     });
+
+    it('should enforce soft unique on model', async () => {
+      const User = createTestModel({
+        email: {
+          type: 'String',
+          required: true,
+          unique: true,
+        },
+        content: {
+          type: 'String',
+          required: true,
+        },
+      });
+
+      await User.create({
+        email: 'foo@bar.com',
+        content: 'foo',
+      });
+
+      await expect(async () => {
+        await User.create({
+          email: 'foo@bar.com',
+        });
+      }).rejects.toThrow();
+    });
   });
 
   describe('arrays', () => {
