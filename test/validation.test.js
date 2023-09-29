@@ -676,6 +676,21 @@ describe('getCreateValidation', () => {
       });
     });
   });
+
+  it('should work correctly with array schemas', async () => {
+    const User = createTestModel({
+      name: {
+        type: 'String',
+        required: true,
+      },
+    });
+    const schema = yd.array(User.getCreateValidation());
+    await assertPass(schema, [
+      {
+        name: 'foo',
+      },
+    ]);
+  });
 });
 
 describe('getUpdateValidation', () => {
