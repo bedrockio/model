@@ -1,3 +1,5 @@
+import { wrapQuery } from './query';
+
 export function applySoftDelete(schema) {
   applyQueries(schema);
   applyUniqueConstraints(schema);
@@ -40,63 +42,86 @@ function applyQueries(schema) {
 
   // Static Methods
 
-  schema.static('deleteOne', async function deleteOne(filter, ...rest) {
+  schema.static('deleteOne', function deleteOne(filter, ...rest) {
     const update = getDelete();
-    const res = await this.updateOne(filter, update, ...rest);
-    return {
-      acknowledged: res.acknowledged,
-      deletedCount: res.modifiedCount,
-    };
+    const query = this.updateOne(filter, update, ...rest);
+    return wrapQuery(query, async (promise) => {
+      const res = await promise;
+      return {
+        acknowledged: res.acknowledged,
+        deletedCount: res.modifiedCount,
+      };
+    });
   });
 
-  schema.static('deleteMany', async function deleteMany(filter, ...rest) {
+  schema.static('deleteMany', function deleteMany(filter, ...rest) {
     const update = getDelete();
-    const res = await this.updateMany(filter, update, ...rest);
-    return {
-      acknowledged: res.acknowledged,
-      deletedCount: res.modifiedCount,
-    };
+    const query = this.updateMany(filter, update, ...rest);
+    return wrapQuery(query, async (promise) => {
+      const res = await promise;
+      return {
+        acknowledged: res.acknowledged,
+        deletedCount: res.modifiedCount,
+      };
+    });
   });
 
-  schema.static(
-    'findOneAndDelete',
-    async function findOneAndDelete(filter, ...args) {
-      return await this.findOneAndUpdate(filter, getDelete(), ...args);
-    }
-  );
+  schema.static('findOneAndDelete', function findOneAndDelete(filter, ...args) {
+    return this.findOneAndUpdate(filter, getDelete(), ...args);
+  });
 
-  schema.static('restoreOne', async function restoreOne(filter, ...rest) {
+  schema.static('restoreOne', function restoreOne(filter, ...rest) {
     const update = getRestore();
-    const res = await this.updateOne(filter, update, ...rest);
-    return {
-      acknowledged: res.acknowledged,
-      restoredCount: res.modifiedCount,
-    };
+    const query = this.updateOne(filter, update, ...rest);
+    return wrapQuery(query, async (promise) => {
+      const res = await promise;
+      return {
+        acknowledged: res.acknowledged,
+        restoredCount: res.modifiedCount,
+      };
+    });
   });
 
-  schema.static('restoreMany', async function restoreMany(filter, ...rest) {
+  schema.static('restoreMany', function restoreMany(filter, ...rest) {
     const update = getRestore();
-    const res = await this.updateMany(filter, update, ...rest);
-    return {
-      acknowledged: res.acknowledged,
-      restoredCount: res.modifiedCount,
-    };
+    const query = this.updateMany(filter, update, ...rest);
+    return wrapQuery(query, async (promise) => {
+      const res = await promise;
+      return {
+        acknowledged: res.acknowledged,
+        restoredCount: res.modifiedCount,
+      };
+    });
   });
 
-  schema.static('destroyOne', async function destroyOne(...args) {
-    const res = await this.collection.deleteOne(...args);
-    return {
-      acknowledged: res.acknowledged,
-      destroyedCount: res.deletedCount,
-    };
+  schema.static('destroyOne', function destroyOne(conditions, options) {
+    // Following Mongoose patterns here
+    const query = new this.Query({}, {}, this, this.collection).deleteOne(
+      conditions,
+      options
+    );
+    return wrapQuery(query, async (promise) => {
+      const res = await promise;
+      return {
+        acknowledged: res.acknowledged,
+        destroyedCount: res.deletedCount,
+      };
+    });
   });
 
-  schema.static('destroyMany', async function destroyMany(...args) {
-    const res = await this.collection.deleteMany(...args);
-    return {
-      acknowledged: res.acknowledged,
-      destroyedCount: res.deletedCount,
-    };
+  schema.static('destroyMany', function destroyMany(conditions, options) {
+    // Following Mongoose patterns here
+    const query = new this.Query({}, {}, this, this.collection).deleteMany(
+      conditions,
+      options
+    );
+    return wrapQuery(query, async (promise) => {
+      const res = await promise;
+      return {
+        acknowledged: res.acknowledged,
+        destroyedCount: res.deletedCount,
+      };
+    });
   });
 
   schema.static('findDeleted', function findDeleted(filter, ...rest) {
@@ -383,5 +408,3 @@ function getCollisions(obj1, obj2) {
   }
   return collisions;
 }
-
-// Disallowed Methods

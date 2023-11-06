@@ -750,4 +750,179 @@ describe('soft delete', () => {
       );
     });
   });
+
+  describe('query chaining', () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+
+    it('deleteOne', async () => {
+      const query = User.deleteOne({
+        name: 'foo',
+      });
+      expect(query.getFilter()).toEqual({
+        name: 'foo',
+      });
+    });
+
+    it('deleteMany', async () => {
+      const query = User.deleteMany({
+        name: 'foo',
+      });
+      expect(query.getFilter()).toEqual({
+        name: 'foo',
+      });
+    });
+
+    it('findOneAndDelete', async () => {
+      const query = User.findOneAndDelete({
+        name: 'foo',
+      });
+      expect(query.getFilter()).toEqual({
+        name: 'foo',
+      });
+    });
+
+    it('restoreOne', async () => {
+      const query = User.restoreOne({
+        name: 'foo',
+      });
+      expect(query.getFilter()).toEqual({
+        name: 'foo',
+      });
+    });
+
+    it('restoreMany', async () => {
+      const query = User.restoreMany({
+        name: 'foo',
+      });
+      expect(query.getFilter()).toEqual({
+        name: 'foo',
+      });
+    });
+
+    it('destroyOne', async () => {
+      const query = User.destroyOne({
+        name: 'foo',
+      });
+      expect(query.getFilter()).toEqual({
+        name: 'foo',
+      });
+    });
+
+    it('destroyMany', async () => {
+      const query = User.destroyMany({
+        name: 'foo',
+      });
+      expect(query.getFilter()).toEqual({
+        name: 'foo',
+      });
+    });
+
+    it('findDeleted', async () => {
+      const query = User.findDeleted({
+        name: 'foo',
+      });
+      expect(query.getFilter()).toEqual({
+        name: 'foo',
+        deleted: true,
+      });
+    });
+
+    it('findOneDeleted', async () => {
+      const query = User.findOneDeleted({
+        name: 'foo',
+      });
+      expect(query.getFilter()).toEqual({
+        name: 'foo',
+        deleted: true,
+      });
+    });
+
+    it('findByIdDeleted', async () => {
+      const query = User.findByIdDeleted('id');
+      expect(query.getFilter()).toEqual({
+        _id: 'id',
+        deleted: true,
+      });
+    });
+
+    it('existsDeleted', async () => {
+      const query = User.existsDeleted({
+        name: 'foo',
+      });
+      expect(query.getFilter()).toEqual({
+        name: 'foo',
+        deleted: true,
+      });
+    });
+
+    it('countDocumentsDeleted', async () => {
+      const query = User.countDocumentsDeleted({
+        name: 'foo',
+      });
+      expect(query.getFilter()).toEqual({
+        name: 'foo',
+        deleted: true,
+      });
+    });
+
+    it('findWithDeleted', async () => {
+      const query = User.findWithDeleted({
+        name: 'foo',
+      });
+      expect(query.getFilter()).toEqual({
+        name: 'foo',
+        deleted: {
+          $in: [true, false],
+        },
+      });
+    });
+
+    it('findWithOneDeleted', async () => {
+      const query = User.findOneWithDeleted({
+        name: 'foo',
+      });
+      expect(query.getFilter()).toEqual({
+        name: 'foo',
+        deleted: {
+          $in: [true, false],
+        },
+      });
+    });
+
+    it('findWithByIdDeleted', async () => {
+      const query = User.findByIdWithDeleted('id');
+      expect(query.getFilter()).toEqual({
+        _id: 'id',
+        deleted: {
+          $in: [true, false],
+        },
+      });
+    });
+
+    it('existsWithDeleted', async () => {
+      const query = User.existsWithDeleted({
+        name: 'foo',
+      });
+      expect(query.getFilter()).toEqual({
+        name: 'foo',
+        deleted: {
+          $in: [true, false],
+        },
+      });
+    });
+
+    it('countDocumentsWithDeleted', async () => {
+      const query = User.countDocumentsWithDeleted({
+        name: 'foo',
+      });
+      expect(query.getFilter()).toEqual({
+        name: 'foo',
+        deleted: {
+          $in: [true, false],
+        },
+      });
+    });
+  });
 });

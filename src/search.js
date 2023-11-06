@@ -7,6 +7,7 @@ import { isDateField, isNumberField, getField } from './utils';
 import { SEARCH_DEFAULTS } from './const';
 import { OBJECT_ID_SCHEMA } from './validation';
 import { debug } from './env';
+import { wrapQuery } from './query';
 
 import warn from './warn';
 
@@ -48,33 +49,20 @@ export function applySearch(schema, definition) {
       .skip(skip)
       .limit(limit);
 
-    // The following construct is awkward but it allows the mongoose query
-    // object to be returned while still ultimately resolving with metadata
-    // so that this method can behave like other find methods and importantly
-    // allow custom population with the same API.
-
-    const runQuery = mQuery.then.bind(mQuery);
-
-    mQuery.then = async (resolve, reject) => {
-      try {
-        const [data, total] = await Promise.all([
-          runQuery(),
-          this.countDocuments(query),
-        ]);
-        resolve({
-          data,
-          meta: {
-            total,
-            skip,
-            limit,
-          },
-        });
-      } catch (err) {
-        reject(err);
-      }
-    };
-
-    return mQuery;
+    return wrapQuery(mQuery, async (promise) => {
+      const [data, total] = await Promise.all([
+        promise,
+        this.countDocuments(query),
+      ]);
+      return {
+        data,
+        meta: {
+          total,
+          skip,
+          limit,
+        },
+      };
+    });
   });
 }
 
