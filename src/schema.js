@@ -10,6 +10,7 @@ import { applyAssign } from './assign';
 import { applyInclude } from './include';
 import { applyReferences } from './references';
 import { applySoftDelete } from './soft-delete';
+import { applyDeleteHooks } from './delete-hooks';
 import { applyDisallowed } from './disallowed';
 
 import {
@@ -48,6 +49,7 @@ export function createSchema(definition, options = {}) {
   );
 
   applyValidation(schema, definition);
+  applyDeleteHooks(schema, definition);
   applySearch(schema, definition);
   applySoftDelete(schema);
   applyReferences(schema);
