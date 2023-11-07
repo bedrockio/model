@@ -506,7 +506,7 @@ function runHook(query, fn, check, next, args) {
   if (!check || check(query)) {
     const ret = fn.apply(query, args);
     if (ret instanceof Promise) {
-      ret.then(next);
+      ret.finally(next);
     }
   } else {
     next();

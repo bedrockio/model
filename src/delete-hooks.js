@@ -1,12 +1,15 @@
 import mongoose from 'mongoose';
 
-import { isReferenceField, getInnerField } from './utils';
 import { ReferenceError } from './errors';
 
 const { ObjectId: SchemaObjectId } = mongoose.Schema.Types;
 
 export function applyDeleteHooks(schema, definition) {
-  const { delete: deleteHooks = {} } = definition;
+  const { delete: deleteHooks } = definition;
+
+  if (!deleteHooks) {
+    return;
+  }
 
   const localHook = validateLocal(deleteHooks, schema);
   const foreignHook = validateForeign(deleteHooks);
@@ -14,32 +17,32 @@ export function applyDeleteHooks(schema, definition) {
 
   let references;
 
-  schema.pre('save', async function () {
-    const modified = this.modifiedPaths().includes('deleted');
-    if (this.deleted && modified) {
-      if (errorHook) {
-        references ||= getAllReferences(this);
-        await errorOnForeignReferences(this, {
-          errorHook,
-          foreignHook,
-          references,
-        });
-      }
-      await deleteLocalReferences(this, localHook);
-      await deleteForeignReferences(this, foreignHook);
+  schema.pre('delete', async function () {
+    if (errorHook) {
+      references ||= getAllReferences(this);
+      await errorOnForeignReferences(this, {
+        errorHook,
+        foreignHook,
+        references,
+      });
     }
+    await deleteLocalReferences(this, localHook);
+    await deleteForeignReferences(this, foreignHook);
   });
 }
 
 // Validation
 
 function validateLocal(deleteHooks, schema) {
-  const { local } = deleteHooks;
+  let { local } = deleteHooks;
   if (!local) {
     return;
   }
-  if (!Array.isArray(local)) {
+  if (typeof local !== 'string' && !Array.isArray(local)) {
     throw new Error('Local delete hook must be an array.');
+  }
+  if (typeof local === 'string') {
+    local = [local];
   }
   for (let name of local) {
     const pathType = schema.pathType(name);
@@ -90,6 +93,7 @@ async function errorOnForeignReferences(doc, options) {
   if (!errorHook) {
     return;
   }
+
   const { except = [] } = errorHook;
 
   assertExceptions(except);
@@ -191,27 +195,13 @@ async function deleteLocalReferences(doc, arr) {
     return;
   }
   for (let name of arr) {
+    await doc.populate(name);
     const value = doc.get(name);
     const arr = Array.isArray(value) ? value : [value];
 
-    const ids = arr.map((el) => {
-      const id = el._id || el;
-      if (!mongoose.isObjectIdOrHexString(id)) {
-        throw new Error(`Invalid id of "${el}" for "${name}".`);
-      }
-      return id;
-    });
-
-    const Model = getModelForDocumentReference(doc, name);
-
-    if (!Model) {
-      throw new Error(`Model could not be derived for ${name}.`);
+    for (let sub of arr) {
+      await sub.delete();
     }
-    await Model.deleteMany({
-      _id: {
-        $in: ids,
-      },
-    });
   }
 }
 
@@ -226,21 +216,28 @@ async function deleteForeignReferences(doc, refs) {
   for (let [modelName, arg] of Object.entries(refs)) {
     const Model = mongoose.models[modelName];
     if (typeof arg === 'string') {
-      await Model.deleteMany({
+      await runDeletes(Model, {
         [arg]: id,
       });
     } else {
       const { $and, $or } = arg;
       if ($and) {
-        await Model.deleteMany({
+        await runDeletes(Model, {
           $and: mapArrayQuery($and, id),
         });
       } else if ($or) {
-        await Model.deleteMany({
+        await runDeletes(Model, {
           $or: mapArrayQuery($or, id),
         });
       }
     }
+  }
+}
+
+async function runDeletes(Model, query) {
+  const docs = await Model.find(query);
+  for (let doc of docs) {
+    await doc.delete();
   }
 }
 
@@ -250,13 +247,4 @@ function mapArrayQuery(arr, id) {
       [refName]: id,
     };
   });
-}
-
-function getModelForDocumentReference(doc, name) {
-  const { schema } = doc.constructor;
-  if (!isReferenceField(schema.obj, name)) {
-    return;
-  }
-  const { ref } = getInnerField(schema.obj, name);
-  return mongoose.models[ref];
 }

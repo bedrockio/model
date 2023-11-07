@@ -8,7 +8,6 @@ import { applySlug } from './slug';
 import { applySearch } from './search';
 import { applyAssign } from './assign';
 import { applyInclude } from './include';
-import { applyReferences } from './references';
 import { applySoftDelete } from './soft-delete';
 import { applyDeleteHooks } from './delete-hooks';
 import { applyDisallowed } from './disallowed';
@@ -48,11 +47,12 @@ export function createSchema(definition, options = {}) {
     }
   );
 
+  // Soft Delete needs to be applied
+  // first for hooks to work correctly.
+  applySoftDelete(schema);
   applyValidation(schema, definition);
   applyDeleteHooks(schema, definition);
   applySearch(schema, definition);
-  applySoftDelete(schema);
-  applyReferences(schema);
   applyDisallowed(schema);
   applyInclude(schema);
   applyAssign(schema);

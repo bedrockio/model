@@ -17,7 +17,7 @@ describe('delete hooks', () => {
             },
           },
           delete: {
-            local: ['profile'],
+            local: 'profile',
           },
         })
       );
@@ -585,7 +585,7 @@ describe('delete hooks', () => {
           await user1.delete();
         }).rejects.toThrow('Refusing to delete.');
 
-        await expect(user2.assertNoReferences()).resolves.not.toThrow();
+        await expect(user2.delete()).resolves.not.toThrow();
       });
 
       it('should expose references on the error object', async () => {
@@ -686,44 +686,6 @@ describe('delete hooks', () => {
           'Unknown model "BadModelName".'
         );
       });
-
-      it('should not stop on excepted model', async () => {
-        const User = createTestModel({
-          name: {
-            type: 'String',
-            required: true,
-          },
-        });
-
-        const Shop = createTestModel({
-          user: {
-            type: 'ObjectId',
-            ref: User.modelName,
-          },
-        });
-
-        const Product = createTestModel({
-          user: {
-            type: 'ObjectId',
-            ref: User.modelName,
-          },
-        });
-        const user = await User.create({
-          name: 'Barry',
-        });
-        await Shop.create({
-          user,
-        });
-        await Product.create({
-          user,
-        });
-
-        await expect(
-          user.assertNoReferences({
-            except: [Shop],
-          })
-        ).rejects.toThrow('Refusing to delete.');
-      });
     });
   });
 
@@ -795,6 +757,478 @@ describe('delete hooks', () => {
 
         expect(await Shop.countDocuments()).toBe(1);
         expect(await Product.countDocuments()).toBe(1);
+      });
+    });
+
+    describe('chained deletes', () => {
+      it('should delete in a chain', async () => {
+        const userModelName = getTestModelName();
+        const shopModelName = getTestModelName();
+        const productModelName = getTestModelName();
+
+        const User = createTestModel(
+          userModelName,
+          createSchema({
+            attributes: {
+              name: 'String',
+            },
+            delete: {
+              foreign: {
+                [shopModelName]: 'owner',
+              },
+            },
+          })
+        );
+
+        const Shop = createTestModel(
+          shopModelName,
+          createSchema({
+            attributes: {
+              name: 'String',
+              owner: {
+                type: 'ObjectId',
+                ref: userModelName,
+              },
+            },
+            delete: {
+              foreign: {
+                [productModelName]: 'shop',
+              },
+            },
+          })
+        );
+
+        const Product = createTestModel(productModelName, {
+          shop: {
+            type: 'ObjectId',
+            ref: shopModelName,
+          },
+        });
+
+        const user = await User.create({
+          name: 'Barry',
+        });
+
+        const shop = await Shop.create({
+          owner: user,
+        });
+
+        await Product.create({
+          name: 'Product 1',
+          shop,
+        });
+
+        await Product.create({
+          name: 'Product 2',
+          shop,
+        });
+
+        await user.delete();
+
+        expect(await User.countDocuments()).toBe(0);
+        expect(await Shop.countDocuments()).toBe(0);
+        expect(await Product.countDocuments()).toBe(0);
+      });
+
+      it('should not proceed on nested document error', async () => {
+        const userModelName = getTestModelName();
+        const shopModelName = getTestModelName();
+        const productModelName = getTestModelName();
+
+        const User = createTestModel(
+          userModelName,
+          createSchema({
+            attributes: {
+              name: 'String',
+            },
+            delete: {
+              foreign: {
+                [shopModelName]: 'owner',
+              },
+            },
+          })
+        );
+
+        const Shop = createTestModel(
+          shopModelName,
+          createSchema({
+            attributes: {
+              name: 'String',
+              owner: {
+                type: 'ObjectId',
+                ref: userModelName,
+              },
+            },
+            delete: {
+              errorOnReferenced: true,
+            },
+          })
+        );
+
+        const Product = createTestModel(productModelName, {
+          shop: {
+            type: 'ObjectId',
+            ref: shopModelName,
+          },
+        });
+
+        const user = await User.create({
+          name: 'Barry',
+        });
+
+        const shop = await Shop.create({
+          owner: user,
+        });
+
+        await Product.create({
+          name: 'Product 1',
+          shop,
+        });
+
+        await Product.create({
+          name: 'Product 2',
+          shop,
+        });
+
+        await expect(async () => {
+          await user.delete();
+        }).rejects.toThrow();
+
+        expect(await User.countDocuments()).toBe(1);
+        expect(await Shop.countDocuments()).toBe(1);
+        expect(await Product.countDocuments()).toBe(2);
+      });
+
+      it('should refuse to delete when local document errored', async () => {
+        const userModelName = getTestModelName();
+        const userProfileModelName = getTestModelName();
+
+        const User = createTestModel(
+          userModelName,
+          createSchema({
+            attributes: {
+              profile: {
+                type: 'ObjectId',
+                ref: userProfileModelName,
+              },
+            },
+            delete: {
+              local: 'profile',
+            },
+          })
+        );
+
+        const UserProfile = createTestModel(
+          userProfileModelName,
+          createSchema({
+            attributes: {
+              name: 'String',
+            },
+            delete: {
+              errorOnReferenced: true,
+            },
+          })
+        );
+
+        const profile = await UserProfile.create({
+          name: 'Barry',
+        });
+
+        let user = await User.create({
+          profile,
+        });
+
+        user = await User.findById(user);
+
+        await expect(async () => {
+          await user.delete();
+        }).rejects.toThrow();
+
+        expect(await User.countDocuments()).toBe(1);
+        expect(await UserProfile.countDocuments()).toBe(1);
+      });
+
+      it('should allow exception defined on subdocument model', async () => {
+        const userModelName = getTestModelName();
+        const userProfileModelName = getTestModelName();
+
+        const User = createTestModel(
+          userModelName,
+          createSchema({
+            attributes: {
+              profile: {
+                type: 'ObjectId',
+                ref: userProfileModelName,
+              },
+            },
+            delete: {
+              local: 'profile',
+            },
+          })
+        );
+
+        const UserProfile = createTestModel(
+          userProfileModelName,
+          createSchema({
+            attributes: {
+              name: 'String',
+            },
+            delete: {
+              errorOnReferenced: {
+                except: [userModelName],
+              },
+            },
+          })
+        );
+
+        const profile = await UserProfile.create({
+          name: 'Barry',
+        });
+
+        let user = await User.create({
+          profile,
+        });
+
+        user = await User.findById(user);
+
+        await user.delete();
+
+        expect(await User.countDocuments()).toBe(0);
+        expect(await UserProfile.countDocuments()).toBe(0);
+      });
+    });
+
+    describe('circular references', () => {
+      it('should not error on foreign reference cleanup', async () => {
+        const userModelName = getTestModelName();
+        const shopModelName = getTestModelName();
+
+        const User = createTestModel(
+          userModelName,
+          createSchema({
+            attributes: {
+              name: 'String',
+              shop: {
+                type: 'ObjectId',
+                ref: shopModelName,
+              },
+            },
+            delete: {
+              foreign: {
+                [shopModelName]: 'owner',
+              },
+            },
+          })
+        );
+
+        const Shop = createTestModel(
+          shopModelName,
+          createSchema({
+            attributes: {
+              name: 'String',
+              owner: {
+                type: 'ObjectId',
+                ref: userModelName,
+              },
+            },
+          })
+        );
+
+        const user = new User({
+          name: 'Barry',
+        });
+
+        const shop = new Shop({
+          owner: user,
+        });
+
+        user.shop = shop;
+
+        await user.save();
+        await shop.save();
+
+        await user.delete();
+
+        expect(await User.countDocuments()).toBe(0);
+        expect(await Shop.countDocuments()).toBe(0);
+      });
+
+      it('should error on foreign references', async () => {
+        const userModelName = getTestModelName();
+        const shopModelName = getTestModelName();
+
+        const User = createTestModel(
+          userModelName,
+          createSchema({
+            attributes: {
+              name: 'String',
+              shop: {
+                type: 'ObjectId',
+                ref: shopModelName,
+              },
+            },
+            delete: {
+              errorOnReferenced: true,
+            },
+          })
+        );
+
+        const Shop = createTestModel(
+          shopModelName,
+          createSchema({
+            attributes: {
+              name: 'String',
+              owner: {
+                type: 'ObjectId',
+                ref: userModelName,
+              },
+            },
+          })
+        );
+
+        const user = new User({
+          name: 'Barry',
+        });
+
+        const shop = new Shop({
+          owner: user,
+        });
+
+        user.shop = shop;
+
+        await user.save();
+        await shop.save();
+
+        await expect(async () => {
+          await user.delete();
+        }).rejects.toThrow();
+
+        expect(await User.countDocuments()).toBe(1);
+        expect(await Shop.countDocuments()).toBe(1);
+      });
+
+      it('should error on reverse references', async () => {
+        const userModelName = getTestModelName();
+        const shopModelName = getTestModelName();
+
+        const User = createTestModel(
+          userModelName,
+          createSchema({
+            attributes: {
+              name: 'String',
+              shop: {
+                type: 'ObjectId',
+                ref: shopModelName,
+              },
+            },
+            delete: {
+              foreign: {
+                [shopModelName]: 'owner',
+              },
+            },
+          })
+        );
+
+        const Shop = createTestModel(
+          shopModelName,
+          createSchema({
+            attributes: {
+              name: 'String',
+              owner: {
+                type: 'ObjectId',
+                ref: userModelName,
+              },
+            },
+            delete: {
+              errorOnReferenced: true,
+            },
+          })
+        );
+
+        const user = new User({
+          name: 'Barry',
+        });
+
+        const shop = new Shop({
+          owner: user,
+        });
+
+        user.shop = shop;
+
+        await user.save();
+        await shop.save();
+
+        await expect(async () => {
+          await user.delete();
+        }).rejects.toThrow();
+
+        expect(await User.countDocuments()).toBe(1);
+        expect(await Shop.countDocuments()).toBe(1);
+      });
+    });
+
+    describe('static methods', () => {
+      const userModelName = getTestModelName();
+      const shopModelName = getTestModelName();
+
+      const User = createTestModel(
+        userModelName,
+        createSchema({
+          attributes: {
+            name: 'String',
+          },
+          delete: {
+            foreign: {
+              [shopModelName]: 'owner',
+            },
+          },
+        })
+      );
+      const Shop = createTestModel(shopModelName, {
+        name: 'String',
+        owner: {
+          type: 'ObjectId',
+          ref: userModelName,
+        },
+      });
+
+      afterEach(async () => {
+        await User.deleteMany({});
+        await Shop.deleteMany({});
+      });
+
+      it('should not run delete hooks for deleteOne', async () => {
+        const user = await User.create({
+          name: 'Barry',
+        });
+
+        await Shop.create({
+          owner: user,
+        });
+
+        await User.deleteOne({
+          name: 'Barry',
+        });
+
+        expect(await User.countDocuments()).toBe(0);
+        expect(await Shop.countDocuments()).toBe(1);
+      });
+
+      it('should not run delete hooks for deleteMany', async () => {
+        const user = await User.create({
+          name: 'Barry',
+        });
+
+        await Shop.create({
+          owner: user,
+        });
+
+        await User.deleteMany({
+          name: 'Barry',
+        });
+
+        expect(await User.countDocuments()).toBe(0);
+        expect(await Shop.countDocuments()).toBe(1);
       });
     });
   });
