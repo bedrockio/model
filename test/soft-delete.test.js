@@ -1,4 +1,7 @@
+import mongoose from 'mongoose';
+
 import { createTestModel } from '../src/testing';
+import { createSchema } from '../src/schema';
 
 describe('soft delete', () => {
   describe('delete', () => {
@@ -922,6 +925,387 @@ describe('soft delete', () => {
         deleted: {
           $in: [true, false],
         },
+      });
+    });
+  });
+
+  describe('hooks', () => {
+    describe('document', () => {
+      function setupHook(hook) {
+        const calls = {
+          pre: 0,
+          post: 0,
+        };
+
+        const schema = createSchema({
+          name: 'String',
+        });
+
+        schema.pre(hook, async function () {
+          expect(this).toBeInstanceOf(mongoose.Document);
+          calls.pre += 1;
+        });
+
+        schema.post(hook, async function () {
+          expect(this).toBeInstanceOf(mongoose.Document);
+          calls.post += 1;
+        });
+
+        const User = createTestModel(schema);
+
+        return {
+          User,
+          calls,
+          schema,
+        };
+      }
+
+      it('should run delete hooks', async () => {
+        const { User, calls } = setupHook('delete');
+
+        const user = await User.create({
+          name: 'Barry',
+        });
+
+        expect(calls.pre).toBe(0);
+        expect(calls.post).toBe(0);
+
+        await user.delete();
+
+        expect(calls.pre).toBe(1);
+        expect(calls.post).toBe(1);
+      });
+
+      it('should run restore hooks', async () => {
+        const { User, calls } = setupHook('restore');
+
+        const user = await User.create({
+          name: 'Barry',
+        });
+
+        await user.delete();
+
+        expect(calls.pre).toBe(0);
+        expect(calls.post).toBe(0);
+
+        await user.restore();
+
+        expect(calls.pre).toBe(1);
+        expect(calls.post).toBe(1);
+      });
+
+      it('should run destroy hooks', async () => {
+        const { User, calls, schema } = setupHook('destroy');
+
+        const otherCalls = {
+          delete: {
+            pre: 0,
+            post: 0,
+          },
+          remove: {
+            pre: 0,
+            post: 0,
+          },
+        };
+
+        schema.pre('delete', function () {
+          otherCalls.delete.pre += 1;
+        });
+
+        schema.post('delete', function () {
+          otherCalls.delete.post += 1;
+        });
+
+        schema.pre('remove', function () {
+          otherCalls.remove.pre += 1;
+        });
+
+        schema.post('remove', function () {
+          otherCalls.remove.post += 1;
+        });
+
+        const user = await User.create({
+          name: 'Barry',
+        });
+
+        expect(calls.pre).toBe(0);
+        expect(calls.post).toBe(0);
+
+        await user.destroy();
+
+        expect(calls.pre).toBe(1);
+        expect(calls.post).toBe(1);
+
+        expect(otherCalls.delete.pre).toBe(0);
+        expect(otherCalls.delete.post).toBe(0);
+        expect(otherCalls.remove.pre).toBe(0);
+        expect(otherCalls.remove.post).toBe(0);
+      });
+    });
+
+    describe('query', () => {
+      // Note that hooks do not exist for:
+      // - exists
+      // - findById
+
+      function setupHook(hook) {
+        const calls = {
+          pre: 0,
+          post: 0,
+        };
+
+        const schema = createSchema({
+          name: 'String',
+        });
+
+        schema.pre(hook, async function () {
+          expect(this).toBeInstanceOf(mongoose.Query);
+          calls.pre += 1;
+        });
+
+        schema.post(hook, async function () {
+          expect(this).toBeInstanceOf(mongoose.Query);
+          calls.post += 1;
+        });
+
+        const User = createTestModel(schema);
+
+        return {
+          User,
+          calls,
+        };
+      }
+
+      describe('delete', () => {
+        it('should run deleteOne hooks', async () => {
+          const { User, calls } = setupHook('deleteOne');
+
+          await User.create({
+            name: 'Barry',
+          });
+
+          await User.deleteOne({
+            name: 'Barry',
+          });
+
+          expect(calls.pre).toBe(1);
+          expect(calls.post).toBe(1);
+        });
+
+        it('should run deleteMany hooks', async () => {
+          const { User, calls } = setupHook('deleteMany');
+
+          await User.create({
+            name: 'Barry',
+          });
+
+          await User.deleteMany({
+            name: 'Barry',
+          });
+
+          expect(calls.pre).toBe(1);
+          expect(calls.post).toBe(1);
+        });
+
+        it('should run findOneAndDelete hooks', async () => {
+          const { User, calls } = setupHook('findOneAndDelete');
+
+          await User.create({
+            name: 'Barry',
+          });
+
+          await User.findOneAndDelete({
+            name: 'Barry',
+          });
+
+          expect(calls.pre).toBe(1);
+          expect(calls.post).toBe(1);
+        });
+      });
+
+      describe('restore', () => {
+        it('should run restoreOne hooks', async () => {
+          const { User, calls } = setupHook('restoreOne');
+
+          await User.create({
+            name: 'Barry',
+          });
+
+          await User.deleteOne({
+            name: 'Barry',
+          });
+
+          expect(calls.pre).toBe(0);
+          expect(calls.post).toBe(0);
+
+          await User.restoreOne({
+            name: 'Barry',
+          });
+
+          expect(calls.pre).toBe(1);
+          expect(calls.post).toBe(1);
+        });
+
+        it('should run restoreMany hooks', async () => {
+          const { User, calls } = setupHook('restoreMany');
+
+          await User.create({
+            name: 'Barry',
+          });
+
+          await User.deleteMany({
+            name: 'Barry',
+          });
+
+          expect(calls.pre).toBe(0);
+          expect(calls.post).toBe(0);
+
+          await User.restoreMany({
+            name: 'Barry',
+          });
+
+          expect(calls.pre).toBe(1);
+          expect(calls.post).toBe(1);
+        });
+      });
+
+      describe('destroy', () => {
+        it('should run destroyOne hooks', async () => {
+          const { User, calls } = setupHook('destroyOne');
+
+          await User.create({
+            name: 'Barry',
+          });
+
+          await User.destroyOne({
+            name: 'Barry',
+          });
+
+          expect(calls.pre).toBe(1);
+          expect(calls.post).toBe(1);
+        });
+
+        it('should run destroyMany hooks', async () => {
+          const { User, calls } = setupHook('destroyMany');
+
+          await User.create({
+            name: 'Barry',
+          });
+
+          await User.destroyMany({
+            name: 'Barry',
+          });
+
+          expect(calls.pre).toBe(1);
+          expect(calls.post).toBe(1);
+        });
+      });
+
+      describe('findDeleted', () => {
+        it('should run findDeleted hooks', async () => {
+          const { User, calls } = setupHook('findDeleted');
+
+          await User.findDeleted({
+            name: 'Barry',
+          });
+
+          expect(calls.pre).toBe(1);
+          expect(calls.post).toBe(1);
+        });
+
+        it('should run findOneDeleted hooks', async () => {
+          const { User, calls } = setupHook('findOneDeleted');
+
+          await User.findOneDeleted({
+            name: 'Barry',
+          });
+
+          expect(calls.pre).toBe(1);
+          expect(calls.post).toBe(1);
+        });
+
+        it('should run countDocumentsDeleted hooks', async () => {
+          const { User, calls } = setupHook(
+            'countDocumentsDeleted',
+            mongoose.Query
+          );
+
+          await User.countDocumentsDeleted({
+            name: 'Barry',
+          });
+
+          expect(calls.pre).toBe(1);
+          expect(calls.post).toBe(1);
+        });
+      });
+
+      describe('findWithDeleted', () => {
+        it('should run findWithDeleted hooks', async () => {
+          const { User, calls } = setupHook('findWithDeleted');
+
+          await User.findWithDeleted({
+            name: 'Barry',
+          });
+
+          expect(calls.pre).toBe(1);
+          expect(calls.post).toBe(1);
+        });
+
+        it('should run findOneWithDeleted hooks', async () => {
+          const { User, calls } = setupHook('findOneWithDeleted');
+
+          await User.findOneWithDeleted({
+            name: 'Barry',
+          });
+
+          expect(calls.pre).toBe(1);
+          expect(calls.post).toBe(1);
+        });
+
+        it('should run countDocumentsWithDeleted hooks', async () => {
+          const { User, calls } = setupHook(
+            'countDocumentsWithDeleted',
+            mongoose.Query
+          );
+
+          await User.countDocumentsWithDeleted({
+            name: 'Barry',
+          });
+
+          expect(calls.pre).toBe(1);
+          expect(calls.post).toBe(1);
+        });
+      });
+
+      describe('other', () => {
+        it('should work with non-async hooks', async () => {
+          const calls = { pre: 0, post: 0 };
+
+          const schema = createSchema({
+            name: 'String',
+          });
+
+          schema.pre('deleteOne', function (next) {
+            expect(this).toBeInstanceOf(mongoose.Query);
+            calls.pre += 1;
+            next();
+          });
+
+          schema.post('deleteOne', function (res, next) {
+            expect(this).toBeInstanceOf(mongoose.Query);
+            calls.post += 1;
+            next();
+          });
+
+          const User = createTestModel(schema);
+
+          await User.deleteOne({
+            name: 'Barry',
+          });
+
+          expect(calls.pre).toBe(1);
+          expect(calls.post).toBe(1);
+        });
       });
     });
   });
