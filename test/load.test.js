@@ -36,7 +36,7 @@ describe('loadModelDir', () => {
     expect(!!mongoose.models.SpecialCategory).toBe(true);
     const { SpecialCategory } = mongoose.models;
     await SpecialCategory.deleteMany({});
-    const someRef = mongoose.Types.ObjectId();
+    const someRef = new mongoose.Types.ObjectId();
     const category = new SpecialCategory({ name: 'foo', someRef, count: 3 });
     await category.save();
     const foundCategory = await SpecialCategory.findOne();

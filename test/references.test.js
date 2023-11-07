@@ -1,5 +1,3 @@
-import mongoose from 'mongoose';
-
 import { createTestModel } from '../src/testing';
 
 const User = createTestModel({
@@ -11,15 +9,15 @@ const User = createTestModel({
 
 const Shop = createTestModel({
   user: {
+    type: 'ObjectId',
     ref: User.modelName,
-    type: mongoose.Schema.Types.ObjectId,
   },
 });
 
 const Product = createTestModel({
   user: {
+    type: 'ObjectId',
     ref: User.modelName,
-    type: mongoose.Schema.Types.ObjectId,
   },
 });
 

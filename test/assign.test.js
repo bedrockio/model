@@ -25,18 +25,18 @@ describe('assign', () => {
     const User = createTestModel();
     const Shop = createTestModel({
       user: {
+        type: 'ObjectId',
         ref: User.modelName,
-        type: mongoose.Schema.Types.ObjectId,
       },
       nested: {
         name: 'String',
         user: {
+          type: 'ObjectId',
           ref: User.modelName,
-          type: mongoose.Schema.Types.ObjectId,
         },
       },
     });
-    const id = mongoose.Types.ObjectId().toString();
+    const id = new mongoose.Types.ObjectId().toString();
     const shop = new Shop({
       user: id,
       nested: {
@@ -74,8 +74,8 @@ describe('assign', () => {
     const Shop = createTestModel({
       users: [
         {
+          type: 'ObjectId',
           ref: User.modelName,
-          type: mongoose.Schema.Types.ObjectId,
         },
       ],
     });

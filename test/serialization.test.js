@@ -17,7 +17,7 @@ describe('serialization', () => {
       expect(data.__v).toBeUndefined();
     });
 
-    it('should not expose _id in nested array objects of mixed type', () => {
+    it('should not expose _id or id in nested array objects of mixed type', () => {
       const User = createTestModel({
         names: [
           {
@@ -688,77 +688,79 @@ describe('serialization', () => {
     });
   });
 
-  it('should not serialize nested array object ids', async () => {
-    const User = createTestModel({
-      foo: [
-        {
+  describe('other', () => {
+    it('should not serialize nested array object ids', async () => {
+      const User = createTestModel({
+        foo: [
+          {
+            bar: [
+              {
+                name: 'String',
+              },
+            ],
+          },
+        ],
+      });
+      const user = new User({
+        foo: [
+          {
+            bar: [
+              {
+                name: 'wut',
+              },
+            ],
+          },
+        ],
+      });
+      expect(user.toObject()).toEqual({
+        id: user.id,
+        foo: [
+          {
+            bar: [
+              {
+                name: 'wut',
+              },
+            ],
+          },
+        ],
+      });
+    });
+
+    it('should serialize id on nested field with type', async () => {
+      const User = createTestModel({
+        foo: {
+          type: {
+            type: 'String',
+            required: true,
+          },
           bar: [
             {
               name: 'String',
             },
           ],
         },
-      ],
-    });
-    const user = new User({
-      foo: [
-        {
+      });
+      const user = new User({
+        foo: {
+          type: 'foo type',
           bar: [
             {
-              name: 'wut',
+              name: 'name',
             },
           ],
         },
-      ],
-    });
-    expect(user.toObject()).toEqual({
-      id: user.id,
-      foo: [
-        {
+      });
+      expect(user.toObject()).toEqual({
+        id: user.id,
+        foo: {
+          type: 'foo type',
           bar: [
             {
-              name: 'wut',
+              name: 'name',
             },
           ],
         },
-      ],
-    });
-  });
-
-  it('should serialize id on nested field with type', async () => {
-    const User = createTestModel({
-      foo: {
-        type: {
-          type: 'String',
-          required: true,
-        },
-        bar: [
-          {
-            name: 'String',
-          },
-        ],
-      },
-    });
-    const user = new User({
-      foo: {
-        type: 'foo type',
-        bar: [
-          {
-            name: 'name',
-          },
-        ],
-      },
-    });
-    expect(user.toObject()).toEqual({
-      id: user.id,
-      foo: {
-        type: 'foo type',
-        bar: [
-          {
-            name: 'name',
-          },
-        ],
-      },
+      });
     });
   });
 });

@@ -433,8 +433,8 @@ describe('search', () => {
         },
       ],
     });
-    const ref1 = mongoose.Types.ObjectId();
-    const ref2 = mongoose.Types.ObjectId();
+    const ref1 = new mongoose.Types.ObjectId();
+    const ref2 = new mongoose.Types.ObjectId();
 
     await User.create(
       {
@@ -584,8 +584,8 @@ describe('search', () => {
     });
     const Shop = createTestModel({
       user: {
+        type: 'ObjectId',
         ref: User.modelName,
-        type: mongoose.Schema.Types.ObjectId,
       },
     });
 
