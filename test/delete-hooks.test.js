@@ -583,7 +583,9 @@ describe('delete hooks', () => {
 
         await expect(async () => {
           await user1.delete();
-        }).rejects.toThrow('Refusing to delete.');
+        }).rejects.toThrow(
+          `Refusing to delete ${User.modelName} referenced by ${Shop.modelName}.`
+        );
 
         await expect(user2.delete()).resolves.not.toThrow();
       });
@@ -659,7 +661,9 @@ describe('delete hooks', () => {
 
         await expect(async () => {
           await user1.delete();
-        }).rejects.toThrow('Refusing to delete.');
+        }).rejects.toThrow(
+          `Refusing to delete ${User.modelName} referenced by ${Shop.modelName}.`
+        );
 
         await expect(user2.delete()).resolves.not.toThrow();
       });

@@ -17,7 +17,9 @@ export function applyDeleteHooks(schema, definition) {
 
   let references;
 
-  schema.pre('delete', async function () {
+  const deleteFn = schema.methods.delete;
+
+  schema.method('delete', async function () {
     if (errorHook) {
       references ||= getAllReferences(this);
       await errorOnForeignReferences(this, {
@@ -28,6 +30,7 @@ export function applyDeleteHooks(schema, definition) {
     }
     await deleteLocalReferences(this, localHook);
     await deleteForeignReferences(this, foreignHook);
+    await deleteFn.apply(this, arguments);
   });
 }
 
@@ -141,7 +144,14 @@ async function errorOnForeignReferences(doc, options) {
   }
 
   if (results.length) {
-    throw new ReferenceError('Refusing to delete.', results);
+    const { modelName } = doc.constructor;
+    const refNames = results.map((reference) => {
+      return reference.model.modelName;
+    });
+    throw new ReferenceError(
+      `Refusing to delete ${modelName} referenced by ${refNames}.`,
+      results
+    );
   }
 }
 
