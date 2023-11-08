@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { groupBy } from 'lodash';
 
 import { ReferenceError } from './errors';
 import { getInnerField } from './utils';
@@ -294,25 +295,39 @@ async function restoreLocalReferences(refDoc, arr) {
   }
   for (let name of arr) {
     const { ref } = getInnerField(refDoc.constructor.schema.obj, name);
-    const _id = refDoc.get(name);
+    const value = refDoc.get(name);
+    const ids = Array.isArray(value) ? value : [value];
     const Model = mongoose.models[ref];
+
     // @ts-ignore
-    const doc = await Model.findByIdDeleted(_id);
-    if (doc) {
+    const docs = await Model.findDeleted({
+      _id: { $in: ids },
+    });
+
+    for (let doc of docs) {
       await doc.restore();
     }
   }
 }
 
 async function restoreForeignReferences(refDoc) {
-  for (let el of refDoc.deletedRefs) {
-    const { _id, ref } = el;
-    const Model = mongoose.models[ref];
+  const grouped = groupBy(refDoc.deletedRefs, 'ref');
+
+  for (let [modelName, refs] of Object.entries(grouped)) {
+    const ids = refs.map((ref) => {
+      return ref._id;
+    });
+    const Model = mongoose.models[modelName];
+
     // @ts-ignore
-    const doc = await Model.findByIdDeleted(_id);
-    if (doc) {
+    const docs = await Model.findDeleted({
+      _id: { $in: ids },
+    });
+
+    for (let doc of docs) {
       await doc.restore();
     }
   }
+
   refDoc.deletedRefs = [];
 }

@@ -2,7 +2,7 @@ import { getTestModelName, createTestModel } from '../src/testing';
 import { createSchema } from '../src/schema';
 
 describe('delete hooks', () => {
-  describe('cleanup', () => {
+  describe('clean', () => {
     describe('local references', () => {
       describe('simple', () => {
         const userModelName = getTestModelName();
@@ -158,6 +158,25 @@ describe('delete hooks', () => {
           await user.delete();
 
           expect(await UserProfile.countDocuments()).toBe(0);
+        });
+
+        it('should be able to restore multiple references', async () => {
+          const profile1 = await UserProfile.create({
+            name: 'Barry',
+          });
+          const profile2 = await UserProfile.create({
+            name: 'Larry',
+          });
+          const user = await User.create({
+            profiles: [profile1, profile2],
+          });
+
+          await user.delete();
+          expect(await UserProfile.countDocuments()).toBe(0);
+
+          await user.restore();
+          expect(await User.countDocuments()).toBe(1);
+          expect(await UserProfile.countDocuments()).toBe(2);
         });
       });
 
@@ -343,6 +362,11 @@ describe('delete hooks', () => {
             owner: user,
           });
 
+          await Shop.create({
+            name: 'shop',
+            owner: user,
+          });
+
           await user.delete();
 
           expect(await User.countDocuments()).toBe(0);
@@ -351,7 +375,7 @@ describe('delete hooks', () => {
           await user.restore();
 
           expect(await User.countDocuments()).toBe(1);
-          expect(await Shop.countDocuments()).toBe(1);
+          expect(await Shop.countDocuments()).toBe(2);
 
           user = await User.findById(user);
           expect(user.deletedRefs.length).toBe(0);
@@ -377,6 +401,25 @@ describe('delete hooks', () => {
           expect(await Shop.countDocuments()).toBe(1);
 
           await expect(user.restore()).resolves.not.toThrow();
+        });
+
+        it('should not overwrite deleteRefs', async () => {
+          let user = await User.create({
+            name: 'Barry',
+          });
+
+          await Shop.create({
+            name: 'shop',
+            owner: user,
+          });
+
+          await user.delete();
+          user = await User.findByIdDeleted(user.id);
+          expect(user.deletedRefs.length).toBe(1);
+
+          await user.delete();
+          user = await User.findByIdDeleted(user.id);
+          expect(user.deletedRefs.length).toBe(1);
         });
       });
 
@@ -425,19 +468,30 @@ describe('delete hooks', () => {
             },
           });
 
-          let shops;
-
-          shops = await Shop.find({
-            'info.owner': user.id,
-          });
-          expect(shops.length).toBe(1);
+          expect(await Shop.countDocuments()).toBe(1);
 
           await user.delete();
+          expect(await Shop.countDocuments()).toBe(0);
+        });
 
-          shops = await Shop.find({
-            'info.owner': user.id,
+        it('should be able to restore deleted document', async () => {
+          const user = await User.create({
+            name: 'Barry',
           });
-          expect(shops.length).toBe(0);
+          await Shop.create({
+            name: 'shop',
+            info: {
+              owner: user,
+            },
+          });
+
+          await user.delete();
+          expect(await User.countDocuments()).toBe(0);
+          expect(await Shop.countDocuments()).toBe(0);
+
+          await user.restore();
+          expect(await User.countDocuments()).toBe(1);
+          expect(await Shop.countDocuments()).toBe(1);
         });
       });
 
