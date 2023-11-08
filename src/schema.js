@@ -37,7 +37,10 @@ export function createSchema(definition, options = {}) {
       createdAt: 'Date',
       updatedAt: 'Date',
       deletedAt: 'Date',
-      deleted: { type: 'Boolean', default: false },
+      deleted: {
+        type: 'Boolean',
+        default: false,
+      },
     }),
     {
       timestamps: true,

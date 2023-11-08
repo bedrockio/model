@@ -2,478 +2,187 @@ import { getTestModelName, createTestModel } from '../src/testing';
 import { createSchema } from '../src/schema';
 
 describe('delete hooks', () => {
-  describe('local references', () => {
-    describe('simple', () => {
-      const userModelName = getTestModelName();
-      const userProfileModelName = getTestModelName();
+  describe('cleanup', () => {
+    describe('local references', () => {
+      describe('simple', () => {
+        const userModelName = getTestModelName();
+        const userProfileModelName = getTestModelName();
 
-      const User = createTestModel(
-        userModelName,
-        createSchema({
-          attributes: {
-            profile: {
-              type: 'ObjectId',
-              ref: userProfileModelName,
-            },
-          },
-          delete: {
-            local: 'profile',
-          },
-        })
-      );
-      const UserProfile = createTestModel(userProfileModelName, {
-        name: 'String',
-      });
-
-      afterEach(async () => {
-        await User.deleteMany({});
-        await UserProfile.deleteMany({});
-      });
-
-      it('should delete document reference on create', async () => {
-        const profile = await UserProfile.create({
-          name: 'Barry',
-        });
-        const user = await User.create({
-          profile,
-        });
-        await user.delete();
-
-        const userProfiles = await UserProfile.find();
-        expect(userProfiles).toEqual([]);
-      });
-
-      it('should delete document reference after create', async () => {
-        let user;
-
-        const profile = await UserProfile.create({
-          name: 'Barry',
-        });
-
-        user = await User.create({
-          profile,
-        });
-
-        user = await User.findById(user.id);
-        await user.delete();
-
-        const userProfiles = await UserProfile.find();
-        expect(userProfiles).toEqual([]);
-      });
-    });
-
-    describe('multiple documents', () => {
-      const userModelName = getTestModelName();
-      const userProfileModelName = getTestModelName();
-
-      const User = createTestModel(
-        userModelName,
-        createSchema({
-          attributes: {
-            profiles: [
-              {
+        const User = createTestModel(
+          userModelName,
+          createSchema({
+            attributes: {
+              profile: {
                 type: 'ObjectId',
                 ref: userProfileModelName,
               },
-            ],
-          },
-          delete: {
-            local: ['profiles'],
-          },
-        })
-      );
-      const UserProfile = createTestModel(userProfileModelName, {
-        name: 'String',
+            },
+            delete: {
+              local: 'profile',
+            },
+          })
+        );
+        const UserProfile = createTestModel(userProfileModelName, {
+          name: 'String',
+        });
+
+        afterEach(async () => {
+          await User.deleteMany({});
+          await UserProfile.deleteMany({});
+        });
+
+        it('should delete document reference on create', async () => {
+          const profile = await UserProfile.create({
+            name: 'Barry',
+          });
+          const user = await User.create({
+            profile,
+          });
+          await user.delete();
+
+          expect(await UserProfile.countDocuments()).toBe(0);
+        });
+
+        it('should delete document reference after create', async () => {
+          let user;
+
+          const profile = await UserProfile.create({
+            name: 'Barry',
+          });
+
+          user = await User.create({
+            profile,
+          });
+
+          user = await User.findById(user.id);
+          await user.delete();
+
+          expect(await UserProfile.countDocuments()).toBe(0);
+        });
+
+        it('should be able to restore local reference', async () => {
+          const profile = await UserProfile.create({
+            name: 'Barry',
+          });
+
+          let user = await User.create({
+            profile,
+          });
+
+          user = await User.findById(user);
+          await user.delete();
+          expect(await UserProfile.countDocuments()).toBe(0);
+
+          user = await User.findByIdDeleted(user);
+          await user.restore();
+          expect(await UserProfile.countDocuments()).toBe(1);
+          expect(user.profile._id).toEqual(profile._id);
+        });
+
+        it('should restore if local document is not deleted', async () => {
+          const profile = await UserProfile.create({
+            name: 'Barry',
+          });
+          const user = await User.create({
+            profile,
+          });
+
+          // Skip hooks
+          await User.deleteOne({
+            _id: user.id,
+          });
+
+          await expect(user.restore()).resolves.not.toThrow();
+        });
       });
 
-      afterEach(async () => {
-        await User.deleteMany({});
-        await UserProfile.deleteMany({});
-      });
+      describe('multiple documents', () => {
+        const userModelName = getTestModelName();
+        const userProfileModelName = getTestModelName();
 
-      it('should delete document reference on create', async () => {
-        const profile1 = await UserProfile.create({
-          name: 'Barry',
-        });
-        const profile2 = await UserProfile.create({
-          name: 'Larry',
-        });
-        const user = await User.create({
-          profiles: [profile1, profile2],
-        });
-        await user.delete();
-
-        const userProfiles = await UserProfile.find();
-        expect(userProfiles).toEqual([]);
-      });
-
-      it('should delete document reference after create', async () => {
-        const profile1 = await UserProfile.create({
-          name: 'Barry',
-        });
-        const profile2 = await UserProfile.create({
-          name: 'Larry',
-        });
-        let user = await User.create({
-          profiles: [profile1, profile2],
-        });
-        user = await User.findById(user.id);
-        await user.delete();
-
-        const userProfiles = await UserProfile.find();
-        expect(userProfiles).toEqual([]);
-      });
-    });
-
-    describe('errors', () => {
-      it('should error on misspelling of reference', async () => {
-        expect(() => {
+        const User = createTestModel(
+          userModelName,
           createSchema({
             attributes: {
-              profile: [
+              profiles: [
                 {
                   type: 'ObjectId',
-                  ref: 'UserProfile',
+                  ref: userProfileModelName,
                 },
               ],
             },
             delete: {
-              local: ['profilez'],
+              local: ['profiles'],
             },
+          })
+        );
+        const UserProfile = createTestModel(userProfileModelName, {
+          name: 'String',
+        });
+
+        afterEach(async () => {
+          await User.deleteMany({});
+          await UserProfile.deleteMany({});
+        });
+
+        it('should delete document reference on create', async () => {
+          const profile1 = await UserProfile.create({
+            name: 'Barry',
           });
-        }).toThrow();
-      });
-    });
-  });
+          const profile2 = await UserProfile.create({
+            name: 'Larry',
+          });
+          const user = await User.create({
+            profiles: [profile1, profile2],
+          });
+          await user.delete();
 
-  describe('foreign references', () => {
-    describe('simple', () => {
-      const userModelName = getTestModelName();
-      const shopModelName = getTestModelName();
+          expect(await UserProfile.countDocuments()).toBe(0);
+        });
 
-      const User = createTestModel(
-        userModelName,
-        createSchema({
-          attributes: {
-            name: 'String',
-          },
-          delete: {
-            foreign: {
-              [shopModelName]: 'owner',
-            },
-          },
-        })
-      );
-      const Shop = createTestModel(shopModelName, {
-        name: 'String',
-        owner: {
-          type: 'ObjectId',
-          ref: userModelName,
-        },
+        it('should delete document reference after create', async () => {
+          const profile1 = await UserProfile.create({
+            name: 'Barry',
+          });
+          const profile2 = await UserProfile.create({
+            name: 'Larry',
+          });
+          let user = await User.create({
+            profiles: [profile1, profile2],
+          });
+          user = await User.findById(user.id);
+          await user.delete();
+
+          expect(await UserProfile.countDocuments()).toBe(0);
+        });
       });
 
-      afterEach(async () => {
-        await User.deleteMany({});
-        await Shop.deleteMany({});
-      });
-
-      it('should delete hooked document', async () => {
-        const user = await User.create({
-          name: 'Barry',
-        });
-        await Shop.create({
-          name: 'shop',
-          owner: user,
-        });
-        await user.delete();
-
-        const shops = await Shop.find();
-        expect(shops).toEqual([]);
-      });
-
-      it('should delete multiple documents', async () => {
-        const user = await User.create({
-          name: 'Barry',
-        });
-        await Shop.create({
-          name: 'shop1',
-          owner: user,
-        });
-        await Shop.create({
-          name: 'shop2',
-          owner: user,
-        });
-
-        await user.delete();
-
-        const shops = await Shop.find();
-
-        expect(shops).toEqual([]);
-      });
-
-      it('should leave other documents untouched', async () => {
-        const user1 = await User.create({
-          name: 'Barry',
-        });
-        const user2 = await User.create({
-          name: 'Larry',
-        });
-
-        await Shop.create({
-          name: 'shop1',
-          owner: user1,
-        });
-        await Shop.create({
-          name: 'shop2',
-          owner: user2,
-        });
-
-        await user1.delete();
-
-        const shops = await Shop.find();
-
-        expect(shops).toMatchObject([
-          {
-            name: 'shop2',
-          },
-        ]);
-      });
-
-      it('should not apply delete hooks when _id is tampered with', async () => {
-        const user1 = await User.create({
-          name: 'Barry',
-        });
-        const user2 = await User.create({
-          name: 'Larry',
-        });
-
-        await Shop.create({
-          name: 'shop1',
-          owner: user1,
-        });
-        await Shop.create({
-          name: 'shop2',
-          owner: user2,
-        });
-
-        // Deleting _id shenanigans
-        user1._id = null;
-
-        await expect(async () => {
-          await user1.delete();
-        }).rejects.toThrow();
-
-        expect(await Shop.countDocuments()).toBe(2);
-      });
-    });
-
-    describe('nested field', () => {
-      const userModelName = getTestModelName();
-      const shopModelName = getTestModelName();
-
-      const User = createTestModel(
-        userModelName,
-        createSchema({
-          attributes: {
-            name: 'String',
-          },
-          delete: {
-            foreign: {
-              [shopModelName]: 'info.owner',
-            },
-          },
-        })
-      );
-      const Shop = createTestModel(shopModelName, {
-        name: 'String',
-        info: {
-          owner: {
-            type: 'ObjectId',
-            ref: userModelName,
-          },
-        },
-      });
-
-      afterEach(async () => {
-        await User.deleteMany({});
-        await Shop.deleteMany({});
-      });
-
-      it('should delete hooked document for nested field', async () => {
-        const user = await User.create({
-          name: 'Barry',
-        });
-        await Shop.create({
-          name: 'shop',
-          info: {
-            owner: user,
-          },
-        });
-
-        let shops;
-
-        shops = await Shop.find({
-          'info.owner': user.id,
-        });
-        expect(shops.length).toBe(1);
-
-        await user.delete();
-
-        shops = await Shop.find({
-          'info.owner': user.id,
-        });
-        expect(shops.length).toBe(0);
-      });
-    });
-
-    describe('$and operator', () => {
-      const userModelName = getTestModelName();
-      const shopModelName = getTestModelName();
-
-      const User = createTestModel(
-        userModelName,
-        createSchema({
-          attributes: {
-            name: 'String',
-          },
-          delete: {
-            foreign: {
-              [shopModelName]: {
-                $and: ['owner', 'administrator'],
-              },
-            },
-          },
-        })
-      );
-      const Shop = createTestModel(shopModelName, {
-        name: 'String',
-        owner: {
-          type: 'ObjectId',
-          ref: userModelName,
-        },
-        administrator: {
-          type: 'ObjectId',
-          ref: userModelName,
-        },
-      });
-
-      afterEach(async () => {
-        await User.deleteMany({});
-        await Shop.deleteMany({});
-      });
-
-      it('should only documents that are both owners and administrators', async () => {
-        const user = await User.create({
-          name: 'Barry',
-        });
-        await Shop.create({
-          name: 'shop1',
-          owner: user,
-        });
-        await Shop.create({
-          name: 'shop2',
-          administrator: user,
-        });
-        await Shop.create({
-          name: 'shop3',
-          owner: user,
-          administrator: user,
-        });
-
-        await user.delete();
-
-        const shops = await Shop.find().sort({ name: 1 });
-        expect(shops).toMatchObject([
-          {
-            name: 'shop1',
-          },
-          {
-            name: 'shop2',
-          },
-        ]);
-      });
-    });
-
-    describe('$or operator', () => {
-      const userModelName = getTestModelName();
-      const shopModelName = getTestModelName();
-
-      const User = createTestModel(
-        userModelName,
-        createSchema({
-          attributes: {
-            name: 'String',
-          },
-          delete: {
-            foreign: {
-              [shopModelName]: {
-                $or: ['owner', 'administrator'],
-              },
-            },
-          },
-        })
-      );
-      const Shop = createTestModel(shopModelName, {
-        name: 'String',
-        owner: {
-          type: 'ObjectId',
-          ref: userModelName,
-        },
-        administrator: {
-          type: 'ObjectId',
-          ref: userModelName,
-        },
-      });
-
-      afterEach(async () => {
-        await User.deleteMany({});
-        await Shop.deleteMany({});
-      });
-
-      it('should delete both documents with $or query', async () => {
-        const user = await User.create({
-          name: 'Barry',
-        });
-        await Shop.create({
-          name: 'shop1',
-          owner: user,
-        });
-        await Shop.create({
-          name: 'shop2',
-          administrator: user,
-        });
-
-        await user.delete();
-
-        const shops = await Shop.find();
-        expect(shops.length).toBe(0);
-      });
-    });
-
-    describe('errors', () => {
-      it('should error if both $and and $or are defined', async () => {
-        expect(() => {
-          createTestModel(
+      describe('errors', () => {
+        it('should error on misspelling of reference', async () => {
+          expect(() => {
             createSchema({
               attributes: {
-                name: 'String',
+                profile: [
+                  {
+                    type: 'ObjectId',
+                    ref: 'UserProfile',
+                  },
+                ],
               },
               delete: {
-                foreign: {
-                  Shop: {
-                    $and: ['owner'],
-                    $or: ['administrator'],
-                  },
-                },
+                local: ['profilez'],
               },
-            })
-          );
-        }).toThrow();
+            });
+          }).toThrow();
+        });
       });
+    });
 
-      it('should not apply delete hooks when ref is misspelled', async () => {
+    describe('foreign references', () => {
+      describe('simple', () => {
         const userModelName = getTestModelName();
         const shopModelName = getTestModelName();
+
         const User = createTestModel(
           userModelName,
           createSchema({
@@ -482,7 +191,7 @@ describe('delete hooks', () => {
             },
             delete: {
               foreign: {
-                [shopModelName]: 'ownerz',
+                [shopModelName]: 'owner',
               },
             },
           })
@@ -495,30 +204,427 @@ describe('delete hooks', () => {
           },
         });
 
-        const user1 = await User.create({
-          name: 'Barry',
-        });
-        const user2 = await User.create({
-          name: 'Larry',
+        afterEach(async () => {
+          await User.deleteMany({});
+          await Shop.deleteMany({});
         });
 
-        await Shop.create({
-          name: 'shop1',
-          owner: user1,
-        });
-        await Shop.create({
-          name: 'shop2',
-          owner: user2,
+        it('should delete hooked document', async () => {
+          const user = await User.create({
+            name: 'Barry',
+          });
+          await Shop.create({
+            name: 'shop',
+            owner: user,
+          });
+          await user.delete();
+
+          const shops = await Shop.find();
+          expect(shops).toEqual([]);
         });
 
-        // Deleting _id shenanigans
-        user1._id = null;
+        it('should delete multiple documents', async () => {
+          const user = await User.create({
+            name: 'Barry',
+          });
+          await Shop.create({
+            name: 'shop1',
+            owner: user,
+          });
+          await Shop.create({
+            name: 'shop2',
+            owner: user,
+          });
 
-        await expect(async () => {
+          await user.delete();
+
+          const shops = await Shop.find();
+
+          expect(shops).toEqual([]);
+        });
+
+        it('should leave other documents untouched', async () => {
+          const user1 = await User.create({
+            name: 'Barry',
+          });
+          const user2 = await User.create({
+            name: 'Larry',
+          });
+
+          await Shop.create({
+            name: 'shop1',
+            owner: user1,
+          });
+          await Shop.create({
+            name: 'shop2',
+            owner: user2,
+          });
+
           await user1.delete();
-        }).rejects.toThrow();
 
-        expect(await Shop.countDocuments()).toBe(2);
+          const shops = await Shop.find();
+
+          expect(shops).toMatchObject([
+            {
+              name: 'shop2',
+            },
+          ]);
+        });
+
+        it('should not apply delete hooks when _id is tampered with', async () => {
+          const user1 = await User.create({
+            name: 'Barry',
+          });
+          const user2 = await User.create({
+            name: 'Larry',
+          });
+
+          await Shop.create({
+            name: 'shop1',
+            owner: user1,
+          });
+          await Shop.create({
+            name: 'shop2',
+            owner: user2,
+          });
+
+          // Deleting _id shenanigans
+          user1._id = null;
+
+          await expect(async () => {
+            await user1.delete();
+          }).rejects.toThrow();
+
+          expect(await Shop.countDocuments()).toBe(2);
+        });
+
+        it('should contain a list of the deleted refs', async () => {
+          let user = await User.create({
+            name: 'Barry',
+          });
+          const shop = await Shop.create({
+            name: 'shop',
+            owner: user,
+          });
+          await user.delete();
+
+          expect(await Shop.countDocuments()).toBe(0);
+
+          user = await User.findByIdDeleted(user.id);
+
+          const [obj] = user.deletedRefs;
+          expect(obj._id).toEqual(shop._id);
+          expect(obj.ref).toEqual(shopModelName);
+          expect(user.deletedRefs.length).toBe(1);
+        });
+
+        it('should not expose deleted refs list', async () => {
+          const user = await User.create({
+            name: 'Barry',
+          });
+          expect(user.toObject().deletedRefs).toBeUndefined();
+        });
+
+        it('should restore deleted foreign references', async () => {
+          let user = await User.create({
+            name: 'Barry',
+          });
+
+          await Shop.create({
+            name: 'shop',
+            owner: user,
+          });
+
+          await user.delete();
+
+          expect(await User.countDocuments()).toBe(0);
+          expect(await Shop.countDocuments()).toBe(0);
+
+          await user.restore();
+
+          expect(await User.countDocuments()).toBe(1);
+          expect(await Shop.countDocuments()).toBe(1);
+
+          user = await User.findById(user);
+          expect(user.deletedRefs.length).toBe(0);
+        });
+
+        it('should restore if foreign document is not deleted', async () => {
+          let user = await User.create({
+            name: 'Barry',
+          });
+
+          let shop = await Shop.create({
+            name: 'shop',
+            owner: user,
+          });
+
+          await user.delete();
+
+          expect(await Shop.countDocuments()).toBe(0);
+
+          shop = await Shop.findByIdDeleted(shop.id);
+          await shop.restore();
+
+          expect(await Shop.countDocuments()).toBe(1);
+
+          await expect(user.restore()).resolves.not.toThrow();
+        });
+      });
+
+      describe('nested field', () => {
+        const userModelName = getTestModelName();
+        const shopModelName = getTestModelName();
+
+        const User = createTestModel(
+          userModelName,
+          createSchema({
+            attributes: {
+              name: 'String',
+            },
+            delete: {
+              foreign: {
+                [shopModelName]: 'info.owner',
+              },
+            },
+          })
+        );
+        const Shop = createTestModel(shopModelName, {
+          name: 'String',
+          info: {
+            owner: {
+              type: 'ObjectId',
+              ref: userModelName,
+            },
+          },
+        });
+
+        afterEach(async () => {
+          await User.deleteMany({});
+          await Shop.deleteMany({});
+        });
+
+        it('should delete hooked document for nested field', async () => {
+          const user = await User.create({
+            name: 'Barry',
+          });
+          await Shop.create({
+            name: 'shop',
+            info: {
+              owner: user,
+            },
+          });
+
+          let shops;
+
+          shops = await Shop.find({
+            'info.owner': user.id,
+          });
+          expect(shops.length).toBe(1);
+
+          await user.delete();
+
+          shops = await Shop.find({
+            'info.owner': user.id,
+          });
+          expect(shops.length).toBe(0);
+        });
+      });
+
+      describe('$and operator', () => {
+        const userModelName = getTestModelName();
+        const shopModelName = getTestModelName();
+
+        const User = createTestModel(
+          userModelName,
+          createSchema({
+            attributes: {
+              name: 'String',
+            },
+            delete: {
+              foreign: {
+                [shopModelName]: {
+                  $and: ['owner', 'administrator'],
+                },
+              },
+            },
+          })
+        );
+        const Shop = createTestModel(shopModelName, {
+          name: 'String',
+          owner: {
+            type: 'ObjectId',
+            ref: userModelName,
+          },
+          administrator: {
+            type: 'ObjectId',
+            ref: userModelName,
+          },
+        });
+
+        afterEach(async () => {
+          await User.deleteMany({});
+          await Shop.deleteMany({});
+        });
+
+        it('should only documents that are both owners and administrators', async () => {
+          const user = await User.create({
+            name: 'Barry',
+          });
+          await Shop.create({
+            name: 'shop1',
+            owner: user,
+          });
+          await Shop.create({
+            name: 'shop2',
+            administrator: user,
+          });
+          await Shop.create({
+            name: 'shop3',
+            owner: user,
+            administrator: user,
+          });
+
+          await user.delete();
+
+          const shops = await Shop.find().sort({ name: 1 });
+          expect(shops).toMatchObject([
+            {
+              name: 'shop1',
+            },
+            {
+              name: 'shop2',
+            },
+          ]);
+        });
+      });
+
+      describe('$or operator', () => {
+        const userModelName = getTestModelName();
+        const shopModelName = getTestModelName();
+
+        const User = createTestModel(
+          userModelName,
+          createSchema({
+            attributes: {
+              name: 'String',
+            },
+            delete: {
+              foreign: {
+                [shopModelName]: {
+                  $or: ['owner', 'administrator'],
+                },
+              },
+            },
+          })
+        );
+        const Shop = createTestModel(shopModelName, {
+          name: 'String',
+          owner: {
+            type: 'ObjectId',
+            ref: userModelName,
+          },
+          administrator: {
+            type: 'ObjectId',
+            ref: userModelName,
+          },
+        });
+
+        afterEach(async () => {
+          await User.deleteMany({});
+          await Shop.deleteMany({});
+        });
+
+        it('should delete both documents with $or query', async () => {
+          const user = await User.create({
+            name: 'Barry',
+          });
+          await Shop.create({
+            name: 'shop1',
+            owner: user,
+          });
+          await Shop.create({
+            name: 'shop2',
+            administrator: user,
+          });
+
+          await user.delete();
+
+          const shops = await Shop.find();
+          expect(shops.length).toBe(0);
+        });
+      });
+
+      describe('errors', () => {
+        it('should error if both $and and $or are defined', async () => {
+          expect(() => {
+            createTestModel(
+              createSchema({
+                attributes: {
+                  name: 'String',
+                },
+                delete: {
+                  foreign: {
+                    Shop: {
+                      $and: ['owner'],
+                      $or: ['administrator'],
+                    },
+                  },
+                },
+              })
+            );
+          }).toThrow();
+        });
+
+        it('should not apply delete hooks when ref is misspelled', async () => {
+          const userModelName = getTestModelName();
+          const shopModelName = getTestModelName();
+          const User = createTestModel(
+            userModelName,
+            createSchema({
+              attributes: {
+                name: 'String',
+              },
+              delete: {
+                foreign: {
+                  [shopModelName]: 'ownerz',
+                },
+              },
+            })
+          );
+          const Shop = createTestModel(shopModelName, {
+            name: 'String',
+            owner: {
+              type: 'ObjectId',
+              ref: userModelName,
+            },
+          });
+
+          const user1 = await User.create({
+            name: 'Barry',
+          });
+          const user2 = await User.create({
+            name: 'Larry',
+          });
+
+          await Shop.create({
+            name: 'shop1',
+            owner: user1,
+          });
+          await Shop.create({
+            name: 'shop2',
+            owner: user2,
+          });
+
+          // Deleting _id shenanigans
+          user1._id = null;
+
+          await expect(async () => {
+            await user1.delete();
+          }).rejects.toThrow();
+
+          expect(await Shop.countDocuments()).toBe(2);
+        });
       });
     });
   });
@@ -714,19 +820,27 @@ describe('delete hooks', () => {
         })
       );
 
-      const Shop = createTestModel(shopModelName, {
-        name: 'String',
-        owner: {
-          type: 'ObjectId',
-          ref: userModelName,
-        },
-      });
+      const Shop = createTestModel(
+        shopModelName,
+        createSchema({
+          attributes: {
+            name: 'String',
+            owner: {
+              type: 'ObjectId',
+              ref: userModelName,
+            },
+          },
+          delete: {
+            errorOnReferenced: true,
+          },
+        })
+      );
 
       const Product = createTestModel(productModelName, {
         name: 'String',
-        owner: {
+        shop: {
           type: 'ObjectId',
-          ref: userModelName,
+          ref: shopModelName,
         },
       });
 
@@ -742,7 +856,7 @@ describe('delete hooks', () => {
         await expect(user.delete()).resolves.not.toThrow();
       });
 
-      it('should not have deleted anything if an error was thrown', async () => {
+      it('should not have deleted foreign references if an error was thrown', async () => {
         const user = await User.create({
           name: 'Barry',
         });
@@ -751,16 +865,92 @@ describe('delete hooks', () => {
           owner: user,
         });
 
-        await Product.create({
+        const shop = await Shop.create({
           owner: user,
+        });
+
+        await Product.create({
+          shop,
         });
 
         await expect(async () => {
           await user.delete();
         }).rejects.toThrow();
 
-        expect(await Shop.countDocuments()).toBe(1);
+        expect(await User.countDocuments()).toBe(1);
+        expect(await Shop.countDocuments()).toBe(2);
         expect(await Product.countDocuments()).toBe(1);
+      });
+
+      it('should not have deleted local references if an error was thrown', async () => {
+        const userModelName = getTestModelName();
+        const shopModelName = getTestModelName();
+        const productModelName = getTestModelName();
+
+        const User = createTestModel(
+          userModelName,
+          createSchema({
+            attributes: {
+              name: 'String',
+              shops: [
+                {
+                  type: 'ObjectId',
+                  ref: shopModelName,
+                },
+              ],
+            },
+            delete: {
+              local: 'shops',
+            },
+          })
+        );
+
+        const Shop = createTestModel(
+          shopModelName,
+          createSchema({
+            attributes: {
+              name: 'String',
+            },
+            delete: {
+              errorOnReferenced: true,
+            },
+          })
+        );
+
+        const Product = createTestModel(productModelName, {
+          shop: {
+            type: 'ObjectId',
+            ref: shopModelName,
+          },
+        });
+
+        const shop1 = await Shop.create({
+          name: 'shop-1',
+        });
+
+        const shop2 = await Shop.create({
+          name: 'shop-2',
+        });
+
+        let user = await User.create({
+          name: 'Barry',
+          shops: [shop1.id, shop2.id],
+        });
+
+        await Product.create({
+          shop: shop2,
+        });
+
+        await expect(async () => {
+          await user.delete();
+        }).rejects.toThrow();
+
+        expect(await User.countDocuments()).toBe(1);
+        expect(await Shop.countDocuments()).toBe(2);
+        expect(await Product.countDocuments()).toBe(1);
+
+        user = await User.findById(user.id);
+        expect(user.shops).toEqual([shop1._id, shop2._id]);
       });
     });
 

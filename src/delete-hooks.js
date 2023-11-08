@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 import { ReferenceError } from './errors';
+import { getInnerField } from './utils';
 
 const { ObjectId: SchemaObjectId } = mongoose.Schema.Types;
 
@@ -18,6 +19,7 @@ export function applyDeleteHooks(schema, definition) {
   let references;
 
   const deleteFn = schema.methods.delete;
+  const restoreFn = schema.methods.restore;
 
   schema.method('delete', async function () {
     if (errorHook) {
@@ -28,9 +30,30 @@ export function applyDeleteHooks(schema, definition) {
         references,
       });
     }
-    await deleteLocalReferences(this, localHook);
-    await deleteForeignReferences(this, foreignHook);
+    try {
+      await deleteLocalReferences(this, localHook);
+      await deleteForeignReferences(this, foreignHook);
+    } catch (error) {
+      await restoreLocalReferences(this, localHook);
+      await restoreForeignReferences(this);
+      throw error;
+    }
     await deleteFn.apply(this, arguments);
+  });
+
+  schema.method('restore', async function () {
+    await restoreLocalReferences(this, localHook);
+    await restoreForeignReferences(this);
+    await restoreFn.apply(this, arguments);
+  });
+
+  schema.add({
+    deletedRefs: [
+      {
+        _id: 'ObjectId',
+        ref: 'String',
+      },
+    ],
   });
 }
 
@@ -226,17 +249,17 @@ async function deleteForeignReferences(doc, refs) {
   for (let [modelName, arg] of Object.entries(refs)) {
     const Model = mongoose.models[modelName];
     if (typeof arg === 'string') {
-      await runDeletes(Model, {
+      await runDeletes(Model, doc, {
         [arg]: id,
       });
     } else {
       const { $and, $or } = arg;
       if ($and) {
-        await runDeletes(Model, {
+        await runDeletes(Model, doc, {
           $and: mapArrayQuery($and, id),
         });
       } else if ($or) {
-        await runDeletes(Model, {
+        await runDeletes(Model, doc, {
           $or: mapArrayQuery($or, id),
         });
       }
@@ -244,10 +267,14 @@ async function deleteForeignReferences(doc, refs) {
   }
 }
 
-async function runDeletes(Model, query) {
+async function runDeletes(Model, refDoc, query) {
   const docs = await Model.find(query);
   for (let doc of docs) {
     await doc.delete();
+    refDoc.deletedRefs.push({
+      _id: doc.id,
+      ref: doc.constructor.modelName,
+    });
   }
 }
 
@@ -257,4 +284,35 @@ function mapArrayQuery(arr, id) {
       [refName]: id,
     };
   });
+}
+
+// Restore
+
+async function restoreLocalReferences(refDoc, arr) {
+  if (!arr) {
+    return;
+  }
+  for (let name of arr) {
+    const { ref } = getInnerField(refDoc.constructor.schema.obj, name);
+    const _id = refDoc.get(name);
+    const Model = mongoose.models[ref];
+    // @ts-ignore
+    const doc = await Model.findByIdDeleted(_id);
+    if (doc) {
+      await doc.restore();
+    }
+  }
+}
+
+async function restoreForeignReferences(refDoc) {
+  for (let el of refDoc.deletedRefs) {
+    const { _id, ref } = el;
+    const Model = mongoose.models[ref];
+    // @ts-ignore
+    const doc = await Model.findByIdDeleted(_id);
+    if (doc) {
+      await doc.restore();
+    }
+  }
+  refDoc.deletedRefs = [];
 }
