@@ -110,6 +110,7 @@ function validateError(deleteHooks) {
   if (errorOnReferenced === true) {
     errorOnReferenced = {};
   }
+
   return errorOnReferenced;
 }
 
@@ -117,22 +118,20 @@ function validateError(deleteHooks) {
 
 async function errorOnForeignReferences(doc, options) {
   const { errorHook, cleanForeign, references } = options;
+
   if (!errorHook) {
     return;
   }
 
-  const { except = [] } = errorHook;
+  const { only, except } = errorHook;
 
-  assertExceptions(except);
+  assertModelNames(only);
+  assertModelNames(except);
 
   const results = [];
 
   for (let { model, paths } of references) {
-    const isAllowed = except.some((modelName) => {
-      return modelName === model.modelName;
-    });
-
-    if (isAllowed) {
+    if (referenceIsAllowed(errorHook, model)) {
       continue;
     }
 
@@ -179,9 +178,20 @@ async function errorOnForeignReferences(doc, options) {
   }
 }
 
-function assertExceptions(except) {
-  for (let val of except) {
-    if (typeof val === 'string' && !mongoose.models[val]) {
+function referenceIsAllowed(errorHook, model) {
+  const { only, except } = errorHook;
+  if (only) {
+    return !only.includes(model.modelName);
+  } else if (except) {
+    return except.includes(model.modelName);
+  } else {
+    return false;
+  }
+}
+
+function assertModelNames(arr = []) {
+  for (let val of arr) {
+    if (!mongoose.models[val]) {
       throw new Error(`Unknown model "${val}".`);
     }
   }

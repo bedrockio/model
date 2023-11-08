@@ -847,7 +847,66 @@ describe('delete hooks', () => {
       });
     });
 
-    describe('errors', () => {
+    describe('error with only', () => {
+      const userModelName = getTestModelName();
+      const shopModelName = getTestModelName();
+      const auditEntryModelName = getTestModelName();
+
+      const User = createTestModel(
+        userModelName,
+        createSchema({
+          attributes: {
+            name: 'String',
+          },
+          onDelete: {
+            errorOnReferenced: {
+              only: [shopModelName],
+            },
+          },
+        })
+      );
+
+      const Shop = createTestModel(shopModelName, {
+        user: {
+          type: 'ObjectId',
+          ref: User.modelName,
+        },
+      });
+
+      const AuditEntry = createTestModel(auditEntryModelName, {
+        user: {
+          type: 'ObjectId',
+          ref: User.modelName,
+        },
+      });
+
+      it('should not throw an error on shop references', async () => {
+        const user1 = await User.create({
+          name: 'Barry',
+        });
+        const user2 = await User.create({
+          name: 'Larry',
+        });
+
+        await Shop.create({
+          user: user1,
+        });
+
+        await AuditEntry.create({
+          user: user2,
+        });
+
+        await expect(async () => {
+          await user1.delete();
+        }).rejects.toThrow(
+          `Refusing to delete ${User.modelName} referenced by ${Shop.modelName}.`
+        );
+
+        await expect(user2.delete()).resolves.not.toThrow();
+      });
+    });
+
+    describe('validation', () => {
       it('should throw error if except contains unknown model', async () => {
         const User = createTestModel(
           createSchema({

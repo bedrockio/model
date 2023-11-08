@@ -1088,6 +1088,9 @@ In this case, "referenced by" means any other model that explicitly uses "User"
 as a `ref` for type `ObjectId`. `errorOnReference` may also be simply `true`,
 which will error on any foreign references of any kind.
 
+`only` may be passed instead of `except`, which will only error when the
+document is referenced by referenced by specific models.
+
 #### Restoring Deleted Documents
 
 Models that have delete hooks defined on them will keep a reference of the
