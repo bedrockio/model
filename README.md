@@ -1011,7 +1011,7 @@ check the document is the same as `authUser`.
 ### Delete Hooks
 
 Delete hooks are a powerful way to define what actions are taken on document
-deletion. They are defined in the `delete` field of the model definition file:
+deletion. They are defined in the `onDelete` field of the model definition file:
 
 ```json
 // user.json
@@ -1023,7 +1023,7 @@ deletion. They are defined in the `delete` field of the model definition file:
       "ref": "UserProfile"
     }
   },
-  "delete": {
+  "onDelete": {
     "clean": {
       "local": "profile",
       "foreign": {
@@ -1057,7 +1057,7 @@ await user.profile.delete();
 
 #### Foreign Reference Cleanup
 
-`cleanr.foreign` specifies foreign refs to delete. It is specified as an object
+`clean.foreign` specifies foreign refs to delete. It is specified as an object
 that maps foreign `ref` names to their referencing field. In the above example:
 
 ```js

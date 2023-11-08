@@ -6,14 +6,14 @@ import { getInnerField } from './utils';
 const { ObjectId: SchemaObjectId } = mongoose.Schema.Types;
 
 export function applyDeleteHooks(schema, definition) {
-  const { delete: deleteHooks } = definition;
+  let { onDelete: deleteHooks } = definition;
 
   if (!deleteHooks) {
     return;
   }
 
-  const localHook = validateLocal(deleteHooks, schema);
-  const foreignHook = validateForeign(deleteHooks);
+  const cleanLocal = validateCleanLocal(deleteHooks, schema);
+  const cleanForeign = validateCleanForeign(deleteHooks);
   const errorHook = validateError(deleteHooks);
 
   let references;
@@ -26,15 +26,15 @@ export function applyDeleteHooks(schema, definition) {
       references ||= getAllReferences(this);
       await errorOnForeignReferences(this, {
         errorHook,
-        foreignHook,
+        cleanForeign,
         references,
       });
     }
     try {
-      await deleteLocalReferences(this, localHook);
-      await deleteForeignReferences(this, foreignHook);
+      await deleteLocalReferences(this, cleanLocal);
+      await deleteForeignReferences(this, cleanForeign);
     } catch (error) {
-      await restoreLocalReferences(this, localHook);
+      await restoreLocalReferences(this, cleanLocal);
       await restoreForeignReferences(this);
       throw error;
     }
@@ -42,7 +42,7 @@ export function applyDeleteHooks(schema, definition) {
   });
 
   schema.method('restore', async function () {
-    await restoreLocalReferences(this, localHook);
+    await restoreLocalReferences(this, cleanLocal);
     await restoreForeignReferences(this);
     await restoreFn.apply(this, arguments);
   });
@@ -57,10 +57,10 @@ export function applyDeleteHooks(schema, definition) {
   });
 }
 
-// Validation
+// Clean Hook
 
-function validateLocal(deleteHooks, schema) {
-  let { local } = deleteHooks;
+function validateCleanLocal(deleteHooks, schema) {
+  let { local } = deleteHooks.clean || {};
   if (!local) {
     return;
   }
@@ -79,8 +79,8 @@ function validateLocal(deleteHooks, schema) {
   return local;
 }
 
-function validateForeign(deleteHooks) {
-  const { foreign } = deleteHooks;
+function validateCleanForeign(deleteHooks) {
+  const { foreign } = deleteHooks.clean || {};
   if (!foreign) {
     return;
   }
@@ -115,7 +115,7 @@ function validateError(deleteHooks) {
 // Error on references
 
 async function errorOnForeignReferences(doc, options) {
-  const { errorHook, foreignHook, references } = options;
+  const { errorHook, cleanForeign, references } = options;
   if (!errorHook) {
     return;
   }
@@ -137,8 +137,8 @@ async function errorOnForeignReferences(doc, options) {
 
     const $or = paths
       .filter((path) => {
-        if (foreignHook) {
-          return foreignHook[model.modelName] !== path;
+        if (cleanForeign) {
+          return cleanForeign[model.modelName] !== path;
         }
         return true;
       })

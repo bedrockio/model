@@ -17,8 +17,10 @@ describe('delete hooks', () => {
                 ref: userProfileModelName,
               },
             },
-            delete: {
-              local: 'profile',
+            onDelete: {
+              clean: {
+                local: 'profile',
+              },
             },
           })
         );
@@ -111,8 +113,10 @@ describe('delete hooks', () => {
                 },
               ],
             },
-            delete: {
-              local: ['profiles'],
+            onDelete: {
+              clean: {
+                local: ['profiles'],
+              },
             },
           })
         );
@@ -169,8 +173,10 @@ describe('delete hooks', () => {
                   },
                 ],
               },
-              delete: {
-                local: ['profilez'],
+              onDelete: {
+                clean: {
+                  local: ['profilez'],
+                },
               },
             });
           }).toThrow();
@@ -189,9 +195,11 @@ describe('delete hooks', () => {
             attributes: {
               name: 'String',
             },
-            delete: {
-              foreign: {
-                [shopModelName]: 'owner',
+            onDelete: {
+              clean: {
+                foreign: {
+                  [shopModelName]: 'owner',
+                },
               },
             },
           })
@@ -382,9 +390,11 @@ describe('delete hooks', () => {
             attributes: {
               name: 'String',
             },
-            delete: {
-              foreign: {
-                [shopModelName]: 'info.owner',
+            onDelete: {
+              clean: {
+                foreign: {
+                  [shopModelName]: 'info.owner',
+                },
               },
             },
           })
@@ -441,10 +451,12 @@ describe('delete hooks', () => {
             attributes: {
               name: 'String',
             },
-            delete: {
-              foreign: {
-                [shopModelName]: {
-                  $and: ['owner', 'administrator'],
+            onDelete: {
+              clean: {
+                foreign: {
+                  [shopModelName]: {
+                    $and: ['owner', 'administrator'],
+                  },
                 },
               },
             },
@@ -509,10 +521,12 @@ describe('delete hooks', () => {
             attributes: {
               name: 'String',
             },
-            delete: {
-              foreign: {
-                [shopModelName]: {
-                  $or: ['owner', 'administrator'],
+            onDelete: {
+              clean: {
+                foreign: {
+                  [shopModelName]: {
+                    $or: ['owner', 'administrator'],
+                  },
                 },
               },
             },
@@ -563,11 +577,13 @@ describe('delete hooks', () => {
                 attributes: {
                   name: 'String',
                 },
-                delete: {
-                  foreign: {
-                    Shop: {
-                      $and: ['owner'],
-                      $or: ['administrator'],
+                onDelete: {
+                  clean: {
+                    foreign: {
+                      Shop: {
+                        $and: ['owner'],
+                        $or: ['administrator'],
+                      },
                     },
                   },
                 },
@@ -585,9 +601,11 @@ describe('delete hooks', () => {
               attributes: {
                 name: 'String',
               },
-              delete: {
-                foreign: {
-                  [shopModelName]: 'ownerz',
+              onDelete: {
+                clean: {
+                  foreign: {
+                    [shopModelName]: 'ownerz',
+                  },
                 },
               },
             })
@@ -663,7 +681,7 @@ describe('delete hooks', () => {
           attributes: {
             name: 'String',
           },
-          delete: {
+          onDelete: {
             errorOnReferenced: true,
           },
         })
@@ -729,7 +747,7 @@ describe('delete hooks', () => {
           attributes: {
             name: 'String',
           },
-          delete: {
+          onDelete: {
             errorOnReferenced: {
               except: [auditEntryModelName],
             },
@@ -782,7 +800,7 @@ describe('delete hooks', () => {
             attributes: {
               name: 'String',
             },
-            delete: {
+            onDelete: {
               errorOnReferenced: {
                 except: ['BadModelName'],
               },
@@ -811,10 +829,12 @@ describe('delete hooks', () => {
           attributes: {
             name: 'String',
           },
-          delete: {
+          onDelete: {
             errorOnReferenced: true,
-            foreign: {
-              [shopModelName]: 'owner',
+            clean: {
+              foreign: {
+                [shopModelName]: 'owner',
+              },
             },
           },
         })
@@ -830,7 +850,7 @@ describe('delete hooks', () => {
               ref: userModelName,
             },
           },
-          delete: {
+          onDelete: {
             errorOnReferenced: true,
           },
         })
@@ -899,8 +919,10 @@ describe('delete hooks', () => {
                 },
               ],
             },
-            delete: {
-              local: 'shops',
+            onDelete: {
+              clean: {
+                local: 'shops',
+              },
             },
           })
         );
@@ -911,7 +933,7 @@ describe('delete hooks', () => {
             attributes: {
               name: 'String',
             },
-            delete: {
+            onDelete: {
               errorOnReferenced: true,
             },
           })
@@ -966,9 +988,11 @@ describe('delete hooks', () => {
             attributes: {
               name: 'String',
             },
-            delete: {
-              foreign: {
-                [shopModelName]: 'owner',
+            onDelete: {
+              clean: {
+                foreign: {
+                  [shopModelName]: 'owner',
+                },
               },
             },
           })
@@ -984,9 +1008,11 @@ describe('delete hooks', () => {
                 ref: userModelName,
               },
             },
-            delete: {
-              foreign: {
-                [productModelName]: 'shop',
+            onDelete: {
+              clean: {
+                foreign: {
+                  [productModelName]: 'shop',
+                },
               },
             },
           })
@@ -1035,9 +1061,11 @@ describe('delete hooks', () => {
             attributes: {
               name: 'String',
             },
-            delete: {
-              foreign: {
-                [shopModelName]: 'owner',
+            onDelete: {
+              clean: {
+                foreign: {
+                  [shopModelName]: 'owner',
+                },
               },
             },
           })
@@ -1053,7 +1081,7 @@ describe('delete hooks', () => {
                 ref: userModelName,
               },
             },
-            delete: {
+            onDelete: {
               errorOnReferenced: true,
             },
           })
@@ -1106,8 +1134,10 @@ describe('delete hooks', () => {
                 ref: userProfileModelName,
               },
             },
-            delete: {
-              local: 'profile',
+            onDelete: {
+              clean: {
+                local: 'profile',
+              },
             },
           })
         );
@@ -1118,7 +1148,7 @@ describe('delete hooks', () => {
             attributes: {
               name: 'String',
             },
-            delete: {
+            onDelete: {
               errorOnReferenced: true,
             },
           })
@@ -1155,8 +1185,10 @@ describe('delete hooks', () => {
                 ref: userProfileModelName,
               },
             },
-            delete: {
-              local: 'profile',
+            onDelete: {
+              clean: {
+                local: 'profile',
+              },
             },
           })
         );
@@ -1167,7 +1199,7 @@ describe('delete hooks', () => {
             attributes: {
               name: 'String',
             },
-            delete: {
+            onDelete: {
               errorOnReferenced: {
                 except: [userModelName],
               },
@@ -1207,9 +1239,11 @@ describe('delete hooks', () => {
                 ref: shopModelName,
               },
             },
-            delete: {
-              foreign: {
-                [shopModelName]: 'owner',
+            onDelete: {
+              clean: {
+                foreign: {
+                  [shopModelName]: 'owner',
+                },
               },
             },
           })
@@ -1261,7 +1295,7 @@ describe('delete hooks', () => {
                 ref: shopModelName,
               },
             },
-            delete: {
+            onDelete: {
               errorOnReferenced: true,
             },
           })
@@ -1315,9 +1349,11 @@ describe('delete hooks', () => {
                 ref: shopModelName,
               },
             },
-            delete: {
-              foreign: {
-                [shopModelName]: 'owner',
+            onDelete: {
+              clean: {
+                foreign: {
+                  [shopModelName]: 'owner',
+                },
               },
             },
           })
@@ -1333,7 +1369,7 @@ describe('delete hooks', () => {
                 ref: userModelName,
               },
             },
-            delete: {
+            onDelete: {
               errorOnReferenced: true,
             },
           })
@@ -1371,9 +1407,11 @@ describe('delete hooks', () => {
           attributes: {
             name: 'String',
           },
-          delete: {
-            foreign: {
-              [shopModelName]: 'owner',
+          onDelete: {
+            clean: {
+              foreign: {
+                [shopModelName]: 'owner',
+              },
             },
           },
         })
