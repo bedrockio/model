@@ -16,8 +16,8 @@ Bedrock utilities for model creation.
   - [Validation](#validation)
   - [Search](#search)
   - [Includes](#includes)
+  - [Delete Hooks](#delete-hooks)
   - [Access Control](#access-control)
-  - [References](#references)
   - [Assign](#assign)
   - [Slugs](#slugs)
 - [Testing](#testing)
@@ -39,14 +39,18 @@ yarn install @bedrockio/yada
 
 ## Usage
 
-Bedrock models are defined as flat JSON files to allow static analysis and inspection. They can be further extended to allow more functionality. The most straightforward way to load models is to use `loadModelDir` that points to the directory where JSON definitions exist:
+Bedrock models are defined as flat JSON files to allow static analysis and
+inspection. They can be further extended to allow more functionality. The most
+straightforward way to load models is to use `loadModelDir` that points to the
+directory where JSON definitions exist:
 
 ```js
 const { loadModelDir } = require('@bedrockio/model');
 model.exports = loadModelDir('path/to/definitions/');
 ```
 
-Models that need to be extended can use the `createSchema` method with the definition and add to the schema as needed:
+Models that need to be extended can use the `createSchema` method with the
+definition and add to the schema as needed:
 
 ```js
 const mongoose = require('mongoose');
@@ -73,7 +77,8 @@ model.exports = {
 
 ## Schemas
 
-The `attributes` field of model definitions can be considered equivalent to Mongoose, but defined in JSON with extended features:
+The `attributes` field of model definitions can be considered equivalent to
+Mongoose, but defined in JSON with extended features:
 
 ```js
 {
@@ -117,7 +122,8 @@ Links:
 
 ### Schema Extensions
 
-This package provides a number of extensions to assist schema creation outside the scope of Mongoose.
+This package provides a number of extensions to assist schema creation outside
+the scope of Mongoose.
 
 #### Attributes
 
@@ -132,7 +138,8 @@ Objects are easily defined with their attributes directly on the field:
 };
 ```
 
-However it is common to need to add an option like `required` to an object schema. In Mongoose this is technically written as:
+However it is common to need to add an option like `required` to an object
+schema. In Mongoose this is technically written as:
 
 ```js
 {
@@ -146,7 +153,8 @@ However it is common to need to add an option like `required` to an object schem
 };
 ```
 
-However in complex cases this can be obtuse and difficult to remember. A more explicit syntax is allowed here:
+However in complex cases this can be obtuse and difficult to remember. A more
+explicit syntax is allowed here:
 
 ```js
 {
@@ -161,7 +169,9 @@ However in complex cases this can be obtuse and difficult to remember. A more ex
 };
 ```
 
-The type `Object` and `attributes` is a signal to create the correct schema for the above type. This can also be similarly used for `Array` for an array of objects:
+The type `Object` and `attributes` is a signal to create the correct schema for
+the above type. This can also be similarly used for `Array` for an array of
+objects:
 
 ```js
 {
@@ -176,7 +186,8 @@ The type `Object` and `attributes` is a signal to create the correct schema for 
 };
 ```
 
-In the above example the `writeAccess` applies to the array itself, not individual fields. Note that for an array of primitives the correct syntax is:
+In the above example the `writeAccess` applies to the array itself, not
+individual fields. Note that for an array of primitives the correct syntax is:
 
 ```js
 {
@@ -189,7 +200,8 @@ In the above example the `writeAccess` applies to the array itself, not individu
 
 #### Scopes
 
-One common need is to define multiple fields with the same options. A custom type `Scope` helps make this possible:
+One common need is to define multiple fields with the same options. A custom
+type `Scope` helps make this possible:
 
 ```js
 {
@@ -222,11 +234,13 @@ This syntax expands into the following:
 };
 ```
 
-Note that the name `$private` is arbitrary. The `$` helps distinguish it from real fields, but it can be anything as the property is removed.
+Note that the name `$private` is arbitrary. The `$` helps distinguish it from
+real fields, but it can be anything as the property is removed.
 
 #### Tuples
 
-Array fields that have more than one element are considered a "tuple". They will enforce an exact length and specific type for each element.
+Array fields that have more than one element are considered a "tuple". They will
+enforce an exact length and specific type for each element.
 
 ```js
 {
@@ -245,13 +259,17 @@ This will map to the following:
 }
 ```
 
-Where `validator` is a special validator that enforces both the exact array length and content types.
+Where `validator` is a special validator that enforces both the exact array
+length and content types.
 
-Note that Mongoose [does not provide a way to enforce array elements of specific mixed types](https://github.com/Automattic/mongoose/issues/10894), requiring the `Mixed` type instead.
+Note that Mongoose
+[does not provide a way to enforce array elements of specific mixed types](https://github.com/Automattic/mongoose/issues/10894),
+requiring the `Mixed` type instead.
 
 #### Array Extensions
 
-A common need is to validate the length of an array or make it required by enforcing a minimum length of 1. However this does not exist in Mongoose:
+A common need is to validate the length of an array or make it required by
+enforcing a minimum length of 1. However this does not exist in Mongoose:
 
 ```js
 {
@@ -262,7 +280,10 @@ A common need is to validate the length of an array or make it required by enfor
 };
 ```
 
-The above syntax will not do anything as the default for arrays is always `[]` so the field will always exist. It also suffers from being ambiguous (is the array required or the elements inside?). An extension is provided here for explicit handling of this case:
+The above syntax will not do anything as the default for arrays is always `[]`
+so the field will always exist. It also suffers from being ambiguous (is the
+array required or the elements inside?). An extension is provided here for
+explicit handling of this case:
 
 ```js
 {
@@ -274,7 +295,8 @@ The above syntax will not do anything as the default for arrays is always `[]` s
 };
 ```
 
-A custom validator will be created to enforce the array length, bringing parity with `minLength` and `maxLength` on strings.
+A custom validator will be created to enforce the array length, bringing parity
+with `minLength` and `maxLength` on strings.
 
 ### Gotchas
 
@@ -289,7 +311,8 @@ A custom validator will be created to enforce the array length, bringing parity 
 }
 ```
 
-Given the above schema, let's say you want to add a default. The appropriate schema would be:
+Given the above schema, let's say you want to add a default. The appropriate
+schema would be:
 
 ```js
 {
@@ -306,7 +329,10 @@ Given the above schema, let's say you want to add a default. The appropriate sch
 }
 ```
 
-However this is not a valid definition in Mongoose, which instead sees `type` and `default` as individual fields. A type definition and object schema unfortunately cannot be disambiguated in this case. [Syntax extentsions](#syntax-extensions) provides an escape hatch here:
+However this is not a valid definition in Mongoose, which instead sees `type`
+and `default` as individual fields. A type definition and object schema
+unfortunately cannot be disambiguated in this case.
+[Syntax extentsions](#syntax-extensions) provides an escape hatch here:
 
 ```js
 {
@@ -330,7 +356,10 @@ This will manually create a new nested subschema.
 
 ### Soft Delete
 
-The soft delete module ensures that no documents are permanently deleted by default and provides helpful methods to query on and restore deleted documents. "Soft deletion" means that deleted documents have the properties `deleted` and `deletedAt`.
+The soft delete module ensures that no documents are permanently deleted by
+default and provides helpful methods to query on and restore deleted documents.
+"Soft deletion" means that deleted documents have the properties `deleted` and
+`deletedAt`.
 
 #### Instance Methods
 
@@ -345,7 +374,8 @@ The soft delete module ensures that no documents are permanently deleted by defa
 - `restoreOne` - Restores a single document.
 - `restoreMany` - Restores multiple documents.
 - `destroyOne` - Permanently deletes a single document.
-- `destroyMany` - Permanently deletes multiple documents. Be careful with this one.
+- `destroyMany` - Permanently deletes multiple documents. Be careful with this
+  one.
 
 #### Query Deleted Documents
 
@@ -365,12 +395,17 @@ The soft delete module ensures that no documents are permanently deleted by defa
 
 #### Other Static Methods
 
-- `findOneAndDelete` - The soft equivalent of the [Mongoose method](https://mongoosejs.com/docs/api/model.html#model_Model-findOneAndDelete). Fetches the current data before deleting and returns the document.
-- `findByIdAndDelete` - The soft equivalent of the [Mongoose method](https://mongoosejs.com/docs/api/model.html#model_Model-findByIdAndDelete). Fetches the current data before deleting and returns the document.
+- `findOneAndDelete` - The soft equivalent of the
+  [Mongoose method](https://mongoosejs.com/docs/api/model.html#model_Model-findOneAndDelete).
+  Fetches the current data before deleting and returns the document.
+- `findByIdAndDelete` - The soft equivalent of the
+  [Mongoose method](https://mongoosejs.com/docs/api/model.html#model_Model-findByIdAndDelete).
+  Fetches the current data before deleting and returns the document.
 
 #### Disallowed Methods
 
-Due to ambiguity with the soft delete module, the following methods will throw an error:
+Due to ambiguity with the soft delete module, the following methods will throw
+an error:
 
 - `Document.remove` - Use `Document.delete` or `Document.destroy` instead.
 - `Document.deleteOne` - Use `Document.delete` or `Model.deleteOne` instead.
@@ -380,11 +415,15 @@ Due to ambiguity with the soft delete module, the following methods will throw a
 
 #### Unique Constraints
 
-Note that although monogoose allows a `unique` option on fields, this will add a unique index to the mongo collection itself which is incompatible with soft deletion.
+Note that although monogoose allows a `unique` option on fields, this will add a
+unique index to the mongo collection itself which is incompatible with soft
+deletion.
 
-This package will intercept `unique: true` to create a soft delete compatible validation which will:
+This package will intercept `unique: true` to create a soft delete compatible
+validation which will:
 
-- Throw an error if other non-deleted documents with the same fields exist when calling:
+- Throw an error if other non-deleted documents with the same fields exist when
+  calling:
   - `Document.save`
   - `Document.update`
   - `Document.restore`
@@ -394,17 +433,24 @@ This package will intercept `unique: true` to create a soft delete compatible va
   - `Model.restoreMany`
   - `Model.insertMany`
   - `Model.replaceOne`
-- Append the same validation to `Model.getCreateSchema` and `Model.getUpdateSchema` to allow this constraint to trickle down to the API.
+- Append the same validation to `Model.getCreateSchema` and
+  `Model.getUpdateSchema` to allow this constraint to trickle down to the API.
 
 > :warning: updateOne and updateMany
 >
-> Note that calling `Model.updateOne` will throw an error when a unique field exists on any document **including the document being updated**. This is an intentional constraint that allows `updateOne` better peformance by not having to fetch the ids of the documents being updated in order to exclude them. To avoid this call `Document.save` instead.
+> Note that calling `Model.updateOne` will throw an error when a unique field
+> exists on any document **including the document being updated**. This is an
+> intentional constraint that allows `updateOne` better peformance by not having
+> to fetch the ids of the documents being updated in order to exclude them. To
+> avoid this call `Document.save` instead.
 >
-> Note also that calling `Model.updateMany` with a unique field passed will always throw an error as the result would inherently be non-unique.
+> Note also that calling `Model.updateMany` with a unique field passed will
+> always throw an error as the result would inherently be non-unique.
 
 ### Validation
 
-Models are extended with methods that allow complex validation that derives from the schema. Bedrock validation is generally used at the API level:
+Models are extended with methods that allow complex validation that derives from
+the schema. Bedrock validation is generally used at the API level:
 
 ```js
 const Router = require('@koa/router');
@@ -423,16 +469,27 @@ router.post(
 );
 ```
 
-In the above example `getCreateValidation` returns a [yada](https://github.com/bedrockio/yada) schema that is validated in the `validateBody` middleware. The `password` field is an additional field that is appended to the create schema.
+In the above example `getCreateValidation` returns a
+[yada](https://github.com/bedrockio/yada) schema that is validated in the
+`validateBody` middleware. The `password` field is an additional field that is
+appended to the create schema.
 
 There are 3 main methods to generate schemas:
 
-- `getCreateValidation`: Validates all fields while disallowing reserved fields like `id`, `createdAt`, and `updatedAt`.
-- `getUpdateValidation`: Validates all fields as optional (ie. they will not be validated if they don't exist on the object). Additionally will strip out reserved fields to allow created objects to be passed in. Unknown fields will also be stripped out rather than error to allow virtuals to be passed in.
-- `getSearchValidation`: Validates fields for use with [search](#search). The generated validation has a number of properties:
-  - In addition to the base field schemas, arrays or ranges are also allowed. See [search](#search) for more.
-  - The special fields `limit`, `sort`, `keyword`, `include`, and `ids` are also allowed.
-  - Array fields are "unwound". This means that for example given an array field `categories`, input may be either a string or an array of strings.
+- `getCreateValidation`: Validates all fields while disallowing reserved fields
+  like `id`, `createdAt`, and `updatedAt`.
+- `getUpdateValidation`: Validates all fields as optional (ie. they will not be
+  validated if they don't exist on the object). Additionally will strip out
+  reserved fields to allow created objects to be passed in. Unknown fields will
+  also be stripped out rather than error to allow virtuals to be passed in.
+- `getSearchValidation`: Validates fields for use with [search](#search). The
+  generated validation has a number of properties:
+  - In addition to the base field schemas, arrays or ranges are also allowed.
+    See [search](#search) for more.
+  - The special fields `limit`, `sort`, `keyword`, `include`, and `ids` are also
+    allowed.
+  - Array fields are "unwound". This means that for example given an array field
+    `categories`, input may be either a string or an array of strings.
 
 #### Named Validations
 
@@ -447,13 +504,18 @@ Named validations can be specified on the model:
 }
 ```
 
-Validator functions are derived from [yada](https://github.com/bedrockio/yada#methods). Note that:
+Validator functions are derived from
+[yada](https://github.com/bedrockio/yada#methods). Note that:
 
 - `email` - Will additionally downcase any input.
-- `password` - Is not supported as it requires options to be passed and is not a field stored directly in the database.
-- `mongo` - Is instead represented in the models as `ObjectId` to have parity with `type`.
-- `min` - Defined instead directly on the field with `minLength` for strings and `min` for numbers.
-- `max` - Defined instead directly on the field with `maxLength` for strings and `max` for numbers.
+- `password` - Is not supported as it requires options to be passed and is not a
+  field stored directly in the database.
+- `mongo` - Is instead represented in the models as `ObjectId` to have parity
+  with `type`.
+- `min` - Defined instead directly on the field with `minLength` for strings and
+  `min` for numbers.
+- `max` - Defined instead directly on the field with `maxLength` for strings and
+  `max` for numbers.
 
 ### Search
 
@@ -466,13 +528,17 @@ const { data, meta } = await User.search();
 The method takes the following options:
 
 - `limit` - Limit for the query. Will be output in `meta`.
-- `sort` - The sort for the query as an object containing a `field` and an `order` of `"asc"` or `"desc"`. May also be an array.
+- `sort` - The sort for the query as an object containing a `field` and an
+  `order` of `"asc"` or `"desc"`. May also be an array.
 - `include` - Allows [include](#includes) based population.
 - `keyword` - A keyword to perform a [keyword search](#keyword-search).
 - `ids` - An array of document ids to search on.
-- `fields` - Used by [keyword search](#keyword-search). Generally for internal use.
+- `fields` - Used by [keyword search](#keyword-search). Generally for internal
+  use.
 
-Any other fields passed in will be forwarded to `find`. The return value contains the found documents in `data` and `meta` which contains metadata about the search:
+Any other fields passed in will be forwarded to `find`. The return value
+contains the found documents in `data` and `meta` which contains metadata about
+the search:
 
 - `total` The total document count for the query.
 - `limit` The limit for the query.
@@ -480,10 +546,12 @@ Any other fields passed in will be forwarded to `find`. The return value contain
 
 #### Advanced Searching
 
-Input to `search` will execute the optimal mongo query and supports several advanced features:
+Input to `search` will execute the optimal mongo query and supports several
+advanced features:
 
 - Array fields will be executed using `$in`.
-- Javascript regular expressions will map to `$regex` which allows for [more advanced PCRE compatible features](https://docs.mongodb.com/manual/reference/operator/query/regex/#pcre-vs-javascript).
+- Javascript regular expressions will map to `$regex` which allows for
+  [more advanced PCRE compatible features](https://docs.mongodb.com/manual/reference/operator/query/regex/#pcre-vs-javascript).
 - Nested objects will be automatically flattened to query subdocuments:
 
 ```
@@ -513,11 +581,13 @@ age: {
 }
 ```
 
-A range query can use `lt`, `gt`, or both. Additionally `lte` and `gte` will query on less/greater than or equal values.
+A range query can use `lt`, `gt`, or both. Additionally `lte` and `gte` will
+query on less/greater than or equal values.
 
 #### Keyword Search
 
-Passing `keyword` to the search method will perform a keyword search. To use this feature a `fields` key must be present on the model definition:
+Passing `keyword` to the search method will perform a keyword search. To use
+this feature a `fields` key must be present on the model definition:
 
 ```json
 {
@@ -538,7 +608,8 @@ Passing `keyword` to the search method will perform a keyword search. To use thi
 }
 ```
 
-This will use the `$or` operator to search on multiple fields. If `fields` is not defined then a Mongo text query will be attempted:
+This will use the `$or` operator to search on multiple fields. If `fields` is
+not defined then a Mongo text query will be attempted:
 
 ```
 {
@@ -552,18 +623,33 @@ Note that this will fail unless a text index is defined on the model.
 
 #### Search Validation
 
-The [validation](#validation) generated for search using `getSearchValidation` is inherently looser and allows more fields to be passed to allow complex searches compatible with the above.
+The [validation](#validation) generated for search using `getSearchValidation`
+is inherently looser and allows more fields to be passed to allow complex
+searches compatible with the above.
 
 ### Includes
 
-Populating foreign documents with [populate](https://mongoosejs.com/docs/populate.html) is a powerful feature of mongoose. In the past Bedrock has made use of the [autopopulate](https://plugins.mongoosejs.io/plugins/autopopulate) plugin, however has since moved away from this for two reasons:
+Populating foreign documents with
+[populate](https://mongoosejs.com/docs/populate.html) is a powerful feature of
+mongoose. In the past Bedrock has made use of the
+[autopopulate](https://plugins.mongoosejs.io/plugins/autopopulate) plugin,
+however has since moved away from this for two reasons:
 
-1. Document population is highly situational. In complex real world applications a document may require deep population or none at all, however autopopulate does not allow this level of control.
-2. Although circular references usually are the result of bad data modeling, in some cases they cannot be avoided. Autopopulate will keep loading these references until it reaches a maximum depth, even when the fetched data is redundant.
+1. Document population is highly situational. In complex real world applications
+   a document may require deep population or none at all, however autopopulate
+   does not allow this level of control.
+2. Although circular references usually are the result of bad data modeling, in
+   some cases they cannot be avoided. Autopopulate will keep loading these
+   references until it reaches a maximum depth, even when the fetched data is
+   redundant.
 
-Both of these issues have major performance implications which result in slower queries and more unneeded data transfer over the wire.
+Both of these issues have major performance implications which result in slower
+queries and more unneeded data transfer over the wire.
 
-For this reason calling `populate` manually is highly preferable, however in complex situations this can easily be a lot of overhead. The include module attempts to greatly streamline this process by adding an `include` method to queries:
+For this reason calling `populate` manually is highly preferable, however in
+complex situations this can easily be a lot of overhead. The include module
+attempts to greatly streamline this process by adding an `include` method to
+queries:
 
 ```js
 const product = await Product.findById(id).include([
@@ -575,7 +661,8 @@ const product = await Product.findById(id).include([
 ]);
 ```
 
-This method accepts a string or array of strings that will map to a `populate` call that can be far more complex:
+This method accepts a string or array of strings that will map to a `populate`
+call that can be far more complex:
 
 ```js
 const product = await Product.findById(id).populate([
@@ -602,7 +689,10 @@ const product = await Product.findById(id).populate([
 ]);
 ```
 
-In addition to brevity, one major advantage of using `include` is that the caller does not need to know whether the documents are subdocuments or foreign references. As Bedrock has knowledge of the schemas, it is able to build the appropriate call to `populate` for you.
+In addition to brevity, one major advantage of using `include` is that the
+caller does not need to know whether the documents are subdocuments or foreign
+references. As Bedrock has knowledge of the schemas, it is able to build the
+appropriate call to `populate` for you.
 
 #### Excluding Fields
 
@@ -614,8 +704,11 @@ const user = await User.findById(id).include('-profile');
 
 The above will return all fields except `profile`. Note that:
 
-- Excluding fields only affects the `select` option. Foreign fields must still be passed, otherwise they will be returned unpopulated.
-- An excluded field on a foreign reference will implicitly be populated. This means that passing `-profile.name` where `profile` is a foreign field will populate `profile` but exclude `name`.
+- Excluding fields only affects the `select` option. Foreign fields must still
+  be passed, otherwise they will be returned unpopulated.
+- An excluded field on a foreign reference will implicitly be populated. This
+  means that passing `-profile.name` where `profile` is a foreign field will
+  populate `profile` but exclude `name`.
 
 #### Wildcards
 
@@ -652,9 +745,13 @@ The example above will select both `firstName` and `lastName`.
 const user = await User.findById(id).include('**.phone');
 ```
 
-This example above will select both `profile1.address.phone` and `profile2.address.phone`. Compare this to `*` which will not match here.
+This example above will select both `profile1.address.phone` and
+`profile2.address.phone`. Compare this to `*` which will not match here.
 
-Note that wildcards do not implicitly populate foreign fields. For example passing `p*` where `profile` is a foreign field will include all fields matching `p*` but it will not populate the `profile` field. In this case an array must be used instead:
+Note that wildcards do not implicitly populate foreign fields. For example
+passing `p*` where `profile` is a foreign field will include all fields matching
+`p*` but it will not populate the `profile` field. In this case an array must be
+used instead:
 
 ```js
 const user = await User.findById(id).include(['p*', 'profile']);
@@ -672,7 +769,8 @@ const user = await User.search({
 
 #### Include as a Filter
 
-Additionally `include` is flagged as a special parameter for filters, allowing the following equivalent syntax on `search` as well as all `find` methods:
+Additionally `include` is flagged as a special parameter for filters, allowing
+the following equivalent syntax on `search` as well as all `find` methods:
 
 ```js
 const user = await User.find({
@@ -683,7 +781,9 @@ const user = await User.find({
 
 #### Validation with includes
 
-The [validation](#validation) methods additionally allow `include` as a special field on generated schemas. This allows the client to drive document inclusion on a case by case basis. For example, given a typical Bedrock setup:
+The [validation](#validation) methods additionally allow `include` as a special
+field on generated schemas. This allows the client to drive document inclusion
+on a case by case basis. For example, given a typical Bedrock setup:
 
 ```js
 const Router = require('@koa/router');
@@ -697,7 +797,9 @@ router.post('/', validateBody(User.getSearchValidation()), async (ctx) => {
 });
 ```
 
-The `getSearchValidation` will allow the `include` property to be passed, letting the client populate documents as they require. Note that the fields a client is able to include is subject to [access control](#access-control).
+The `getSearchValidation` will allow the `include` property to be passed,
+letting the client populate documents as they require. Note that the fields a
+client is able to include is subject to [access control](#access-control).
 
 ### Access Control
 
@@ -705,11 +807,18 @@ This package applies two forms of access control:
 
 #### Read Access
 
-Read access influences how documents are serialized. Fields that have been denied access will be stripped out. Additionally it will influence the validation schema for `getSearchValidation`. Fields that have been denied access are not allowed to be searched on and will throw an error.
+Read access influences how documents are serialized. Fields that have been
+denied access will be stripped out. Additionally it will influence the
+validation schema for `getSearchValidation`. Fields that have been denied access
+are not allowed to be searched on and will throw an error.
 
 #### Write Access
 
-Write access influences validation in `getCreateValidation` and `getUpdateValidation`. Fields that have been denied access will throw an error unless they are identical to what is already set on the document. Note that in the case of `getCreateValidation` no document has been created yet so a denied field will always result in an error if passed.
+Write access influences validation in `getCreateValidation` and
+`getUpdateValidation`. Fields that have been denied access will throw an error
+unless they are identical to what is already set on the document. Note that in
+the case of `getCreateValidation` no document has been created yet so a denied
+field will always result in an error if passed.
 
 #### Defining Access
 
@@ -725,7 +834,8 @@ Access is defined in schemas with the `readAccess` and `writeAccess` options:
 }
 ```
 
-This may be either a string or an array of strings. For multiple fields with the same access types, use a [scope](#scopes).
+This may be either a string or an array of strings. For multiple fields with the
+same access types, use a [scope](#scopes).
 
 ##### Access on Arrays
 
@@ -742,7 +852,9 @@ Note that on array fields the following schema is often used:
 };
 ```
 
-However this is not technically correct as the `readAccess` above is referring to the `tokens` array instead of individual elements. The correct schema is technically written:
+However this is not technically correct as the `readAccess` above is referring
+to the `tokens` array instead of individual elements. The correct schema is
+technically written:
 
 ```js
 {
@@ -753,13 +865,18 @@ However this is not technically correct as the `readAccess` above is referring t
 }
 ```
 
-However this is overhead and hard to remember, so `readAccess` and `writeAccess` will be hoisted to the array field itself as a special case. Note that only these two fields will be hoisted as other fields like `validate` and `default` are correctly defined on the string itself.
+However this is overhead and hard to remember, so `readAccess` and `writeAccess`
+will be hoisted to the array field itself as a special case. Note that only
+these two fields will be hoisted as other fields like `validate` and `default`
+are correctly defined on the string itself.
 
 #### Access Types
 
-`readAccess` and `writeAccess` can specify any token. However a few special tokens exist:
+`readAccess` and `writeAccess` can specify any token. However a few special
+tokens exist:
 
-- `all` - Allows access to anyone. This token is reserved for clarity but is not required as it is the default.
+- `all` - Allows access to anyone. This token is reserved for clarity but is not
+  required as it is the default.
 - `none` - Allows access to no-one.
 - `self` - See [document based access](#document-based-access).
 - `user` - See [document based access](#document-based-access).
@@ -769,7 +886,8 @@ Any other token will use [scope based access](#scope-based-access).
 
 ##### Scope Based Access
 
-A non-reserved token specified in `readAccess` or `writeAccess` will test against scopes in the generated validations or when serializing:
+A non-reserved token specified in `readAccess` or `writeAccess` will test
+against scopes in the generated validations or when serializing:
 
 ```js
 // In validation middleware:
@@ -787,7 +905,9 @@ document.toObject({
 });
 ```
 
-Note that scopes are just literal strings. For example a route already checking that the user is admin may simply pass `.toObject({ scope: 'admin' })`. However for more complex cases scopes are typically derived from the authUser's roles.
+Note that scopes are just literal strings. For example a route already checking
+that the user is admin may simply pass `.toObject({ scope: 'admin' })`. However
+for more complex cases scopes are typically derived from the authUser's roles.
 
 ##### Document Based Access
 
@@ -801,16 +921,19 @@ Document based access allows 3 different tokens:
 
 Using document based access comes with some requirements:
 
-1. Read access must use `.toObject({ authUser })`. Note that the document is not required here as a reference is already kept.
+1. Read access must use `.toObject({ authUser })`. Note that the document is not
+   required here as a reference is already kept.
 2. Write access must use `schema.validate(body, { authUser, document })`.
 
 #### Examples
 
-For clarity, here are a few examples about how document based access control should be used:
+For clarity, here are a few examples about how document based access control
+should be used:
 
 ##### Example 1
 
-A user is allowed to update their own date of birth, but not their email which is set after verification:
+A user is allowed to update their own date of birth, but not their email which
+is set after verification:
 
 ```js
 // user.json
@@ -828,7 +951,8 @@ A user is allowed to update their own date of birth, but not their email which i
 
 ##### Example 2
 
-A user is allowed to update the name of their own shop and admins can as well. However, only admins can set the owner of the shop:
+A user is allowed to update the name of their own shop and admins can as well.
+However, only admins can set the owner of the shop:
 
 ```json
 // shop.json
@@ -847,9 +971,13 @@ A user is allowed to update the name of their own shop and admins can as well. H
 
 ##### Example 3
 
-A user is allowed to update the fact that they have received their medical report, but nothing else. The medical report is received externally so even admins are not allowed to change the user they belong to.
+A user is allowed to update the fact that they have received their medical
+report, but nothing else. The medical report is received externally so even
+admins are not allowed to change the user they belong to.
 
-The difference with `owner` here is the name only, however both options exist as a `user` defined on a schema does not necessarily represent the document's owner, as this example illustrates:
+The difference with `owner` here is the name only, however both options exist as
+a `user` defined on a schema does not necessarily represent the document's
+owner, as this example illustrates:
 
 ```js
 // medical-report.json
@@ -868,33 +996,93 @@ The difference with `owner` here is the name only, however both options exist as
 
 #### Notes on Read Access
 
-Note that all forms of read access require that `.toObject` is called on the document with special parameters, however this method is called on internal serialization including both `JSON.stringify` and logging to the console. For this reason it will never fail even if it cannot perform the correct access checks. Instead any fields with `readAccess` defined on them will be stripped out.
+Note that all forms of read access require that `.toObject` is called on the
+document with special parameters, however this method is called on internal
+serialization including both `JSON.stringify` and logging to the console. For
+this reason it will never fail even if it cannot perform the correct access
+checks. Instead any fields with `readAccess` defined on them will be stripped
+out.
 
 #### Notes on Write Access
 
-Note that `self` is generally only meaningful on a User model as it will always check the document is the same as `authUser`.
+Note that `self` is generally only meaningful on a User model as it will always
+check the document is the same as `authUser`.
 
-### References
+### Delete Hooks
 
-This module adds a single method `assertNoReferences` to the schema. This is useful on delete operations to throw an error if there are external references to the document. It takes an options object with a single option `except` as an array:
+Delete hooks are a powerful way to define what actions are taken on document
+deletion. They are defined in the `delete` field of the model definition file:
+
+```json
+// user.json
+{
+  "attributes": {
+    "name": "String"
+    "profile": {
+      "type": "ObjectId",
+      "ref": "UserProfile"
+    }
+  },
+  "delete": {
+    "local": "profile"
+    "foreign": {
+      Shop: "owner"
+    },
+    "errorOnReferenced": {
+      "except": ["AuditEntry"]
+    }
+  }
+}
+```
+
+#### Local Reference Cleanup
+
+The `local` field specifies locally referenced documents that should also be
+deleted when the main document is deleted. It may be a string or array of
+strings. In the above example:
 
 ```js
-router.delete('/:id', async (ctx) => {
-  const { shop } = ctx.state;
-  try {
-    await shop.assertNoReferences({
-      except: [AuditEntry],
-    });
-  } catch (err) {
-    console.info(err.references);
-    ctx.throw(400, err.message);
-  }
-  await user.delete();
-  ctx.status = 204;
+user.delete();
+// Will implicitly run:
+UserProfile.deleteOne({
+  _id: user.profile,
 });
 ```
 
-The above example will throw an error if shop is referenced externally (for example by a a `Product`), however it will not count `AuditEntry` references. Note that a `references` property on the thrown error will contain the found references.
+#### Foreign Reference Cleanup
+
+Similarly, the `foreign` field defined foreign documents that should be removed
+when the main document is deleted. It is specified as an object that maps
+foreign `ref` names to their referencing field. In the above example:
+
+```js
+user.delete();
+// Will implicitly run:
+Shop.deleteMany({
+  owner: user.id,
+});
+```
+
+#### Preventing Orphaned References
+
+The `errorOnReferenced` field helps to prevent orphaned references by defining
+if and how the `delete` method will error if it is being referenced by another
+foreign document. In the above example:
+
+```js
+user.delete();
+// Will error if referenced by any document other than:
+// 1. AuditEntry - Explicitly allowed by "except".
+// 2. Shop - Marked to be deleted if all other checks pass.
+```
+
+In this case, "referenced by" means any other model that explicitly uses "User"
+as a `ref` for type `ObjectId`. `errorOnReference` may also be simply `true`,
+which will error on any foreign references of any kind.
+
+> [!IMPORTANT]  
+> Delete hooks are **only** run on a single document `.delete()`. They will not
+> be run when using model methods like `deleteOne` or `deleteMany`.
 
 ### Assign
 
@@ -906,13 +1094,20 @@ user.assign(ctx.request.body);
 Object.assign(user, ctx.request.body);
 ```
 
-This is functionally identical to `Object.assign` with the exception that `ObjectId` reference fields can be unset by passing falsy values. This method is provided as `undefined` cannot be represented in JSON which requires using either a `null` or empty string, both of which would be stored in the database if naively assigned with `Object.assign`.
+This is functionally identical to `Object.assign` with the exception that
+`ObjectId` reference fields can be unset by passing falsy values. This method is
+provided as `undefined` cannot be represented in JSON which requires using
+either a `null` or empty string, both of which would be stored in the database
+if naively assigned with `Object.assign`.
 
 ### Slugs
 
-A common requirement is to allow slugs on documents to serve as ids for human readable URLs. To load a single document this way the naive approach would be to run a search on all documents matching the `slug` then pull the first one off.
+A common requirement is to allow slugs on documents to serve as ids for human
+readable URLs. To load a single document this way the naive approach would be to
+run a search on all documents matching the `slug` then pull the first one off.
 
-This module simplifies this by assuming a `slug` field on a model and adding a `findByIdOrSlug` method that allows searching on both:
+This module simplifies this by assuming a `slug` field on a model and adding a
+`findByIdOrSlug` method that allows searching on both:
 
 ```js
 const post = await Post.findByIdOrSlug(str);
@@ -923,7 +1118,8 @@ Note that soft delete methods are also applied:
 - `findByIdOrSlugDeleted`
 - `findByIdOrSlugWithDeleted`
 
-Also note that as Mongo ids are represented as 24 byte hexadecimal a collision is possible:
+Also note that as Mongo ids are represented as 24 byte hexadecimal a collision
+is possible:
 
 - `deadbeefdeadbeefdeadbeef`
 - `cafecafecafecafecafecafe`
@@ -932,7 +1128,8 @@ However the likelyhood of such collisions on a slug are acceptably small.
 
 ## Testing
 
-A helper `createTestModel` is exported to allow quickly building models for testing:
+A helper `createTestModel` is exported to allow quickly building models for
+testing:
 
 ```js
 const { createTestModel } = require('@bedrockio/model');
@@ -943,7 +1140,9 @@ const User = createTestModel({
 mk;
 ```
 
-Note that a unique model name will be generated to prevent clashing with other models. This can be accessed with `Model.modelName` or to make tests more readable it can be overridden:
+Note that a unique model name will be generated to prevent clashing with other
+models. This can be accessed with `Model.modelName` or to make tests more
+readable it can be overridden:
 
 ```js
 const { createTestModel } = require('@bedrockio/model');
