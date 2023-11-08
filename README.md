@@ -1017,17 +1017,19 @@ deletion. They are defined in the `delete` field of the model definition file:
 // user.json
 {
   "attributes": {
-    "name": "String"
+    "name": "String",
     "profile": {
       "type": "ObjectId",
       "ref": "UserProfile"
     }
   },
   "delete": {
-    "local": "profile"
-    "foreign": {
-      Shop: "owner"
-    },
+    "clean": {
+      "local": "profile",
+      "foreign": {
+        Shop: "owner"
+      },
+    }
     "errorOnReferenced": {
       "except": ["AuditEntry"]
     }
@@ -1035,35 +1037,40 @@ deletion. They are defined in the `delete` field of the model definition file:
 }
 ```
 
-#### Local Reference Cleanup
+#### Clean
 
-The `local` field specifies locally referenced documents that should also be
-deleted when the main document is deleted. It may be a string or array of
+`clean` determines other associated documents that will be deleted when the main
+document is deleted.
+
+#### Local References
+
+`clean.local` specifies local refs to delete. It may be a string or array of
 strings. In the above example:
 
 ```js
 user.delete();
+
 // Will implicitly run:
-UserProfile.deleteOne({
-  _id: user.profile,
-});
+await user.populate('profile');
+await user.profile.delete();
 ```
 
 #### Foreign Reference Cleanup
 
-Similarly, the `foreign` field defined foreign documents that should be removed
-when the main document is deleted. It is specified as an object that maps
-foreign `ref` names to their referencing field. In the above example:
+`cleanr.foreign` specifies foreign refs to delete. It is specified as an object
+that maps foreign `ref` names to their referencing field. In the above example:
 
 ```js
 user.delete();
+
 // Will implicitly run:
-Shop.deleteMany({
-  owner: user.id,
+const shop = await Shop.find({
+  owner: user,
 });
+await shop.delete();
 ```
 
-#### Preventing Orphaned References
+#### Erroring on Delete
 
 The `errorOnReferenced` field helps to prevent orphaned references by defining
 if and how the `delete` method will error if it is being referenced by another
@@ -1071,18 +1078,26 @@ foreign document. In the above example:
 
 ```js
 user.delete();
+
 // Will error if referenced by any document other than:
 // 1. AuditEntry - Explicitly allowed by "except".
-// 2. Shop - Marked to be deleted if all other checks pass.
+// 2. Shop - Implicitly allowed as it will be deleted.
 ```
 
 In this case, "referenced by" means any other model that explicitly uses "User"
 as a `ref` for type `ObjectId`. `errorOnReference` may also be simply `true`,
 which will error on any foreign references of any kind.
 
+#### Restoring Deleted Documents
+
+Models that have delete hooks defined on them will keep a reference of the
+documents that were deleted. Calling `.restore()` on the document will also
+restore these references.
+
 > [!IMPORTANT]  
-> Delete hooks are **only** run on a single document `.delete()`. They will not
-> be run when using model methods like `deleteOne` or `deleteMany`.
+> Delete hooks are **only** run on a single document (`.delete` or `.restore`).
+> They will not be run when using model methods like `deleteOne` or
+> `deleteMany`.
 
 ### Assign
 
