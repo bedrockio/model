@@ -594,16 +594,13 @@ this feature a `fields` key must be present on the model definition:
   "attributes": {
     "name": {
       "type": "String"
-    }
+    },
     "email": {
       "type": "String"
     }
   },
   "search": {
-    "fields": [
-      "name",
-      "email",
-    ]
+    "fields": ["name", "email"]
   }
 }
 ```
@@ -1057,7 +1054,7 @@ await user.profile.delete();
 
 #### Foreign Reference Cleanup
 
-`clean.foreign` specifies foreign refs to delete. It is specified as an object
+`clean.foreign` specifies foreign refs to delete. It is defined as an object
 that maps foreign `ref` names to their referencing field. In the above example:
 
 ```js
