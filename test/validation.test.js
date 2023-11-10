@@ -1750,6 +1750,21 @@ describe('getBaseSchema', () => {
         },
       });
     });
+
+    it('should correctly describe a mixed schema', async () => {
+      const User = createTestModel({
+        any: 'Mixed',
+      });
+      const schema = User.getBaseSchema();
+      expect(schema.toOpenApi()).toMatchObject({
+        type: 'object',
+        properties: {
+          any: {
+            type: ['object', 'array', 'string', 'number', 'boolean', 'null'],
+          },
+        },
+      });
+    });
   });
 });
 

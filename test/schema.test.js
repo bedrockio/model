@@ -176,6 +176,17 @@ describe('normalizeAttributes', () => {
     });
   });
 
+  it('should allow Mixed type', async () => {
+    const attributes = {
+      any: 'Mixed',
+    };
+    expect(normalizeAttributes(attributes)).toEqual({
+      any: {
+        type: 'Mixed',
+      },
+    });
+  });
+
   it('should error on unknown types', async () => {
     const attributes = {
       profile: {
@@ -196,15 +207,6 @@ describe('normalizeAttributes', () => {
     expect(() => {
       normalizeAttributes(attributes);
     }).toThrow('Type "string" in "profile.name" should be "String".');
-  });
-
-  it('should error on Mixed type', async () => {
-    const attributes = {
-      name: 'Mixed',
-    };
-    expect(() => {
-      normalizeAttributes(attributes);
-    }).toThrow('Type "Mixed" is not allowed. Use "Object" instead.');
   });
 
   it('should error on ObjectId with no ref', async () => {
@@ -344,6 +346,33 @@ describe('createSchema', () => {
       }).rejects.toThrow();
     });
 
+    it('should allow Mixed type', async () => {
+      const User = createTestModel({
+        any: 'Mixed',
+      });
+
+      let user = new User();
+
+      user.any = 1;
+      await user.save();
+      user = await User.findById(user.id);
+      expect(user.any).toBe(1);
+
+      user.any = 'foo';
+      await user.save();
+      user = await User.findById(user.id);
+      expect(user.any).toBe('foo');
+
+      user.any = {
+        key: 'foo',
+      };
+      await user.save();
+      user = await User.findById(user.id);
+      expect(user.any).toEqual({
+        key: 'foo',
+      });
+    });
+
     it('should error when type is unknown', async () => {
       expect(() => {
         createTestModel({
@@ -353,14 +382,6 @@ describe('createSchema', () => {
           },
         });
       }).toThrow();
-    });
-
-    it('should error when type is Mixed', async () => {
-      expect(() => {
-        createTestModel({
-          object: 'Mixed',
-        });
-      }).toThrow('Type "Mixed" is not allowed. Use "Object" instead.');
     });
 
     it('should not error when ObjectId has a refPath', async () => {

@@ -156,10 +156,6 @@ function attributesToMongoose(attributes) {
 }
 
 function assertSchemaType(type, path) {
-  if (type === 'Mixed') {
-    throw new Error('Type "Mixed" is not allowed. Use "Object" instead.');
-  }
-
   if (typeof type === 'string') {
     if (!isMongooseType(type)) {
       const p = path.join('.');

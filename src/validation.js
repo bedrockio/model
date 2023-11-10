@@ -333,11 +333,12 @@ function getSchemaForType(type, options) {
       return yd.boolean();
     case 'Date':
       return yd.date().iso().tag(DATE_TAGS);
-    case 'Mixed':
     case 'Object':
       return yd.object();
     case 'Array':
       return yd.array();
+    case 'Mixed':
+      return yd.any();
     case 'ObjectId':
       if (options.allowExpandedRefs) {
         return REFERENCE_SCHEMA;
