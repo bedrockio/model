@@ -436,8 +436,7 @@ validation which will:
 - Append the same validation to `Model.getCreateSchema` and
   `Model.getUpdateSchema` to allow this constraint to trickle down to the API.
 
-> :warning: updateOne and updateMany
->
+> [!WARNING]
 > Note that calling `Model.updateOne` will throw an error when a unique field
 > exists on any document **including the document being updated**. This is an
 > intentional constraint that allows `updateOne` better peformance by not having
@@ -951,7 +950,7 @@ is set after verification:
 A user is allowed to update the name of their own shop and admins can as well.
 However, only admins can set the owner of the shop:
 
-```json
+```jsonc
 // shop.json
 {
   "name": {
@@ -1026,7 +1025,7 @@ deletion. They are defined in the `onDelete` field of the model definition file:
       "foreign": {
         Shop: "owner"
       },
-    }
+    },
     "errorOnReferenced": {
       "except": ["AuditEntry"]
     }
@@ -1094,7 +1093,7 @@ Models that have delete hooks defined on them will keep a reference of the
 documents that were deleted. Calling `.restore()` on the document will also
 restore these references.
 
-> [!IMPORTANT]  
+> [!WARNING]
 > Delete hooks are **only** run on a single document (`.delete` or `.restore`).
 > They will not be run when using model methods like `deleteOne` or
 > `deleteMany`.
