@@ -1010,7 +1010,7 @@ check the document is the same as `authUser`.
 Delete hooks are a powerful way to define what actions are taken on document
 deletion. They are defined in the `onDelete` field of the model definition file:
 
-```json
+```jsonc
 // user.json
 {
   "attributes": {
