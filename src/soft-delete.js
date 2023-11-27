@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { isEqual } from 'lodash';
 
 import { wrapQuery } from './query';
@@ -251,7 +252,7 @@ function applyUniqueConstraints(schema) {
   }
 
   schema.pre('save', async function () {
-    await assertUnique(this.toObject(), {
+    await assertUnique(this, {
       operation: this.isNew ? 'create' : 'update',
       model: this.constructor,
       schema,
@@ -367,6 +368,11 @@ function resolveUnique(schema, obj, map = {}, path = []) {
     for (let el of obj) {
       resolveUnique(schema, el, map, path);
     }
+  } else if (obj instanceof mongoose.Document) {
+    obj.schema.eachPath((key) => {
+      const val = obj.get(key);
+      resolveUnique(schema, val, map, [...path, key]);
+    });
   } else if (obj && typeof obj === 'object') {
     for (let [key, val] of Object.entries(obj)) {
       resolveUnique(schema, val, map, [...path, key]);

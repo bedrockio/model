@@ -752,6 +752,38 @@ describe('soft delete', () => {
         `Cannot update ${User.modelName}. Duplicate fields exist: email.`
       );
     });
+
+    it('should work with access control', async () => {
+      const User = createTestModel({
+        email: {
+          type: 'String',
+          unique: true,
+        },
+        password: {
+          type: 'String',
+          readAccess: 'admin',
+        },
+      });
+
+      await User.create({
+        email: 'foo@bar.com',
+        password: '12345',
+      });
+
+      await expect(
+        User.create({
+          email: 'foo@bar.com',
+        })
+      ).rejects.toThrow(
+        `Cannot create ${User.modelName}. Duplicate fields exist: email.`
+      );
+
+      await expect(
+        User.create({
+          email: 'foo2@bar.com',
+        })
+      ).resolves.not.toThrow();
+    });
   });
 
   describe('query chaining', () => {
