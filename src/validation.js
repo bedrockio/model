@@ -145,7 +145,7 @@ export function applyValidation(schema, definition) {
         allowInclude: true,
         expandDotSyntax: true,
         unwindArrayFields: true,
-        requireReadAccess: true,
+        requireSearchAccess: true,
         stripDeleted: !includeDeleted,
         appendSchema: searchValidation({
           defaults,
@@ -314,7 +314,7 @@ function getSchemaForTypedef(typedef, options = {}) {
   if (options.allowSearch) {
     schema = getSearchSchema(schema, type);
   }
-  if (typedef.readAccess && options.requireReadAccess) {
+  if (typedef.readAccess && options.requireSearchAccess) {
     schema = validateReadAccess(schema, typedef.readAccess, options);
   }
   if (typedef.writeAccess && options.requireWriteAccess) {
@@ -430,11 +430,13 @@ function isRequired(typedef, options) {
 
 function isExcludedField(field, options) {
   if (isSchemaTypedef(field)) {
-    const { requireWriteAccess } = options;
-    return requireWriteAccess && field.writeAccess === 'none';
-  } else {
-    return false;
+    if (options.requireWriteAccess) {
+      return field.writeAccess === 'none';
+    } else if (options.requireSearchAccess) {
+      return field.readAccess === 'none' || field.readAccess === 'self';
+    }
   }
+  return false;
 }
 
 function validateReadAccess(schema, allowed, options) {

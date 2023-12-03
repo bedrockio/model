@@ -1496,7 +1496,7 @@ describe('getSearchValidation', () => {
   });
 
   describe('read access', () => {
-    it('should enforce read access', async () => {
+    it('should ignore field if no read access', async () => {
       const User = createTestModel({
         name: 'String',
         age: {
@@ -1514,7 +1514,29 @@ describe('getSearchValidation', () => {
           name: 'Barry',
           age: 50,
         },
-        'requires read permissions.'
+        'Unknown field "age".'
+      );
+    });
+
+    it('should ignore field if only has self read access', async () => {
+      const User = createTestModel({
+        name: 'String',
+        age: {
+          type: 'Number',
+          readAccess: 'self',
+        },
+      });
+      const schema = User.getSearchValidation();
+      await assertPass(schema, {
+        name: 'Barry',
+      });
+      await assertFailWithError(
+        schema,
+        {
+          name: 'Barry',
+          age: 50,
+        },
+        'Unknown field "age".'
       );
     });
 
@@ -1534,23 +1556,6 @@ describe('getSearchValidation', () => {
         {
           scope: 'admin',
         }
-      );
-    });
-
-    it('should throw standard permissions error on "self"', async () => {
-      const User = createTestModel({
-        name: {
-          type: 'String',
-          readAccess: 'self',
-        },
-      });
-      const schema = User.getSearchValidation();
-      await assertFailWithError(
-        schema,
-        {
-          name: 'Barry',
-        },
-        'requires read permissions.'
       );
     });
   });
@@ -1590,6 +1595,41 @@ describe('getSearchValidation', () => {
       });
       await assertPass(schema, { startsAt: {} });
       await assertFail(schema, { startsAt: { lte: 'bad' } });
+    });
+  });
+
+  describe('OpenAPI', () => {
+    it('should correctly describe its schema', async () => {
+      const User = createTestModel({
+        name: 'String',
+        tokens: [
+          {
+            type: 'String',
+            readAccess: 'none',
+          },
+        ],
+      });
+      const schema = User.getSearchValidation();
+      const openApi = schema.toOpenApi();
+      expect(openApi).toMatchObject({
+        type: 'object',
+        properties: {
+          name: {
+            oneOf: [
+              {
+                type: 'string',
+              },
+              {
+                type: 'array',
+                items: {
+                  type: 'string',
+                },
+              },
+            ],
+          },
+        },
+      });
+      expect(openApi.properties.tokens).toBeUndefined();
     });
   });
 
