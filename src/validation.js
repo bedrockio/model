@@ -145,7 +145,7 @@ export function applyValidation(schema, definition) {
         allowInclude: true,
         expandDotSyntax: true,
         unwindArrayFields: true,
-        requireSearchAccess: true,
+        requireReadAccess: true,
         stripDeleted: !includeDeleted,
         appendSchema: searchValidation({
           defaults,
@@ -163,6 +163,7 @@ export function applyValidation(schema, definition) {
   schema.static('getBaseSchema', function getBaseSchema() {
     return getSchemaFromMongoose(schema, {
       stripDeleted: true,
+      requireReadAccess: true,
     });
   });
 }
@@ -314,7 +315,7 @@ function getSchemaForTypedef(typedef, options = {}) {
   if (options.allowSearch) {
     schema = getSearchSchema(schema, type);
   }
-  if (typedef.readAccess && options.requireSearchAccess) {
+  if (typedef.readAccess && options.requireReadAccess) {
     schema = validateReadAccess(schema, typedef.readAccess, options);
   }
   if (typedef.writeAccess && options.requireWriteAccess) {
@@ -432,7 +433,7 @@ function isExcludedField(field, options) {
   if (isSchemaTypedef(field)) {
     if (options.requireWriteAccess) {
       return field.writeAccess === 'none';
-    } else if (options.requireSearchAccess) {
+    } else if (options.requireReadAccess) {
       return field.readAccess === 'none' || field.readAccess === 'self';
     }
   }

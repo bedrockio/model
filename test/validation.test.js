@@ -1805,6 +1805,21 @@ describe('getBaseSchema', () => {
         },
       });
     });
+
+    it('should not include fields without read access', async () => {
+      const User = createTestModel({
+        name: {
+          type: 'String',
+          required: true,
+        },
+        age: {
+          type: 'Number',
+          readAccess: 'none',
+        },
+      });
+      const schema = User.getBaseSchema();
+      expect(schema.toOpenApi().properties.age).toBeUndefined();
+    });
   });
 });
 
