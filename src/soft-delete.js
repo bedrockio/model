@@ -48,7 +48,14 @@ function applyQueries(schema) {
 
   schema.static('deleteOne', function deleteOne(filter, ...rest) {
     const update = getDelete();
-    const query = this.updateOne(filter, update, ...omitCallback(rest));
+    const query = this.updateOne(
+      {
+        ...filter,
+        deleted: false,
+      },
+      update,
+      ...omitCallback(rest)
+    );
     return wrapQuery(query, async (promise) => {
       const res = await promise;
       return {
@@ -60,7 +67,14 @@ function applyQueries(schema) {
 
   schema.static('deleteMany', function deleteMany(filter, ...rest) {
     const update = getDelete();
-    const query = this.updateMany(filter, update, ...omitCallback(rest));
+    const query = this.updateMany(
+      {
+        ...filter,
+        deleted: false,
+      },
+      update,
+      ...omitCallback(rest)
+    );
     return wrapQuery(query, async (promise) => {
       const res = await promise;
       return {
@@ -71,11 +85,25 @@ function applyQueries(schema) {
   });
 
   schema.static('findOneAndDelete', function findOneAndDelete(filter, ...rest) {
-    return this.findOneAndUpdate(filter, getDelete(), ...omitCallback(rest));
+    return this.findOneAndUpdate(
+      {
+        ...filter,
+        deleted: false,
+      },
+      getDelete(),
+      ...omitCallback(rest)
+    );
   });
 
   schema.static('restoreOne', function restoreOne(filter, ...rest) {
-    const query = this.updateOne(filter, getRestore(), ...omitCallback(rest));
+    const query = this.updateOne(
+      {
+        ...filter,
+        deleted: true,
+      },
+      getRestore(),
+      ...omitCallback(rest)
+    );
     return wrapQuery(query, async (promise) => {
       const res = await promise;
       return {
@@ -86,7 +114,14 @@ function applyQueries(schema) {
   });
 
   schema.static('restoreMany', function restoreMany(filter, ...rest) {
-    const query = this.updateMany(filter, getRestore(), ...omitCallback(rest));
+    const query = this.updateMany(
+      {
+        ...filter,
+        deleted: true,
+      },
+      getRestore(),
+      ...omitCallback(rest)
+    );
     return wrapQuery(query, async (promise) => {
       const res = await promise;
       return {

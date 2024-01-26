@@ -56,6 +56,21 @@ describe('soft delete', () => {
       expect(await User.countDocumentsWithDeleted()).toBe(2);
     });
 
+    it('should only match non-deleted items', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      const user = await User.create({
+        name: 'foo',
+      });
+      await user.delete();
+      const res = await User.deleteMany();
+      expect(res).toEqual({
+        acknowledged: true,
+        deletedCount: 0,
+      });
+    });
+
     it('should soft delete with findOneAndDelete', async () => {
       const User = createTestModel({
         name: 'String',
@@ -160,6 +175,23 @@ describe('soft delete', () => {
       expect(users[0].deletedAt).toBeUndefined();
       expect(users[1].deleted).toBe(false);
       expect(users[1].deletedAt).toBeUndefined();
+    });
+
+    it('should only match deleted documents', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      await User.create({
+        name: 'foo',
+      });
+
+      const res = await User.restoreOne({
+        name: 'foo',
+      });
+      expect(res).toEqual({
+        acknowledged: true,
+        restoredCount: 0,
+      });
     });
   });
 
@@ -797,6 +829,7 @@ describe('soft delete', () => {
       });
       expect(query.getFilter()).toEqual({
         name: 'foo',
+        deleted: false,
       });
     });
 
@@ -806,6 +839,7 @@ describe('soft delete', () => {
       });
       expect(query.getFilter()).toEqual({
         name: 'foo',
+        deleted: false,
       });
     });
 
@@ -815,6 +849,7 @@ describe('soft delete', () => {
       });
       expect(query.getFilter()).toEqual({
         name: 'foo',
+        deleted: false,
       });
     });
 
@@ -824,6 +859,7 @@ describe('soft delete', () => {
       });
       expect(query.getFilter()).toEqual({
         name: 'foo',
+        deleted: true,
       });
     });
 
@@ -833,6 +869,7 @@ describe('soft delete', () => {
       });
       expect(query.getFilter()).toEqual({
         name: 'foo',
+        deleted: true,
       });
     });
 
