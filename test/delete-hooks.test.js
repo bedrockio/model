@@ -779,7 +779,7 @@ describe('delete hooks', () => {
         try {
           await user.delete();
         } catch (error) {
-          expect(error.references).toEqual([
+          expect(error.details.references).toEqual([
             {
               model: Shop,
               count: 1,

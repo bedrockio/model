@@ -436,12 +436,11 @@ validation which will:
 - Append the same validation to `Model.getCreateSchema` and
   `Model.getUpdateSchema` to allow this constraint to trickle down to the API.
 
-> [!WARNING]
-> Note that calling `Model.updateOne` will throw an error when a unique field
-> exists on any document **including the document being updated**. This is an
-> intentional constraint that allows `updateOne` better peformance by not having
-> to fetch the ids of the documents being updated in order to exclude them. To
-> avoid this call `Document.save` instead.
+> [!WARNING] Note that calling `Model.updateOne` will throw an error when a
+> unique field exists on any document **including the document being updated**.
+> This is an intentional constraint that allows `updateOne` better peformance by
+> not having to fetch the ids of the documents being updated in order to exclude
+> them. To avoid this call `Document.save` instead.
 >
 > Note also that calling `Model.updateMany` with a unique field passed will
 > always throw an error as the result would inherently be non-unique.
@@ -1023,8 +1022,8 @@ deletion. They are defined in the `onDelete` field of the model definition file:
     "clean": {
       "local": "profile",
       "foreign": {
-        Shop: "owner"
-      },
+        "Shop": "owner"
+      }
     },
     "errorOnReferenced": {
       "except": ["AuditEntry"]
@@ -1081,7 +1080,7 @@ user.delete();
 ```
 
 In this case, "referenced by" means any other model that explicitly uses "User"
-as a `ref` for type `ObjectId`. `errorOnReference` may also be simply `true`,
+as a `ref` for type `ObjectId`. `errorOnReferenced` may also be simply `true`,
 which will error on any foreign references of any kind.
 
 `only` may be passed instead of `except`, which will only error when the
@@ -1093,9 +1092,8 @@ Models that have delete hooks defined on them will keep a reference of the
 documents that were deleted. Calling `.restore()` on the document will also
 restore these references.
 
-> [!WARNING]
-> Delete hooks are **only** run on a single document (`.delete` or `.restore`).
-> They will not be run when using model methods like `deleteOne` or
+> [!WARNING] Delete hooks are **only** run on a single document (`.delete` or
+> `.restore`). They will not be run when using model methods like `deleteOne` or
 > `deleteMany`.
 
 ### Assign
