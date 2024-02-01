@@ -11,7 +11,14 @@ export class ReferenceError extends Error {
   constructor(message, references) {
     super(message);
     this.details = {
-      references,
+      references: references.map((obj) => {
+        const { count, ids, model } = obj;
+        return {
+          ids,
+          model: model.modelName,
+          count,
+        };
+      }),
     };
   }
 }

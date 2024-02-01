@@ -779,13 +779,18 @@ describe('delete hooks', () => {
         try {
           await user.delete();
         } catch (error) {
-          expect(error.details.references).toEqual([
-            {
-              model: Shop,
-              count: 1,
-              ids: [shop.id],
+          const data = JSON.parse(JSON.stringify(error));
+          expect(data).toEqual({
+            details: {
+              references: [
+                {
+                  model: Shop.modelName,
+                  count: 1,
+                  ids: [shop.id],
+                },
+              ],
             },
-          ]);
+          });
         }
       });
     });
