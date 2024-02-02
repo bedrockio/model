@@ -117,7 +117,7 @@ function validateError(deleteHooks) {
 // Error on references
 
 async function errorOnForeignReferences(doc, options) {
-  const { errorHook, cleanForeign, references } = options;
+  const { errorHook, references } = options;
 
   if (!errorHook) {
     return;
@@ -131,59 +131,53 @@ async function errorOnForeignReferences(doc, options) {
   const results = [];
 
   for (let { model, paths } of references) {
-    if (referenceIsAllowed(errorHook, model)) {
+    if (referenceIsAllowed(model, options)) {
       continue;
     }
 
-    const $or = paths
-      .filter((path) => {
-        if (cleanForeign) {
-          return cleanForeign[model.modelName] !== path;
-        }
-        return true;
-      })
-      .map((path) => {
-        return {
-          [path]: doc.id,
-        };
-      });
+    const { modelName } = model;
 
-    if (!$or.length) {
-      continue;
-    }
+    for (let path of paths) {
+      const docs = await model
+        .find(
+          {
+            [path]: doc.id,
+          },
+          { _id: 1 }
+        )
+        .lean();
 
-    const docs = await model.find({ $or }, { _id: 1 }).lean();
-
-    if (docs.length > 0) {
-      const ids = docs.map((doc) => {
-        return String(doc._id);
-      });
-      results.push({
-        ids,
-        model,
-        count: ids.length,
-      });
+      if (docs.length > 0) {
+        const ids = docs.map((doc) => {
+          return String(doc._id);
+        });
+        const strId = ids.join(', ');
+        const message = `Referenced as "${path}" by ${modelName}: ${strId}.`;
+        results.push({
+          ids,
+          path,
+          message,
+          model: modelName,
+        });
+      }
     }
   }
 
   if (results.length) {
     const { modelName } = doc.constructor;
-    const refNames = results.map((reference) => {
-      return reference.model.modelName;
-    });
-    throw new ReferenceError(
-      `Refusing to delete ${modelName} referenced by ${refNames}.`,
-      results
-    );
+    throw new ReferenceError(`Refusing to delete ${modelName}.`, results);
   }
 }
 
-function referenceIsAllowed(errorHook, model) {
-  const { only, except } = errorHook;
+function referenceIsAllowed(model, options) {
+  const { cleanForeign } = options;
+  const { only, except } = options?.errorHook || {};
   if (only) {
     return !only.includes(model.modelName);
   } else if (except) {
     return except.includes(model.modelName);
+  } else if (cleanForeign) {
+    return model.modelName in cleanForeign;
   } else {
     return false;
   }
@@ -262,6 +256,10 @@ async function deleteForeignReferences(doc, refs) {
     if (typeof arg === 'string') {
       await runDeletes(Model, doc, {
         [arg]: id,
+      });
+    } else if (Array.isArray(arg)) {
+      await runDeletes(Model, doc, {
+        $or: mapArrayQuery(arg, id),
       });
     } else {
       const { $and, $or } = arg;

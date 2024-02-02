@@ -423,6 +423,89 @@ describe('delete hooks', () => {
         });
       });
 
+      describe('multiple', () => {
+        const userModelName = getTestModelName();
+        const shopModelName = getTestModelName();
+
+        const User = createTestModel(
+          userModelName,
+          createSchema({
+            attributes: {
+              name: 'String',
+            },
+            onDelete: {
+              clean: {
+                foreign: {
+                  [shopModelName]: ['owner', 'operator'],
+                },
+              },
+            },
+          })
+        );
+        const Shop = createTestModel(shopModelName, {
+          name: 'String',
+          owner: {
+            type: 'ObjectId',
+            ref: userModelName,
+          },
+          operator: {
+            type: 'ObjectId',
+            ref: userModelName,
+          },
+        });
+
+        afterEach(async () => {
+          await User.deleteMany({});
+          await Shop.deleteMany({});
+        });
+
+        it('should delete referenced documents', async () => {
+          const user = await User.create({
+            name: 'Barry',
+          });
+          await Shop.create({
+            name: 'shop 1',
+            owner: user,
+          });
+          await Shop.create({
+            name: 'shop 2',
+            operator: user,
+          });
+          await user.delete();
+
+          const shops = await Shop.find();
+          expect(shops.length).toEqual(0);
+        });
+
+        it('should leave other documents untouched', async () => {
+          const user1 = await User.create({
+            name: 'Barry',
+          });
+          const user2 = await User.create({
+            name: 'Larry',
+          });
+
+          await Shop.create({
+            name: 'shop1',
+            owner: user1,
+          });
+          await Shop.create({
+            name: 'shop2',
+            owner: user2,
+          });
+
+          await user1.delete();
+
+          const shops = await Shop.find();
+
+          expect(shops).toMatchObject([
+            {
+              name: 'shop2',
+            },
+          ]);
+        });
+      });
+
       describe('nested field', () => {
         const userModelName = getTestModelName();
         const shopModelName = getTestModelName();
@@ -761,9 +844,7 @@ describe('delete hooks', () => {
 
         await expect(async () => {
           await user1.delete();
-        }).rejects.toThrow(
-          `Refusing to delete ${User.modelName} referenced by ${Shop.modelName}.`
-        );
+        }).rejects.toThrow(`Refusing to delete ${User.modelName}.`);
 
         await expect(user2.delete()).resolves.not.toThrow();
       });
@@ -781,15 +862,14 @@ describe('delete hooks', () => {
         } catch (error) {
           const data = JSON.parse(JSON.stringify(error));
           expect(data).toEqual({
-            details: {
-              references: [
-                {
-                  model: Shop.modelName,
-                  count: 1,
-                  ids: [shop.id],
-                },
-              ],
-            },
+            details: [
+              {
+                ids: [shop.id],
+                path: 'user',
+                model: Shop.modelName,
+                message: `Referenced as "user" by ${Shop.modelName}: ${shop.id}.`,
+              },
+            ],
           });
         }
       });
@@ -844,9 +924,7 @@ describe('delete hooks', () => {
 
         await expect(async () => {
           await user1.delete();
-        }).rejects.toThrow(
-          `Refusing to delete ${User.modelName} referenced by ${Shop.modelName}.`
-        );
+        }).rejects.toThrow(`Refusing to delete ${User.modelName}.`);
 
         await expect(user2.delete()).resolves.not.toThrow();
       });
@@ -903,9 +981,7 @@ describe('delete hooks', () => {
 
         await expect(async () => {
           await user1.delete();
-        }).rejects.toThrow(
-          `Refusing to delete ${User.modelName} referenced by ${Shop.modelName}.`
-        );
+        }).rejects.toThrow(`Refusing to delete ${User.modelName}.`);
 
         await expect(user2.delete()).resolves.not.toThrow();
       });
