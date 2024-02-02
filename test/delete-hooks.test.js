@@ -1170,6 +1170,55 @@ describe('delete hooks', () => {
       });
     });
 
+    describe('error interop with only', () => {
+      const userModelName = getTestModelName();
+      const shopModelName = getTestModelName();
+
+      const User = createTestModel(
+        userModelName,
+        createSchema({
+          attributes: {
+            name: 'String',
+          },
+          onDelete: {
+            errorOnReferenced: {
+              only: [shopModelName],
+            },
+            clean: {
+              foreign: {
+                [shopModelName]: 'owner',
+              },
+            },
+          },
+        })
+      );
+
+      const Shop = createTestModel(
+        shopModelName,
+        createSchema({
+          attributes: {
+            name: 'String',
+            owner: {
+              type: 'ObjectId',
+              ref: userModelName,
+            },
+          },
+        })
+      );
+
+      it('should not error if model is going to be cleaned', async () => {
+        const user = await User.create({
+          name: 'Barry',
+        });
+
+        await Shop.create({
+          owner: user,
+        });
+
+        await expect(user.delete()).resolves.not.toThrow();
+      });
+    });
+
     describe('chained deletes', () => {
       it('should delete in a chain', async () => {
         const userModelName = getTestModelName();

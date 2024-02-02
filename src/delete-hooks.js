@@ -170,14 +170,15 @@ async function errorOnForeignReferences(doc, options) {
 }
 
 function referenceIsAllowed(model, options) {
-  const { cleanForeign } = options;
+  const { cleanForeign = {} } = options;
   const { only, except } = options?.errorHook || {};
+  if (model.modelName in cleanForeign) {
+    return true;
+  }
   if (only) {
     return !only.includes(model.modelName);
   } else if (except) {
     return except.includes(model.modelName);
-  } else if (cleanForeign) {
-    return model.modelName in cleanForeign;
   } else {
     return false;
   }
