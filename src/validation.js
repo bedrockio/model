@@ -123,6 +123,7 @@ export function applyValidation(schema, definition) {
         stripTimestamps: true,
         allowExpandedRefs: true,
         requireWriteAccess: true,
+        allowNullForPrimitives: true,
         ...(hasUnique && {
           assertUniqueOptions: {
             schema,
@@ -280,6 +281,8 @@ function getSchemaForTypedef(typedef, options = {}) {
 
   if (isRequired(typedef, options)) {
     schema = schema.required();
+  } else if (allowsNull(typedef, options)) {
+    schema = yd.allow(null, schema);
   }
 
   if (typedef.default && options.allowDefaultTags) {
@@ -427,6 +430,19 @@ function getSearchSchema(schema, type) {
 
 function isRequired(typedef, options) {
   return typedef.required && !typedef.default && !options.skipRequired;
+}
+
+function allowsNull(typedef, options) {
+  if (!options.allowNullForPrimitives) {
+    return false;
+  }
+  return !typedef.required && isPrimitiveTypedef(typedef);
+}
+
+const PRIMITIVE_TYPES = ['String', 'Number', 'Boolean'];
+
+function isPrimitiveTypedef(typedef) {
+  return PRIMITIVE_TYPES.includes(typedef.type);
 }
 
 function isExcludedField(field, options) {

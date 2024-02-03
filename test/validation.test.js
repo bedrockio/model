@@ -742,6 +742,33 @@ describe('getUpdateValidation', () => {
     });
   });
 
+  it('should allow null to unset optional number fields', async () => {
+    const User = createTestModel({
+      count: {
+        type: 'Number',
+      },
+    });
+    const schema = User.getUpdateValidation();
+    expect(yd.isSchema(schema)).toBe(true);
+    await assertPass(schema, {
+      count: null,
+    });
+  });
+
+  it('should not allow null to unset required number fields', async () => {
+    const User = createTestModel({
+      count: {
+        type: 'Number',
+        required: true,
+      },
+    });
+    const schema = User.getUpdateValidation();
+    expect(yd.isSchema(schema)).toBe(true);
+    await assertFail(schema, {
+      count: null,
+    });
+  });
+
   it('should not enforce a schema on unstructured objects', async () => {
     const User = createTestModel({
       profile: {
