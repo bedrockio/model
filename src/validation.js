@@ -163,6 +163,7 @@ export function applyValidation(schema, definition) {
 
   schema.static('getBaseSchema', function getBaseSchema() {
     return getSchemaFromMongoose(schema, {
+      model: this,
       stripDeleted: true,
       requireReadAccess: true,
     });

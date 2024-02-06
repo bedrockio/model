@@ -1847,6 +1847,23 @@ describe('getBaseSchema', () => {
       const schema = User.getBaseSchema();
       expect(schema.toOpenApi().properties.age).toBeUndefined();
     });
+
+    it('should not fail on fields with conditional read access', async () => {
+      const User = createTestModel({
+        name: {
+          type: 'String',
+          required: true,
+        },
+        age: {
+          type: 'Number',
+          readAccess: 'admin',
+        },
+      });
+      const schema = User.getBaseSchema();
+      expect(schema.toOpenApi().properties.age).toEqual({
+        type: 'number',
+      });
+    });
   });
 });
 
