@@ -24,149 +24,6 @@ describe('search', () => {
     });
   });
 
-  it('should search on name as a keyword', async () => {
-    const User = createTestModel({
-      name: {
-        type: 'String',
-        required: true,
-      },
-    });
-    User.schema.index({
-      name: 'text',
-    });
-    await User.createIndexes();
-    await Promise.all([
-      User.create({ name: 'Billy' }),
-      User.create({ name: 'Willy' }),
-    ]);
-    const { data, meta } = await User.search({ keyword: 'billy' });
-    expect(data).toMatchObject([{ name: 'Billy' }]);
-    expect(meta.total).toBe(1);
-  });
-
-  it('should allow partial text match when search fields are defined', async () => {
-    let result;
-    const schema = createSchema({
-      attributes: {
-        name: {
-          type: 'String',
-          required: true,
-        },
-      },
-      search: {
-        fields: ['name'],
-      },
-    });
-    schema.index({
-      name: 'text',
-    });
-    const User = createTestModel(schema);
-    await Promise.all([
-      User.create({ name: 'Billy' }),
-      User.create({ name: 'Willy' }),
-    ]);
-
-    result = await User.search({
-      keyword: 'bil',
-      sort: {
-        field: 'name',
-        order: 'asc',
-      },
-    });
-    expect(result.data).toMatchObject([{ name: 'Billy' }]);
-    expect(result.meta.total).toBe(1);
-
-    result = await User.search({
-      keyword: 'lly',
-      sort: {
-        field: 'name',
-        order: 'asc',
-      },
-    });
-    expect(result.data).toMatchObject([{ name: 'Billy' }, { name: 'Willy' }]);
-    expect(result.meta.total).toBe(2);
-  });
-
-  it('should allow partial text match on multiple fields', async () => {
-    let result;
-    const schema = createSchema({
-      attributes: {
-        name: {
-          type: 'String',
-          required: true,
-        },
-        role: {
-          type: 'String',
-          required: true,
-        },
-      },
-      search: {
-        fields: ['name', 'role'],
-      },
-    });
-    schema.index({
-      name: 'text',
-    });
-    const User = createTestModel(schema);
-    await Promise.all([
-      User.create({ name: 'Billy', role: 'user' }),
-      User.create({ name: 'Willy', role: 'manager' }),
-    ]);
-
-    result = await User.search({ keyword: 'use' });
-    expect(result.data).toMatchObject([{ name: 'Billy', role: 'user' }]);
-    expect(result.meta.total).toBe(1);
-
-    result = await User.search({ keyword: 'man' });
-    expect(result.data).toMatchObject([{ name: 'Willy', role: 'manager' }]);
-    expect(result.meta.total).toBe(1);
-  });
-
-  it('should allow id search with partial text match', async () => {
-    let result;
-    const schema = createSchema({
-      attributes: {
-        name: {
-          type: 'String',
-          required: true,
-        },
-      },
-      search: {
-        fields: ['name'],
-      },
-    });
-    const User = createTestModel(schema);
-    const [billy] = await Promise.all([
-      User.create({ name: 'Billy', role: 'user' }),
-      User.create({ name: 'Willy', role: 'manager' }),
-    ]);
-
-    result = await User.search({ keyword: billy.id });
-    expect(result.data).toMatchObject([{ name: 'Billy' }]);
-    expect(result.meta.total).toBe(1);
-  });
-
-  it('should allow id search when no fields are defined', async () => {
-    let result;
-    const schema = createSchema({
-      attributes: {
-        name: {
-          type: 'String',
-          required: true,
-        },
-      },
-    });
-    const User = createTestModel(schema);
-    const [billy] = await Promise.all([
-      User.create({ name: 'Billy', role: 'user' }),
-      User.create({ name: 'Willy', role: 'manager' }),
-    ]);
-
-    result = await User.search({ keyword: billy.id });
-    expect(result.data).toMatchObject([{ name: 'Billy' }]);
-    expect(result.meta.total).toBe(1);
-  });
-
   it('should search on an array field', async () => {
     const User = createTestModel({
       order: 'Number',
@@ -731,21 +588,182 @@ describe('search', () => {
     expect(users.data.length).toBe(2);
   });
 
-  it('should not error on regex tokens', async () => {
-    const schema = createSchema({
-      attributes: {
-        name: 'String',
-      },
-      search: {
-        fields: ['name'],
-      },
+  describe('keyword search', () => {
+    it('should search on name as a keyword', async () => {
+      const User = createTestModel({
+        name: {
+          type: 'String',
+          required: true,
+        },
+      });
+      User.schema.index({
+        name: 'text',
+      });
+      await User.createIndexes();
+      await Promise.all([
+        User.create({ name: 'Billy' }),
+        User.create({ name: 'Willy' }),
+      ]);
+      const { data, meta } = await User.search({ keyword: 'billy' });
+      expect(data).toMatchObject([{ name: 'Billy' }]);
+      expect(meta.total).toBe(1);
     });
-    const User = createTestModel(schema);
 
-    await expect(
-      User.search({
-        keyword: 'billy(*$?.^|',
-      })
-    ).resolves.not.toThrow();
+    it('should allow partial text match when search fields are defined', async () => {
+      let result;
+      const schema = createSchema({
+        attributes: {
+          name: {
+            type: 'String',
+            required: true,
+          },
+        },
+        search: {
+          fields: ['name'],
+        },
+      });
+      schema.index({
+        name: 'text',
+      });
+      const User = createTestModel(schema);
+      await Promise.all([
+        User.create({ name: 'Billy' }),
+        User.create({ name: 'Willy' }),
+      ]);
+
+      result = await User.search({
+        keyword: 'bil',
+        sort: {
+          field: 'name',
+          order: 'asc',
+        },
+      });
+      expect(result.data).toMatchObject([{ name: 'Billy' }]);
+      expect(result.meta.total).toBe(1);
+
+      result = await User.search({
+        keyword: 'lly',
+        sort: {
+          field: 'name',
+          order: 'asc',
+        },
+      });
+      expect(result.data).toMatchObject([{ name: 'Billy' }, { name: 'Willy' }]);
+      expect(result.meta.total).toBe(2);
+    });
+
+    it('should allow partial text match on multiple fields', async () => {
+      let result;
+      const schema = createSchema({
+        attributes: {
+          name: {
+            type: 'String',
+            required: true,
+          },
+          role: {
+            type: 'String',
+            required: true,
+          },
+        },
+        search: {
+          fields: ['name', 'role'],
+        },
+      });
+      schema.index({
+        name: 'text',
+      });
+      const User = createTestModel(schema);
+      await Promise.all([
+        User.create({ name: 'Billy', role: 'user' }),
+        User.create({ name: 'Willy', role: 'manager' }),
+      ]);
+
+      result = await User.search({ keyword: 'use' });
+      expect(result.data).toMatchObject([{ name: 'Billy', role: 'user' }]);
+      expect(result.meta.total).toBe(1);
+
+      result = await User.search({ keyword: 'man' });
+      expect(result.data).toMatchObject([{ name: 'Willy', role: 'manager' }]);
+      expect(result.meta.total).toBe(1);
+    });
+
+    it('should allow id search with partial text match', async () => {
+      let result;
+      const schema = createSchema({
+        attributes: {
+          name: {
+            type: 'String',
+            required: true,
+          },
+        },
+        search: {
+          fields: ['name'],
+        },
+      });
+      const User = createTestModel(schema);
+      const [billy] = await Promise.all([
+        User.create({ name: 'Billy', role: 'user' }),
+        User.create({ name: 'Willy', role: 'manager' }),
+      ]);
+
+      result = await User.search({ keyword: billy.id });
+      expect(result.data).toMatchObject([{ name: 'Billy' }]);
+      expect(result.meta.total).toBe(1);
+    });
+
+    it('should allow id search when no fields are defined', async () => {
+      let result;
+      const schema = createSchema({
+        attributes: {
+          name: {
+            type: 'String',
+            required: true,
+          },
+        },
+      });
+      const User = createTestModel(schema);
+      const [billy] = await Promise.all([
+        User.create({ name: 'Billy', role: 'user' }),
+        User.create({ name: 'Willy', role: 'manager' }),
+      ]);
+
+      result = await User.search({ keyword: billy.id });
+      expect(result.data).toMatchObject([{ name: 'Billy' }]);
+      expect(result.meta.total).toBe(1);
+    });
+
+    it('should not fail on other search when no fields defined', async () => {
+      let result;
+      const schema = createSchema({
+        attributes: {
+          name: {
+            type: 'String',
+            required: true,
+          },
+        },
+      });
+      const User = createTestModel(schema);
+
+      result = await User.search({ keyword: 'foo' });
+      expect(result.data).toMatchObject([]);
+    });
+
+    it('should not error on regex tokens', async () => {
+      const schema = createSchema({
+        attributes: {
+          name: 'String',
+        },
+        search: {
+          fields: ['name'],
+        },
+      });
+      const User = createTestModel(schema);
+
+      await expect(
+        User.search({
+          keyword: 'billy(*$?.^|',
+        })
+      ).resolves.not.toThrow();
+    });
   });
 });

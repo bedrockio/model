@@ -179,7 +179,8 @@ function buildKeywordQuery(schema, keyword, fields) {
     queries.push({ _id: keyword });
   }
 
-  return { $or: queries };
+  // Note: Mongo will error on empty $or/$and array.
+  return queries.length ? { $or: queries } : {};
 }
 
 function buildRegexQuery(keyword, fields) {
