@@ -29,7 +29,11 @@ function applyQueries(schema) {
     this.deleted = true;
     this.deletedAt = new Date();
     // @ts-ignore
-    return this.save();
+    return this.save({
+      // Do not validate when soft deleting the data is effectively
+      // gone for now, however ensure that we do validate when restoring.
+      validateBeforeSave: false,
+    });
   });
 
   schema.method('restore', function restore() {

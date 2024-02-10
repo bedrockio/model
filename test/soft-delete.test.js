@@ -100,6 +100,25 @@ describe('soft delete', () => {
       expect(await User.countDocuments()).toBe(0);
       expect(await User.countDocumentsWithDeleted()).toBe(1);
     });
+
+    it('should not validate on delete', async () => {
+      const User = createTestModel({
+        email: {
+          type: 'String',
+          validate: 'email',
+        },
+      });
+
+      let user = new User();
+      user.email = 'foo@bar';
+      await user.save({
+        validateBeforeSave: false,
+      });
+
+      user = await User.findById(user.id);
+      await user.delete();
+      expect(await user.deletedAt).toBeInstanceOf(Date);
+    });
   });
 
   describe('restore', () => {
@@ -192,6 +211,27 @@ describe('soft delete', () => {
         acknowledged: true,
         restoredCount: 0,
       });
+    });
+
+    it('should validate on restore', async () => {
+      const User = createTestModel({
+        email: {
+          type: 'String',
+          validate: 'email',
+        },
+      });
+
+      let user = new User();
+      user.email = 'foo@bar';
+      await user.save({
+        validateBeforeSave: false,
+      });
+      await user.delete();
+
+      user = await User.findByIdDeleted(user.id);
+      await expect(user.restore()).rejects.toThrow(
+        `email: Input failed validation`
+      );
     });
   });
 
