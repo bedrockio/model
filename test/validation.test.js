@@ -2693,11 +2693,60 @@ describe('tuples', () => {
   });
 });
 
-describe('getNamedValidator', () => {
-  it('should get an email validator', async () => {
-    const emailValidator = getNamedValidator('email');
-    await expect(emailValidator('foo@bar.com')).resolves.not.toThrow();
-    await expect(emailValidator('bad@email')).rejects.toThrow();
+describe('named validators', () => {
+  describe('getNamedValidator', () => {
+    it('should get an email validator', async () => {
+      const emailValidator = getNamedValidator('email');
+      await expect(emailValidator('foo@bar.com')).resolves.not.toThrow();
+      await expect(emailValidator('bad@email')).rejects.toThrow();
+    });
+  });
+
+  describe('other', () => {
+    it('should have a zipcode validator', async () => {
+      const User = createTestModel({
+        zipcode: {
+          type: 'String',
+          validate: 'zipcode',
+        },
+      });
+      const schema = User.getCreateValidation();
+      await assertPass(schema, {
+        zipcode: '80906',
+      });
+
+      await assertFailWithError(
+        schema,
+        {
+          zipcode: '153-0062',
+        },
+        'Must be a valid zipcode.'
+      );
+    });
+
+    it('should have a postal code validator', async () => {
+      const User = createTestModel({
+        postalCode: {
+          type: 'String',
+          validate: 'postalCode',
+        },
+      });
+      const schema = User.getCreateValidation();
+      await assertPass(schema, {
+        postalCode: '80906',
+      });
+      await assertPass(schema, {
+        postalCode: '153-0062',
+      });
+
+      await assertFailWithError(
+        schema,
+        {
+          postalCode: 'foo',
+        },
+        'Must be a valid postal code.'
+      );
+    });
   });
 });
 

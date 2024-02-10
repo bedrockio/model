@@ -72,6 +72,7 @@ const namedSchemas = {
   md5: yd.string().md5(),
   phone: yd.string().phone(),
   postalCode: yd.string().postalCode(),
+  zipcode: yd.string().zipcode(),
   sha1: yd.string().sha1(),
   slug: yd.string().slug(),
   swift: yd.string().swift(),
