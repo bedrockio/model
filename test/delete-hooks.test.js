@@ -45,6 +45,13 @@ describe('delete hooks', () => {
           expect(await UserProfile.countDocuments()).toBe(0);
         });
 
+        it('should skip if reference does not exist', async () => {
+          const user = await User.create({});
+          await user.delete();
+
+          expect(await UserProfile.countDocuments()).toBe(0);
+        });
+
         it('should delete document reference after create', async () => {
           let user;
 

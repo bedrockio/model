@@ -235,9 +235,13 @@ async function deleteLocalReferences(doc, arr) {
   }
   for (let name of arr) {
     await doc.populate(name);
-    const value = doc.get(name);
-    const arr = Array.isArray(value) ? value : [value];
 
+    const value = doc.get(name);
+    if (!value) {
+      continue;
+    }
+
+    const arr = Array.isArray(value) ? value : [value];
     for (let sub of arr) {
       await sub.delete();
     }
