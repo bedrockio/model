@@ -639,6 +639,7 @@ describe('createSchema', () => {
 
         const data = user.toObject();
         expect(data.auth.tokens[0].types[0]).toEqual({
+          id: user.auth.tokens[0].types[0].id,
           name: 'test',
         });
       });

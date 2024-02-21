@@ -735,6 +735,47 @@ describe('serialization', () => {
       });
     });
 
+    it('should serialize nested array object ids with Array syntax', async () => {
+      const User = createTestModel({
+        foo: {
+          type: 'Array',
+          attributes: {
+            bar: {
+              type: 'Array',
+              attributes: {
+                name: 'String',
+              },
+            },
+          },
+        },
+      });
+      const user = new User({
+        foo: [
+          {
+            bar: [
+              {
+                name: 'wut',
+              },
+            ],
+          },
+        ],
+      });
+      expect(user.toObject()).toEqual({
+        id: user.id,
+        foo: [
+          {
+            id: user.foo[0].id,
+            bar: [
+              {
+                id: user.foo[0].bar[0].id,
+                name: 'wut',
+              },
+            ],
+          },
+        ],
+      });
+    });
+
     it('should serialize id on nested field with type', async () => {
       const User = createTestModel({
         foo: {

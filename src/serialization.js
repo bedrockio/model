@@ -24,6 +24,23 @@ function transformField(obj, field, options) {
   } else if (isPlainObject(obj)) {
     for (let [key, val] of Object.entries(obj)) {
       if (!isAllowedField(key, field, options)) {
+        // Although the "id" field is automatically added for most
+        // documents, this doesn't appear to be the case for mongoose
+        // schemas with a "type" field that is an array. For example:
+        //
+        // "type": [
+        //   {
+        //     "name": "String"
+        //   }
+        // ]
+        //
+        // This may be a mongoose bug.
+        // The "type": "Array" extended syntax wraps this behavior, so
+        // to keep consistency with other array field declaration types,
+        // force the "id" field to be set here.
+        if (key === '_id') {
+          obj.id = val.toString();
+        }
         delete obj[key];
       } else {
         transformField(val, getInnerField(field, key), options);
