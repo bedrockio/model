@@ -17,7 +17,7 @@ describe('serialization', () => {
       expect(data.__v).toBeUndefined();
     });
 
-    it('should not expose _id or id in nested array objects of mixed type', () => {
+    it('should not expose _id in nested array objects of mixed type', () => {
       const User = createTestModel({
         names: [
           {
@@ -38,6 +38,7 @@ describe('serialization', () => {
         id: user.id,
         names: [
           {
+            id: user.names[0].id,
             name: 'Foo',
             position: 2,
           },
@@ -82,10 +83,13 @@ describe('serialization', () => {
         id: user.id,
         one: [
           {
+            id: user.one[0].id,
             two: [
               {
+                id: user.one[0].two[0].id,
                 three: [
                   {
+                    id: user.one[0].two[0].three[0].id,
                     name: 'Foo',
                     position: 2,
                   },
@@ -407,10 +411,13 @@ describe('serialization', () => {
         id: user.id,
         one: [
           {
+            id: user.one[0].id,
             two: [
               {
+                id: user.one[0].two[0].id,
                 three: [
                   {
+                    id: user.one[0].two[0].three[0].id,
                     name: 'Harry',
                   },
                 ],
@@ -689,7 +696,7 @@ describe('serialization', () => {
   });
 
   describe('other', () => {
-    it('should not serialize nested array object ids', async () => {
+    it('should serialize nested array object ids', async () => {
       const User = createTestModel({
         foo: [
           {
@@ -716,8 +723,10 @@ describe('serialization', () => {
         id: user.id,
         foo: [
           {
+            id: user.foo[0].id,
             bar: [
               {
+                id: user.foo[0].bar[0].id,
                 name: 'wut',
               },
             ],
@@ -756,6 +765,7 @@ describe('serialization', () => {
           type: 'foo type',
           bar: [
             {
+              id: user.foo.bar[0].id,
               name: 'name',
             },
           ],

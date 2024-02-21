@@ -20,8 +20,6 @@ function transformField(obj, field, options) {
   if (Array.isArray(obj)) {
     for (let el of obj) {
       transformField(el, field, options);
-      // Delete ids in array elements.
-      delete el.id;
     }
   } else if (isPlainObject(obj)) {
     for (let [key, val] of Object.entries(obj)) {
