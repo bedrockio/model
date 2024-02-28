@@ -2,8 +2,8 @@ import { getTestModelName, createTestModel } from '../src/testing';
 import { createSchema } from '../src/schema';
 
 describe('delete hooks', () => {
-  describe('clean', () => {
-    describe('local references', () => {
+  describe('clean references', () => {
+    describe('local', () => {
       describe('simple', () => {
         const userModelName = getTestModelName();
         const userProfileModelName = getTestModelName();
@@ -18,9 +18,11 @@ describe('delete hooks', () => {
               },
             },
             onDelete: {
-              clean: {
-                local: 'profile',
-              },
+              clean: [
+                {
+                  path: 'profile',
+                },
+              ],
             },
           })
         );
@@ -121,9 +123,11 @@ describe('delete hooks', () => {
               ],
             },
             onDelete: {
-              clean: {
-                local: ['profiles'],
-              },
+              clean: [
+                {
+                  path: 'profiles',
+                },
+              ],
             },
           })
         );
@@ -188,6 +192,23 @@ describe('delete hooks', () => {
       });
 
       describe('errors', () => {
+        it('should error if no paths are defined', async () => {
+          expect(() => {
+            createSchema({
+              attributes: {
+                name: 'String',
+              },
+              onDelete: {
+                clean: [
+                  {
+                    ref: 'Shop',
+                  },
+                ],
+              },
+            });
+          }).toThrow('Clean hook must define either "path" or "paths".');
+        });
+
         it('should error on misspelling of reference', async () => {
           expect(() => {
             createSchema({
@@ -200,9 +221,11 @@ describe('delete hooks', () => {
                 ],
               },
               onDelete: {
-                clean: {
-                  local: ['profilez'],
-                },
+                clean: [
+                  {
+                    path: ['profilez'],
+                  },
+                ],
               },
             });
           }).toThrow();
@@ -210,7 +233,7 @@ describe('delete hooks', () => {
       });
     });
 
-    describe('foreign references', () => {
+    describe('foreign', () => {
       describe('simple', () => {
         const userModelName = getTestModelName();
         const shopModelName = getTestModelName();
@@ -222,11 +245,12 @@ describe('delete hooks', () => {
               name: 'String',
             },
             onDelete: {
-              clean: {
-                foreign: {
-                  [shopModelName]: 'owner',
+              clean: [
+                {
+                  ref: shopModelName,
+                  path: 'owner',
                 },
-              },
+              ],
             },
           })
         );
@@ -441,11 +465,12 @@ describe('delete hooks', () => {
               name: 'String',
             },
             onDelete: {
-              clean: {
-                foreign: {
-                  [shopModelName]: ['owner', 'operator'],
+              clean: [
+                {
+                  ref: shopModelName,
+                  paths: ['owner', 'operator'],
                 },
-              },
+              ],
             },
           })
         );
@@ -524,11 +549,12 @@ describe('delete hooks', () => {
               name: 'String',
             },
             onDelete: {
-              clean: {
-                foreign: {
-                  [shopModelName]: 'info.owner',
+              clean: [
+                {
+                  ref: shopModelName,
+                  path: 'info.owner',
                 },
-              },
+              ],
             },
           })
         );
@@ -585,157 +611,131 @@ describe('delete hooks', () => {
         });
       });
 
-      describe('$and operator', () => {
-        const userModelName = getTestModelName();
-        const shopModelName = getTestModelName();
+      describe('other', () => {
+        it('should apply additional query fields to multiple paths', async () => {
+          const userModelName = getTestModelName();
+          const shopModelName = getTestModelName();
 
-        const User = createTestModel(
-          userModelName,
-          createSchema({
-            attributes: {
-              name: 'String',
-            },
-            onDelete: {
-              clean: {
-                foreign: {
-                  [shopModelName]: {
-                    $and: ['owner', 'administrator'],
-                  },
-                },
+          const User = createTestModel(
+            userModelName,
+            createSchema({
+              attributes: {
+                name: 'String',
               },
+              onDelete: {
+                clean: [
+                  {
+                    ref: shopModelName,
+                    paths: ['owner', 'administrator'],
+                    query: {
+                      status: 'active',
+                    },
+                  },
+                ],
+              },
+            })
+          );
+          const Shop = createTestModel(shopModelName, {
+            status: {
+              type: 'String',
+              enum: ['active', 'inactive'],
             },
-          })
-        );
-        const Shop = createTestModel(shopModelName, {
-          name: 'String',
-          owner: {
-            type: 'ObjectId',
-            ref: userModelName,
-          },
-          administrator: {
-            type: 'ObjectId',
-            ref: userModelName,
-          },
-        });
+            owner: {
+              type: 'ObjectId',
+              ref: userModelName,
+            },
+            administrator: {
+              type: 'ObjectId',
+              ref: userModelName,
+            },
+          });
 
-        afterEach(async () => {
-          await User.deleteMany({});
-          await Shop.deleteMany({});
-        });
-
-        it('should only documents that are both owners and administrators', async () => {
           const user = await User.create({
             name: 'Barry',
           });
+
           await Shop.create({
-            name: 'shop1',
+            status: 'active',
             owner: user,
           });
+
           await Shop.create({
-            name: 'shop2',
+            name: 'inactive',
             administrator: user,
           });
+
           await Shop.create({
-            name: 'shop3',
+            name: 'status',
+            owner: user,
+            administrator: user,
+          });
+
+          await Shop.create({
+            name: 'inactive',
             owner: user,
             administrator: user,
           });
 
           await user.delete();
 
-          const shops = await Shop.find().sort({ name: 1 });
-          expect(shops).toMatchObject([
-            {
-              name: 'shop1',
-            },
-            {
-              name: 'shop2',
-            },
-          ]);
+          expect(await Shop.countDocuments()).toBe(3);
         });
-      });
 
-      describe('$or operator', () => {
-        const userModelName = getTestModelName();
-        const shopModelName = getTestModelName();
+        it('should not delete everything in unbounded query', async () => {
+          const userModelName = getTestModelName();
+          const shopModelName = getTestModelName();
 
-        const User = createTestModel(
-          userModelName,
-          createSchema({
-            attributes: {
-              name: 'String',
-            },
-            onDelete: {
-              clean: {
-                foreign: {
-                  [shopModelName]: {
-                    $or: ['owner', 'administrator'],
-                  },
-                },
+          const User = createTestModel(
+            userModelName,
+            createSchema({
+              attributes: {
+                name: 'String',
               },
+              onDelete: {
+                clean: [
+                  {
+                    ref: shopModelName,
+                    path: 'owner',
+                    query: {},
+                  },
+                ],
+              },
+            })
+          );
+
+          const Shop = createTestModel(shopModelName, {
+            name: 'String',
+            owner: {
+              type: 'ObjectId',
+              ref: userModelName,
             },
-          })
-        );
-        const Shop = createTestModel(shopModelName, {
-          name: 'String',
-          owner: {
-            type: 'ObjectId',
-            ref: userModelName,
-          },
-          administrator: {
-            type: 'ObjectId',
-            ref: userModelName,
-          },
-        });
+          });
 
-        afterEach(async () => {
-          await User.deleteMany({});
-          await Shop.deleteMany({});
-        });
-
-        it('should delete both documents with $or query', async () => {
-          const user = await User.create({
+          const user1 = await User.create({
             name: 'Barry',
           });
-          await Shop.create({
-            name: 'shop1',
-            owner: user,
-          });
-          await Shop.create({
-            name: 'shop2',
-            administrator: user,
+
+          const user2 = await User.create({
+            name: 'Larry',
           });
 
-          await user.delete();
+          await Shop.create({
+            owner: user1,
+          });
 
-          const shops = await Shop.find();
-          expect(shops.length).toBe(0);
+          await Shop.create({
+            owner: user2,
+          });
+
+          await Shop.create({});
+
+          await user1.delete();
+
+          expect(await Shop.countDocuments()).toBe(2);
         });
       });
 
       describe('errors', () => {
-        it('should error if both $and and $or are defined', async () => {
-          expect(() => {
-            createTestModel(
-              createSchema({
-                attributes: {
-                  name: 'String',
-                },
-                onDelete: {
-                  clean: {
-                    foreign: {
-                      Shop: {
-                        $and: ['owner'],
-                        $or: ['administrator'],
-                      },
-                    },
-                  },
-                },
-              })
-            );
-          }).toThrow();
-        });
-
         it('should not apply delete hooks when ref is misspelled', async () => {
           const userModelName = getTestModelName();
           const shopModelName = getTestModelName();
@@ -746,11 +746,12 @@ describe('delete hooks', () => {
                 name: 'String',
               },
               onDelete: {
-                clean: {
-                  foreign: {
-                    [shopModelName]: 'ownerz',
+                clean: [
+                  {
+                    ref: shopModelName,
+                    path: 'ownerz',
                   },
-                },
+                ],
               },
             })
           );
@@ -1032,11 +1033,12 @@ describe('delete hooks', () => {
           },
           onDelete: {
             errorOnReferenced: true,
-            clean: {
-              foreign: {
-                [shopModelName]: 'owner',
+            clean: [
+              {
+                ref: shopModelName,
+                path: 'owner',
               },
-            },
+            ],
           },
         })
       );
@@ -1121,9 +1123,11 @@ describe('delete hooks', () => {
               ],
             },
             onDelete: {
-              clean: {
-                local: 'shops',
-              },
+              clean: [
+                {
+                  path: 'shops',
+                },
+              ],
             },
           })
         );
@@ -1191,11 +1195,12 @@ describe('delete hooks', () => {
             errorOnReferenced: {
               only: [shopModelName],
             },
-            clean: {
-              foreign: {
-                [shopModelName]: 'owner',
+            clean: [
+              {
+                ref: shopModelName,
+                path: 'owner',
               },
-            },
+            ],
           },
         })
       );
@@ -1239,11 +1244,12 @@ describe('delete hooks', () => {
               name: 'String',
             },
             onDelete: {
-              clean: {
-                foreign: {
-                  [shopModelName]: 'owner',
+              clean: [
+                {
+                  ref: shopModelName,
+                  path: 'owner',
                 },
-              },
+              ],
             },
           })
         );
@@ -1259,11 +1265,12 @@ describe('delete hooks', () => {
               },
             },
             onDelete: {
-              clean: {
-                foreign: {
-                  [productModelName]: 'shop',
+              clean: [
+                {
+                  ref: productModelName,
+                  path: 'shop',
                 },
-              },
+              ],
             },
           })
         );
@@ -1312,11 +1319,12 @@ describe('delete hooks', () => {
               name: 'String',
             },
             onDelete: {
-              clean: {
-                foreign: {
-                  [shopModelName]: 'owner',
+              clean: [
+                {
+                  ref: shopModelName,
+                  path: 'owner',
                 },
-              },
+              ],
             },
           })
         );
@@ -1385,9 +1393,11 @@ describe('delete hooks', () => {
               },
             },
             onDelete: {
-              clean: {
-                local: 'profile',
-              },
+              clean: [
+                {
+                  path: 'profile',
+                },
+              ],
             },
           })
         );
@@ -1436,9 +1446,11 @@ describe('delete hooks', () => {
               },
             },
             onDelete: {
-              clean: {
-                local: 'profile',
-              },
+              clean: [
+                {
+                  path: 'profile',
+                },
+              ],
             },
           })
         );
@@ -1490,11 +1502,12 @@ describe('delete hooks', () => {
               },
             },
             onDelete: {
-              clean: {
-                foreign: {
-                  [shopModelName]: 'owner',
+              clean: [
+                {
+                  ref: shopModelName,
+                  path: 'owner',
                 },
-              },
+              ],
             },
           })
         );
@@ -1600,11 +1613,12 @@ describe('delete hooks', () => {
               },
             },
             onDelete: {
-              clean: {
-                foreign: {
-                  [shopModelName]: 'owner',
+              clean: [
+                {
+                  ref: shopModelName,
+                  path: 'owner',
                 },
-              },
+              ],
             },
           })
         );
@@ -1658,11 +1672,12 @@ describe('delete hooks', () => {
             name: 'String',
           },
           onDelete: {
-            clean: {
-              foreign: {
-                [shopModelName]: 'owner',
+            clean: [
+              {
+                ref: shopModelName,
+                path: 'owner',
               },
-            },
+            ],
           },
         })
       );

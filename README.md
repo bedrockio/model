@@ -1019,12 +1019,15 @@ deletion. They are defined in the `onDelete` field of the model definition file:
     }
   },
   "onDelete": {
-    "clean": {
-      "local": "profile",
-      "foreign": {
-        "Shop": "owner"
+    "clean": [
+      {
+        "path": "profile"
+      },
+      {
+        "ref": "Shop",
+        "path": "owner"
       }
-    },
+    ],
     "errorOnReferenced": {
       "except": ["AuditEntry"]
     }
@@ -1035,12 +1038,13 @@ deletion. They are defined in the `onDelete` field of the model definition file:
 #### Clean
 
 `clean` determines other associated documents that will be deleted when the main
-document is deleted.
+document is deleted. It is defined as an array of operations that will be
+performed in order. Operations must contain either `path` or `paths`.
 
 #### Local References
 
-`clean.local` specifies local refs to delete. It may be a string or array of
-strings. In the above example:
+Operations that do not specify a `ref` are treated as local paths. In the above
+example:
 
 ```js
 user.delete();
@@ -1050,26 +1054,110 @@ await user.populate('profile');
 await user.profile.delete();
 ```
 
-#### Foreign Reference Cleanup
+#### Foreign References
 
-`clean.foreign` specifies foreign refs to delete. It is defined as an object
-that maps foreign `ref` names to their referencing field. In the above example:
+Operations that specify a `ref` are treated as foreign references. In the above
+example:
 
 ```js
 user.delete();
 
 // Will implicitly run:
-const shop = await Shop.find({
+const shops = await Shop.find({
   owner: user,
 });
-await shop.delete();
+for (let shop of shops) {
+  await shop.delete();
+}
 ```
+
+#### Additional Filters
+
+Operations may filter on additional fields with `query`:
+
+```json
+// user.json
+{
+  "onDelete": {
+    "clean": [
+      {
+        "ref": "Shop",
+        "path": "owner",
+        "query": {
+          "status": "active"
+        }
+      }
+    ]
+  }
+}
+```
+
+In this example:
+
+```js
+user.delete();
+
+// Will implicitly run:
+const shops = await Shop.find({
+  status: 'active',
+  owner: user,
+});
+for (let shop of shops) {
+  await shop.delete();
+}
+```
+
+Any query that can be serliazed as JSON is valid, however top-level `$or`
+operators have special behavior with multiple paths (see note below).
+
+#### Multiple Paths
+
+An operation that specified an array of `paths` will implicitly run an `$or`
+query:
+
+```json
+// user.json
+{
+  "onDelete": {
+    "clean": [
+      {
+        "ref": "Shop",
+        "path": ["owner", "administrator"]
+      }
+    ]
+  }
+}
+```
+
+In this example:
+
+```js
+user.delete();
+
+// Will implicitly run:
+const shops = await Shop.find({
+  $or: [
+    {
+      owner: user,
+    },
+    {
+      administrator: user,
+    },
+  ],
+});
+for (let shop of shops) {
+  await shop.delete();
+}
+```
+
+> [!WARNING] The ability to run an `$and` query with multiple paths is currently
+> not implemented.
 
 #### Erroring on Delete
 
 The `errorOnReferenced` field helps to prevent orphaned references by defining
 if and how the `delete` method will error if it is being referenced by another
-foreign document. In the above example:
+foreign document. In the top example:
 
 ```js
 user.delete();
@@ -1149,7 +1237,6 @@ const { createTestModel } = require('@bedrockio/model');
 const User = createTestModel({
   name: 'String',
 });
-mk;
 ```
 
 Note that a unique model name will be generated to prevent clashing with other
