@@ -35,6 +35,7 @@ describe('search', () => {
     ]);
 
     let result;
+
     result = await User.search({
       categories: ['member'],
     });
@@ -470,7 +471,7 @@ describe('search', () => {
     }).rejects.toThrow();
   });
 
-  it('should allow model-level override of search defaults', async () => {
+  it('should allow override of search defaults', async () => {
     const schema = createSchema({
       attributes: {
         name: {
@@ -479,10 +480,12 @@ describe('search', () => {
         },
       },
       search: {
-        limit: 2,
-        sort: {
-          field: 'name',
-          order: 'asc',
+        query: {
+          limit: 2,
+          sort: {
+            field: 'name',
+            order: 'asc',
+          },
         },
       },
     });
@@ -587,183 +590,866 @@ describe('search', () => {
     });
     expect(users.data.length).toBe(2);
   });
+});
 
-  describe('keyword search', () => {
-    it('should search on name as a keyword', async () => {
-      const User = createTestModel({
+describe('keyword search', () => {
+  it('should search on name as a keyword', async () => {
+    const User = createTestModel({
+      name: {
+        type: 'String',
+        required: true,
+      },
+    });
+    User.schema.index({
+      name: 'text',
+    });
+    await User.createIndexes();
+    await Promise.all([
+      User.create({ name: 'Billy' }),
+      User.create({ name: 'Willy' }),
+    ]);
+    const { data, meta } = await User.search({ keyword: 'billy' });
+    expect(data).toMatchObject([{ name: 'Billy' }]);
+    expect(meta.total).toBe(1);
+  });
+
+  it('should allow partial text match when search fields are defined', async () => {
+    let result;
+    const schema = createSchema({
+      attributes: {
         name: {
           type: 'String',
           required: true,
         },
-      });
-      User.schema.index({
-        name: 'text',
-      });
-      await User.createIndexes();
-      await Promise.all([
-        User.create({ name: 'Billy' }),
-        User.create({ name: 'Willy' }),
-      ]);
-      const { data, meta } = await User.search({ keyword: 'billy' });
-      expect(data).toMatchObject([{ name: 'Billy' }]);
-      expect(meta.total).toBe(1);
+      },
+      search: {
+        fields: ['name'],
+      },
     });
+    schema.index({
+      name: 'text',
+    });
+    const User = createTestModel(schema);
+    await Promise.all([
+      User.create({ name: 'Billy' }),
+      User.create({ name: 'Willy' }),
+    ]);
 
-    it('should allow partial text match when search fields are defined', async () => {
-      let result;
-      const schema = createSchema({
-        attributes: {
-          name: {
+    result = await User.search({
+      keyword: 'bil',
+      sort: {
+        field: 'name',
+        order: 'asc',
+      },
+    });
+    expect(result.data).toMatchObject([{ name: 'Billy' }]);
+    expect(result.meta.total).toBe(1);
+
+    result = await User.search({
+      keyword: 'lly',
+      sort: {
+        field: 'name',
+        order: 'asc',
+      },
+    });
+    expect(result.data).toMatchObject([{ name: 'Billy' }, { name: 'Willy' }]);
+    expect(result.meta.total).toBe(2);
+  });
+
+  it('should allow partial text match on multiple fields', async () => {
+    let result;
+    const schema = createSchema({
+      attributes: {
+        name: {
+          type: 'String',
+          required: true,
+        },
+        role: {
+          type: 'String',
+          required: true,
+        },
+      },
+      search: {
+        fields: ['name', 'role'],
+      },
+    });
+    schema.index({
+      name: 'text',
+    });
+    const User = createTestModel(schema);
+    await Promise.all([
+      User.create({ name: 'Billy', role: 'user' }),
+      User.create({ name: 'Willy', role: 'manager' }),
+    ]);
+
+    result = await User.search({ keyword: 'use' });
+    expect(result.data).toMatchObject([{ name: 'Billy', role: 'user' }]);
+    expect(result.meta.total).toBe(1);
+
+    result = await User.search({ keyword: 'man' });
+    expect(result.data).toMatchObject([{ name: 'Willy', role: 'manager' }]);
+    expect(result.meta.total).toBe(1);
+  });
+
+  it('should allow id search with partial text match', async () => {
+    let result;
+    const schema = createSchema({
+      attributes: {
+        name: {
+          type: 'String',
+          required: true,
+        },
+      },
+      search: {
+        fields: ['name'],
+      },
+    });
+    const User = createTestModel(schema);
+    const [billy] = await Promise.all([
+      User.create({ name: 'Billy', role: 'user' }),
+      User.create({ name: 'Willy', role: 'manager' }),
+    ]);
+
+    result = await User.search({ keyword: billy.id });
+    expect(result.data).toMatchObject([{ name: 'Billy' }]);
+    expect(result.meta.total).toBe(1);
+  });
+
+  it('should error when no fields are defined', async () => {
+    const User = createTestModel({
+      name: {
+        type: 'String',
+        required: true,
+      },
+    });
+    await Promise.all([
+      User.create({ name: 'Billy', role: 'user' }),
+      User.create({ name: 'Willy', role: 'manager' }),
+    ]);
+
+    await expect(async () => {
+      await User.search({ keyword: 'Billy' });
+    }).rejects.toThrow('No keyword fields defined.');
+  });
+
+  it('should not error on regex tokens', async () => {
+    const schema = createSchema({
+      attributes: {
+        name: 'String',
+      },
+      search: {
+        fields: ['name'],
+      },
+    });
+    const User = createTestModel(schema);
+
+    await expect(
+      User.search({
+        keyword: 'billy(*$?.^|',
+      })
+    ).resolves.not.toThrow();
+  });
+});
+
+describe('cached fields', () => {
+  it('should cache a foreign document field', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const schema = createSchema({
+      attributes: {
+        user: {
+          type: 'ObjectId',
+          ref: User.modelName,
+        },
+      },
+      search: {
+        cache: {
+          cachedUserName: {
             type: 'String',
-            required: true,
+            path: 'user.name',
           },
         },
-        search: {
-          fields: ['name'],
-        },
-      });
-      schema.index({
-        name: 'text',
-      });
-      const User = createTestModel(schema);
-      await Promise.all([
-        User.create({ name: 'Billy' }),
-        User.create({ name: 'Willy' }),
-      ]);
+        fields: ['cachedUserName'],
+      },
+    });
+    const Shop = createTestModel(schema);
 
-      result = await User.search({
-        keyword: 'bil',
-        sort: {
-          field: 'name',
-          order: 'asc',
-        },
-      });
-      expect(result.data).toMatchObject([{ name: 'Billy' }]);
-      expect(result.meta.total).toBe(1);
-
-      result = await User.search({
-        keyword: 'lly',
-        sort: {
-          field: 'name',
-          order: 'asc',
-        },
-      });
-      expect(result.data).toMatchObject([{ name: 'Billy' }, { name: 'Willy' }]);
-      expect(result.meta.total).toBe(2);
+    const user1 = await User.create({
+      name: 'Frank',
     });
 
-    it('should allow partial text match on multiple fields', async () => {
-      let result;
-      const schema = createSchema({
-        attributes: {
-          name: {
-            type: 'String',
-            required: true,
-          },
-          role: {
-            type: 'String',
-            required: true,
-          },
-        },
-        search: {
-          fields: ['name', 'role'],
-        },
-      });
-      schema.index({
-        name: 'text',
-      });
-      const User = createTestModel(schema);
-      await Promise.all([
-        User.create({ name: 'Billy', role: 'user' }),
-        User.create({ name: 'Willy', role: 'manager' }),
-      ]);
-
-      result = await User.search({ keyword: 'use' });
-      expect(result.data).toMatchObject([{ name: 'Billy', role: 'user' }]);
-      expect(result.meta.total).toBe(1);
-
-      result = await User.search({ keyword: 'man' });
-      expect(result.data).toMatchObject([{ name: 'Willy', role: 'manager' }]);
-      expect(result.meta.total).toBe(1);
+    const shop1 = await Shop.create({
+      user: user1,
     });
 
-    it('should allow id search with partial text match', async () => {
-      let result;
-      const schema = createSchema({
-        attributes: {
-          name: {
+    const user2 = await User.create({
+      name: 'Dennis',
+    });
+
+    const shop2 = await Shop.create({
+      user: user2,
+    });
+
+    let result;
+
+    result = await Shop.search({
+      keyword: 'Frank',
+    });
+
+    expect(result.meta.total).toBe(1);
+    expect(result.data[0].id).toBe(shop1.id);
+
+    result = await Shop.search({
+      keyword: 'Dennis',
+    });
+
+    expect(result.meta.total).toBe(1);
+    expect(result.data[0].id).toBe(shop2.id);
+
+    result = await Shop.search({
+      keyword: 'foo',
+    });
+
+    expect(result.meta.total).toBe(0);
+  });
+
+  it('should cache multiple fields on the same document', async () => {
+    const User = createTestModel({
+      firstName: 'String',
+      lastName: 'String',
+    });
+    const schema = createSchema({
+      attributes: {
+        user: {
+          type: 'ObjectId',
+          ref: User.modelName,
+        },
+      },
+      search: {
+        cache: {
+          cachedFirstName: {
             type: 'String',
-            required: true,
+            path: 'user.firstName',
+          },
+          cachedLastName: {
+            type: 'String',
+            path: 'user.lastName',
           },
         },
-        search: {
-          fields: ['name'],
-        },
-      });
-      const User = createTestModel(schema);
-      const [billy] = await Promise.all([
-        User.create({ name: 'Billy', role: 'user' }),
-        User.create({ name: 'Willy', role: 'manager' }),
-      ]);
+        fields: ['cachedFirstName', 'cachedLastName'],
+      },
+    });
+    const Shop = createTestModel(schema);
 
-      result = await User.search({ keyword: billy.id });
-      expect(result.data).toMatchObject([{ name: 'Billy' }]);
-      expect(result.meta.total).toBe(1);
+    const user1 = await User.create({
+      firstName: 'Frank',
+      lastName: 'Reynolds',
     });
 
-    it('should allow id search when no fields are defined', async () => {
-      let result;
-      const schema = createSchema({
-        attributes: {
-          name: {
+    const shop1 = await Shop.create({
+      user: user1,
+    });
+
+    const user2 = await User.create({
+      firstName: 'Charlie',
+      lastName: 'Kelly',
+    });
+
+    const shop2 = await Shop.create({
+      user: user2,
+    });
+
+    let result;
+
+    result = await Shop.search({
+      keyword: 'Frank',
+    });
+
+    expect(result.meta.total).toBe(1);
+    expect(result.data[0].id).toBe(shop1.id);
+
+    result = await Shop.search({
+      keyword: 'Kelly',
+    });
+
+    expect(result.meta.total).toBe(1);
+    expect(result.data[0].id).toBe(shop2.id);
+
+    result = await Shop.search({
+      keyword: 'foo',
+    });
+
+    expect(result.meta.total).toBe(0);
+  });
+
+  it('should derive cached fields if not specified', async () => {
+    const User = createTestModel({
+      firstName: 'String',
+      lastName: 'String',
+    });
+    const schema = createSchema({
+      attributes: {
+        user: {
+          type: 'ObjectId',
+          ref: User.modelName,
+        },
+      },
+      search: {
+        fields: ['user.firstName', 'user.lastName'],
+      },
+    });
+    const Shop = createTestModel(schema);
+
+    expect(Object.keys(Shop.schema.obj)).toEqual(
+      expect.arrayContaining(['cachedUserFirstName', 'cachedUserLastName'])
+    );
+
+    const user1 = await User.create({
+      firstName: 'Frank',
+      lastName: 'Reynolds',
+    });
+
+    const shop1 = await Shop.create({
+      user: user1,
+    });
+
+    const user2 = await User.create({
+      firstName: 'Charlie',
+      lastName: 'Kelly',
+    });
+
+    const shop2 = await Shop.create({
+      user: user2,
+    });
+
+    let result;
+
+    result = await Shop.search({
+      keyword: 'Frank',
+    });
+
+    expect(result.meta.total).toBe(1);
+    expect(result.data[0].id).toBe(shop1.id);
+
+    result = await Shop.search({
+      keyword: 'Kelly',
+    });
+
+    expect(result.meta.total).toBe(1);
+    expect(result.data[0].id).toBe(shop2.id);
+
+    result = await Shop.search({
+      keyword: 'foo',
+    });
+
+    expect(result.meta.total).toBe(0);
+  });
+
+  it('should cache a deep field', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const Shop = createTestModel({
+      user: {
+        type: 'ObjectId',
+        ref: User.modelName,
+      },
+    });
+    const schema = createSchema({
+      attributes: {
+        shop: {
+          type: 'ObjectId',
+          ref: Shop.modelName,
+        },
+      },
+      search: {
+        fields: ['shop.user.name'],
+      },
+    });
+    const Product = createTestModel(schema);
+
+    const user = await User.create({
+      name: 'Frank Reynolds',
+    });
+
+    const shop = await Shop.create({
+      user,
+    });
+
+    const product = await Product.create({
+      shop,
+    });
+
+    let result;
+
+    result = await Product.search({
+      keyword: 'Frank',
+    });
+    expect(result.meta.total).toBe(1);
+    expect(result.data[0].id).toBe(product.id);
+
+    result = await Product.search({
+      keyword: 'Dennis',
+    });
+    expect(result.meta.total).toBe(0);
+
+    user.name = 'Dennis';
+    await user.save();
+
+    await Product.syncSearchFields({
+      force: true,
+    });
+
+    result = await Product.search({
+      keyword: 'Dennis',
+    });
+    expect(result.meta.total).toBe(1);
+    expect(result.data[0].id).toBe(product.id);
+  });
+
+  it('should cache an array field', async () => {
+    const User = createTestModel({
+      names: ['String'],
+    });
+    const schema = createSchema({
+      attributes: {
+        user: {
+          type: 'ObjectId',
+          ref: User.modelName,
+        },
+      },
+      search: {
+        fields: ['user.names'],
+      },
+    });
+    const Shop = createTestModel(schema);
+
+    const user1 = await User.create({
+      names: ['Frank', 'Reynolds'],
+    });
+
+    const user2 = await User.create({
+      names: ['Charlie', 'Kelly'],
+    });
+
+    const shop1 = await Shop.create({
+      user: user1,
+    });
+
+    await Shop.create({
+      user: user2,
+    });
+
+    let result;
+
+    result = await Shop.search({
+      keyword: 'Frank',
+    });
+    expect(result.meta.total).toBe(1);
+    expect(result.data[0].id).toBe(shop1.id);
+  });
+
+  it('should cache a virtual', async () => {
+    const userSchema = createSchema({
+      attributes: {
+        firstName: 'String',
+        lastName: 'String',
+      },
+    });
+    userSchema.virtual('name').get(function () {
+      return [this.firstName, this.lastName].join(' ');
+    });
+    const User = createTestModel(userSchema);
+    const shopSchema = createSchema({
+      attributes: {
+        user: {
+          type: 'ObjectId',
+          ref: User.modelName,
+        },
+      },
+      search: {
+        fields: ['user.name'],
+      },
+    });
+    const Shop = createTestModel(shopSchema);
+
+    const user = await User.create({
+      firstName: 'Frank',
+      lastName: 'Reynolds',
+    });
+
+    await Shop.create({
+      user,
+    });
+
+    const result = await Shop.search({
+      keyword: 'Frank',
+    });
+    expect(result.meta.total).toBe(1);
+  });
+
+  it('should not error on unset foreign field', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const schema = createSchema({
+      attributes: {
+        user: {
+          type: 'ObjectId',
+          ref: User.modelName,
+        },
+      },
+      search: {
+        fields: ['user.name'],
+      },
+    });
+    const Shop = createTestModel(schema);
+
+    await Shop.create({});
+
+    const { data, meta } = await Shop.search({
+      keyword: 'Frank',
+    });
+    expect(meta.total).toBe(0);
+    expect(data).toEqual([]);
+  });
+
+  it('should not expose cached field on serialize', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const schema = createSchema({
+      attributes: {
+        user: {
+          type: 'ObjectId',
+          ref: User.modelName,
+        },
+      },
+      search: {
+        cache: {
+          cachedUserName: {
             type: 'String',
-            required: true,
+            path: 'user.name',
           },
         },
-      });
-      const User = createTestModel(schema);
-      const [billy] = await Promise.all([
-        User.create({ name: 'Billy', role: 'user' }),
-        User.create({ name: 'Willy', role: 'manager' }),
-      ]);
+        fields: ['cachedUserName'],
+      },
+    });
+    const Shop = createTestModel(schema);
 
-      result = await User.search({ keyword: billy.id });
-      expect(result.data).toMatchObject([{ name: 'Billy' }]);
-      expect(result.meta.total).toBe(1);
+    const user = await User.create({
+      name: 'Frank',
     });
 
-    it('should not fail on other search when no fields defined', async () => {
-      let result;
-      const schema = createSchema({
-        attributes: {
-          name: {
+    const shop = await Shop.create({
+      user,
+    });
+
+    expect(shop.cachedUserName).toBe('Frank');
+    expect(shop.toObject().cachedUserName).toBeUndefined();
+  });
+});
+
+describe('lazy cached fields', () => {
+  it('should not update a cached field that is already set', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const schema = createSchema({
+      attributes: {
+        user: {
+          type: 'ObjectId',
+          ref: User.modelName,
+        },
+      },
+      search: {
+        cache: {
+          cachedUserName: {
             type: 'String',
-            required: true,
+            path: 'user.name',
+            lazy: true,
           },
         },
-      });
-      const User = createTestModel(schema);
+        fields: ['cachedUserName'],
+      },
+    });
+    const Shop = createTestModel(schema);
 
-      result = await User.search({ keyword: 'foo' });
-      expect(result.data).toMatchObject([]);
+    const user = await User.create({
+      name: 'Frank',
     });
 
-    it('should not error on regex tokens', async () => {
-      const schema = createSchema({
-        attributes: {
-          name: 'String',
-        },
-        search: {
-          fields: ['name'],
-        },
-      });
-      const User = createTestModel(schema);
-
-      await expect(
-        User.search({
-          keyword: 'billy(*$?.^|',
-        })
-      ).resolves.not.toThrow();
+    const shop = await Shop.create({
+      user,
     });
+
+    expect(shop.cachedUserName).toBe('Frank');
+
+    user.name = 'Dennis';
+    await user.save();
+
+    await shop.save();
+    expect(shop.cachedUserName).toBe('Frank');
+  });
+});
+
+describe('syncSearchFields', () => {
+  it('should sync searched fields', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const schema = createSchema({
+      attributes: {
+        user: {
+          type: 'ObjectId',
+          ref: User.modelName,
+        },
+      },
+      search: {
+        fields: ['user.name'],
+      },
+    });
+    const Shop = createTestModel(schema);
+
+    const user = await User.create({
+      name: 'Frank',
+    });
+
+    const shop = await Shop.create({});
+
+    await shop.updateOne({
+      $set: {
+        user: user.id,
+      },
+    });
+
+    let result;
+
+    result = await Shop.search({
+      keyword: 'Frank',
+    });
+    expect(result.meta.total).toBe(0);
+
+    const ret = await Shop.syncSearchFields();
+
+    expect(ret).toMatchObject({
+      matchedCount: 1,
+      modifiedCount: 1,
+    });
+
+    result = await Shop.search({
+      keyword: 'Frank',
+    });
+    expect(result.meta.total).toBe(1);
+    expect(result.data[0].id).toBe(shop.id);
+  });
+
+  it('should force sync searched fields', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const schema = createSchema({
+      attributes: {
+        user: {
+          type: 'ObjectId',
+          ref: User.modelName,
+        },
+      },
+      search: {
+        fields: ['user.name'],
+      },
+    });
+    const Shop = createTestModel(schema);
+
+    const user = await User.create({
+      name: 'Frank',
+    });
+
+    await Shop.create({
+      user,
+    });
+
+    user.name = 'Dennis';
+    await user.save();
+
+    let result;
+
+    result = await Shop.search({
+      keyword: 'Dennis',
+    });
+    expect(result.meta.total).toBe(0);
+
+    await Shop.syncSearchFields();
+
+    result = await Shop.search({
+      keyword: 'Dennis',
+    });
+    expect(result.meta.total).toBe(0);
+
+    await Shop.syncSearchFields({
+      force: true,
+    });
+
+    result = await Shop.search({
+      keyword: 'Dennis',
+    });
+    expect(result.meta.total).toBe(1);
+  });
+
+  it('should throw error when no fields to sync', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+
+    await expect(async () => {
+      await User.syncSearchFields();
+    }).rejects.toThrow();
+  });
+
+  it('should not sync fields that do not have ref field', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const schema = createSchema({
+      attributes: {
+        user: {
+          type: 'ObjectId',
+          ref: User.modelName,
+        },
+      },
+      search: {
+        fields: ['user.name'],
+      },
+    });
+    const Shop = createTestModel(schema);
+
+    const shop = await Shop.create({});
+
+    await Shop.syncSearchFields();
+
+    const updated = await Shop.findById(shop.id);
+
+    expect(updated.updatedAt).toEqual(shop.updatedAt);
+  });
+
+  it('should not sync a lazy cached field that is already set', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const schema = createSchema({
+      attributes: {
+        user: {
+          type: 'ObjectId',
+          ref: User.modelName,
+        },
+      },
+      search: {
+        cache: {
+          cachedUserName: {
+            type: 'String',
+            path: 'user.name',
+            lazy: true,
+          },
+        },
+        fields: ['cachedUserName'],
+      },
+    });
+    const Shop = createTestModel(schema);
+
+    const user = await User.create({
+      name: 'Frank',
+    });
+
+    let shop = await Shop.create({
+      user,
+    });
+
+    expect(shop.cachedUserName).toBe('Frank');
+
+    user.name = 'Dennis';
+    await user.save();
+
+    await Shop.syncSearchFields();
+
+    shop = await Shop.findById(shop.id);
+    expect(shop.cachedUserName).toBe('Frank');
+  });
+
+  it('should force sync a lazy cached field that is already set', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const schema = createSchema({
+      attributes: {
+        user: {
+          type: 'ObjectId',
+          ref: User.modelName,
+        },
+      },
+      search: {
+        cache: {
+          cachedUserName: {
+            type: 'String',
+            path: 'user.name',
+            lazy: true,
+          },
+        },
+        fields: ['cachedUserName'],
+      },
+    });
+    const Shop = createTestModel(schema);
+
+    const user = await User.create({
+      name: 'Frank',
+    });
+
+    let shop = await Shop.create({
+      user,
+    });
+
+    expect(shop.cachedUserName).toBe('Frank');
+
+    user.name = 'Dennis';
+    await user.save();
+
+    await Shop.syncSearchFields({
+      force: true,
+    });
+
+    shop = await Shop.findById(shop.id);
+    expect(shop.cachedUserName).toBe('Dennis');
+  });
+});
+
+describe('validation integration', () => {
+  it('should not fail on validations', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const schema = createSchema({
+      attributes: {
+        user: {
+          type: 'ObjectId',
+          ref: User.modelName,
+        },
+      },
+      search: {
+        fields: ['user.name'],
+      },
+    });
+    const Shop = createTestModel(schema);
+
+    expect(() => {
+      Shop.getCreateValidation();
+    }).not.toThrow();
+
+    expect(() => {
+      Shop.getUpdateValidation();
+    }).not.toThrow();
+
+    expect(() => {
+      Shop.getSearchValidation();
+    }).not.toThrow();
   });
 });

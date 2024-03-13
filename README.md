@@ -11,7 +11,7 @@ Bedrock utilities for model creation.
   - [Scopes](#scopes)
   - [Tuples](#tuples)
   - [Array Extensions](#array-extensions)
-- [Features](#features)
+- [Modules](#modules)
   - [Soft Delete](#soft-delete)
   - [Validation](#validation)
   - [Search](#search)
@@ -352,7 +352,7 @@ unfortunately cannot be disambiguated in this case.
 
 This will manually create a new nested subschema.
 
-## Features
+## Modules
 
 ### Soft Delete
 
@@ -531,8 +531,6 @@ The method takes the following options:
 - `include` - Allows [include](#includes) based population.
 - `keyword` - A keyword to perform a [keyword search](#keyword-search).
 - `ids` - An array of document ids to search on.
-- `fields` - Used by [keyword search](#keyword-search). Generally for internal
-  use.
 
 Any other fields passed in will be forwarded to `find`. The return value
 contains the found documents in `data` and `meta` which contains metadata about
@@ -603,8 +601,8 @@ this feature a `fields` key must be present on the model definition:
 }
 ```
 
-This will use the `$or` operator to search on multiple fields. If `fields` is
-not defined then a Mongo text query will be attempted:
+This will use the `$or` operator to search on multiple fields. If the model has
+a text index applied, then a Mongo text query will be attempted:
 
 ```
 {
@@ -614,7 +612,118 @@ not defined then a Mongo text query will be attempted:
 }
 ```
 
-Note that this will fail unless a text index is defined on the model.
+#### Keyword Field Caching
+
+A common problem with search is filtering on fields belonging to foreign models.
+The search module helps to alleviate this issue by allowing a simple way to
+cache foreign fields on the model to allow filtering on them.
+
+```json
+{
+  "attributes": {
+    "user": {
+      "type": "ObjectId",
+      "ref": "User"
+    }
+  },
+  "search": {
+    "cache": {
+      "cachedUserName": {
+        "type": "String",
+        "path": "user.name"
+      }
+    },
+    "fields": ["cachedUserName"]
+  }
+}
+```
+
+The above example is equivalent to creating a field called `cachedUserName` and
+updating it when a document is saved:
+
+```js
+schema.add({
+  cachedUserName: 'String',
+});
+schema.pre('save', function () {
+  await this.populate('user');
+  this.cachedUserName = this.user.name;
+});
+```
+
+Specifying a foreign path in `fields` serves as a shortcut to manually defining
+the cached fields:
+
+```json
+// Equivalent to the above example.
+{
+  "attributes": {
+    "user": {
+      "type": "ObjectId",
+      "ref": "User"
+    }
+  },
+  "search": {
+    "fields": ["user.name"]
+  }
+}
+```
+
+##### Syncing Search Fields
+
+When first applying or making changes to defined cached search fields, existing
+documents will be out of sync. The static method `syncSearchFields` is provided
+to synchronize them:
+
+```js
+// Find and update any documents that do not have
+// existing cached fields. Generally called when
+// adding a cached field.
+await Model.syncSearchFields();
+
+// Force an update on ALL documents to resync their
+// cached fields. Generally called to force a cache
+// refresh.
+await Model.syncSearchFields({
+  force: true,
+});
+```
+
+##### Lazy Cached Fields
+
+Cached fields can be made lazy:
+
+```json
+{
+  "attributes": {
+    "user": {
+      "type": "ObjectId",
+      "ref": "User"
+    }
+  },
+  "search": {
+    "cache": {
+      "cachedUserName": {
+        "lazy": true,
+        "path": "user.name"
+      }
+    },
+    "fields": ["user.name"]
+  }
+}
+```
+
+Lazy cached fields will not update themselves once set. They can only be updated
+by forcing a sync:
+
+```js
+await Model.syncSearchFields({
+  force: true,
+});
+```
+
+Making fields lazy alleviates performance impact on writes and allows caches to
+be updated at another time (such as a background job).
 
 #### Search Validation
 

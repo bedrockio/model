@@ -1,6 +1,7 @@
 import { Types } from 'mongoose';
 
 import { getIncludes } from '../src/include';
+import { createSchema } from '../src/schema';
 import { createTestModel, getTestModelName } from '../src/testing';
 
 const userModelName = getTestModelName();
@@ -1087,7 +1088,7 @@ describe('search integration', () => {
   });
 });
 
-describe('validaton integration', () => {
+describe('validation integration', () => {
   describe('getCreateValidation', () => {
     it('should not have include by default', async () => {
       const schema = Shop.getCreateValidation();
@@ -1250,5 +1251,30 @@ describe('other', () => {
     });
 
     expect(count).toBeGreaterThan(0);
+  });
+
+  it('should not fail on including a getter virtual', async () => {
+    const schema = createSchema({
+      attributes: {
+        firstName: 'String',
+        lastName: 'String',
+      },
+    });
+    schema.virtual('name').get(function () {
+      return [this.firstName, this.lastName].join(' ');
+    });
+    const User = await createTestModel(schema);
+    let user = await User.create({
+      firstName: 'Frank',
+      lastName: 'Reynolds',
+    });
+
+    // Document includes
+    await user.include('name');
+    expect(user.name).toBe('Frank Reynolds');
+
+    // Query includes
+    user = await User.findById(user.id).include('name');
+    expect(user.name).toBe('Frank Reynolds');
   });
 });
