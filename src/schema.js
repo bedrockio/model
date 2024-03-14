@@ -236,13 +236,13 @@ function applyScopeExtension(typedef, definition) {
         ...options,
       };
     } else {
-      val = attributesToMongoose({
+      val = {
         type: 'Object',
         attributes: val,
         ...options,
-      });
+      };
     }
-    definition[key] = val;
+    definition[key] = attributesToMongoose(val);
   }
 }
 

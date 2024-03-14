@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
+import { createSchema, normalizeAttributes } from '../src/schema';
 import { createTestModel } from '../src/testing';
-import { normalizeAttributes } from '../src/schema';
 
 describe('normalizeAttributes', () => {
   it('should accept a correctly formatted definition', async () => {
@@ -710,6 +710,49 @@ describe('createSchema', () => {
         await expect(
           User.create({
             location: [35, '139'],
+          })
+        ).rejects.toThrow();
+      });
+
+      it('should validate tuples inside a scope', async () => {
+        const User = createTestModel({
+          $private: {
+            type: 'Scope',
+            readAccess: 'none',
+            writeAccess: 'none',
+            attributes: {
+              coordinates: ['Number', 'Number'],
+            },
+          },
+        });
+
+        await expect(
+          User.create({
+            coordinates: [],
+          })
+        ).resolves.not.toThrow();
+
+        await expect(
+          User.create({
+            coordinates: [35],
+          })
+        ).rejects.toThrow();
+
+        await expect(
+          User.create({
+            coordinates: [35, 139],
+          })
+        ).resolves.not.toThrow();
+
+        await expect(
+          User.create({
+            coordinates: [35, 139, 13],
+          })
+        ).rejects.toThrow();
+
+        await expect(
+          User.create({
+            coordinates: [35, '139'],
           })
         ).rejects.toThrow();
       });
