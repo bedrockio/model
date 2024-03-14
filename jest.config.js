@@ -1,4 +1,5 @@
 process.env.ENV_NAME = 'test';
+process.env.MONGO_MEMORY_SERVER_FILE = 'jest-mongodb-config.cjs';
 
 export default {
   preset: '@shelf/jest-mongodb',
