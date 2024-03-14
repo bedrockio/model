@@ -170,6 +170,12 @@ function nodeToPopulates(node) {
   };
 }
 
+// Null serves as a flag that the key terminates
+// the branch and this is a leaf node. Using null
+// here as it's simple and serializes to JSON for
+// easy inspection.
+const LEAF_NODE = null;
+
 function pathsToNode(paths, modelName) {
   const node = {};
   for (let str of paths) {
@@ -214,7 +220,7 @@ function setNodePath(node, options) {
         // -user.name - Implies population of "user" but exclude "user.name",
         //  so continue traversing into object when part is "user".
         if (isExact && exclude) {
-          node['-' + key] = null;
+          node['-' + key] = LEAF_NODE;
         } else if (field.ref) {
           node[key] ||= {};
           setNodePath(node[key], {
@@ -225,7 +231,7 @@ function setNodePath(node, options) {
           });
           halt = true;
         } else if (isSchemaTypedef(field)) {
-          node[key] = null;
+          node[key] = LEAF_NODE;
         }
       } else if (type === 'virtual') {
         const virtual = schema.virtual(key);
