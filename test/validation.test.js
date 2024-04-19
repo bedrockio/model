@@ -742,30 +742,106 @@ describe('getUpdateValidation', () => {
     });
   });
 
-  it('should allow null to unset optional number fields', async () => {
-    const User = createTestModel({
-      count: {
-        type: 'Number',
-      },
+  describe('unsetting', () => {
+    it('should allow null or empty to unset optional number fields', async () => {
+      const User = createTestModel({
+        count: {
+          type: 'Number',
+        },
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertPass(schema, {
+        count: null,
+      });
+      await assertPass(schema, {
+        count: '',
+      });
     });
-    const schema = User.getUpdateValidation();
-    expect(yd.isSchema(schema)).toBe(true);
-    await assertPass(schema, {
-      count: null,
-    });
-  });
 
-  it('should not allow null to unset required number fields', async () => {
-    const User = createTestModel({
-      count: {
-        type: 'Number',
-        required: true,
-      },
+    it('should not allow null or empty to unset required number fields', async () => {
+      const User = createTestModel({
+        count: {
+          type: 'Number',
+          required: true,
+        },
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertFail(schema, {
+        count: null,
+      });
+      await assertFail(schema, {
+        count: '',
+      });
     });
-    const schema = User.getUpdateValidation();
-    expect(yd.isSchema(schema)).toBe(true);
-    await assertFail(schema, {
-      count: null,
+
+    it('should allow null or empty to unset optional string fields', async () => {
+      const User = createTestModel({
+        name: {
+          type: 'String',
+        },
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertPass(schema, {
+        name: null,
+      });
+      await assertPass(schema, {
+        name: '',
+      });
+    });
+
+    it('should not allow null or empty to unset required string fields', async () => {
+      const User = createTestModel({
+        name: {
+          type: 'String',
+          required: true,
+        },
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertFail(schema, {
+        name: null,
+      });
+      await assertFail(schema, {
+        name: '',
+      });
+    });
+
+    it('should allow null or empty to unset optional reference fields', async () => {
+      const User = createTestModel({
+        shop: {
+          type: 'ObjectId',
+          ref: 'Shop',
+        },
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertPass(schema, {
+        shop: null,
+      });
+      await assertPass(schema, {
+        shop: '',
+      });
+    });
+
+    it('should not allow null or empty to unset required reference fields', async () => {
+      const User = createTestModel({
+        shop: {
+          type: 'ObjectId',
+          ref: 'Shop',
+          required: true,
+        },
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertFail(schema, {
+        shop: null,
+      });
+      await assertFail(schema, {
+        shop: '',
+      });
     });
   });
 

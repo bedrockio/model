@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-import { createSchema, normalizeAttributes } from '../src/schema';
+import { normalizeAttributes } from '../src/schema';
 import { createTestModel } from '../src/testing';
 
 describe('normalizeAttributes', () => {

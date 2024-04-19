@@ -118,13 +118,13 @@ export function applyValidation(schema, definition) {
         model: this,
         appendSchema,
         allowInclude,
+        allowUnset: true,
         skipRequired: true,
         stripUnknown: true,
         stripDeleted: true,
         stripTimestamps: true,
         allowExpandedRefs: true,
         requireWriteAccess: true,
-        allowNullForPrimitives: true,
         ...(hasUnique && {
           assertUniqueOptions: {
             schema,
@@ -283,8 +283,8 @@ function getSchemaForTypedef(typedef, options = {}) {
 
   if (isRequired(typedef, options)) {
     schema = schema.required();
-  } else if (allowsNull(typedef, options)) {
-    schema = yd.allow(null, schema);
+  } else if (allowUnset(typedef, options)) {
+    schema = yd.allow(null, '', schema);
   }
 
   if (typedef.default && options.allowDefaultTags) {
@@ -434,17 +434,8 @@ function isRequired(typedef, options) {
   return typedef.required && !typedef.default && !options.skipRequired;
 }
 
-function allowsNull(typedef, options) {
-  if (!options.allowNullForPrimitives) {
-    return false;
-  }
-  return !typedef.required && isPrimitiveTypedef(typedef);
-}
-
-const PRIMITIVE_TYPES = ['String', 'Number', 'Boolean'];
-
-function isPrimitiveTypedef(typedef) {
-  return PRIMITIVE_TYPES.includes(typedef.type);
+function allowUnset(typedef, options) {
+  return options.allowUnset && !typedef.required;
 }
 
 function isExcludedField(field, options) {
