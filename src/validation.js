@@ -464,7 +464,7 @@ function validateAccess(type, schema, allowed, options) {
 
     let isAllowed;
     try {
-      isAllowed = hasAccess(type, allowed, {
+      isAllowed = hasAccess(allowed, {
         ...options,
         document,
       });

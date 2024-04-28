@@ -1,18 +1,10 @@
 import { ImplementationError } from './errors';
 import warn from './warn';
 
-export function hasReadAccess(allowed, options) {
-  return hasAccess('read', allowed, options);
-}
-
-export function hasWriteAccess(allowed, options) {
-  return hasAccess('write', allowed, options);
-}
-
 /**
  * @param {string|string[]} allowed
  */
-export function hasAccess(type, allowed = 'all', options = {}) {
+export function hasAccess(allowed = 'all', options = {}) {
   if (allowed === 'all') {
     return true;
   } else if (allowed === 'none') {

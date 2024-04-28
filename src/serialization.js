@@ -1,8 +1,8 @@
 import { isPlainObject } from 'lodash';
 
 import { checkSelects } from './include';
-import { hasReadAccess } from './access';
 import { getField, getInnerField } from './utils';
+import { hasAccess } from './access';
 
 const DISALLOWED_FIELDS = ['deleted', 'deletedRefs'];
 
@@ -60,7 +60,7 @@ function isAllowedField(key, field, options) {
   } else {
     const { readAccess } = getField(field, key);
     try {
-      return hasReadAccess(readAccess, options);
+      return hasAccess(readAccess, options);
     } catch {
       return false;
     }
