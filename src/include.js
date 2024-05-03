@@ -89,9 +89,9 @@ export function applyInclude(schema) {
   // Perform population immediately when instance method is called.
   // Store selects as a local variable which will be checked
   // during serialization.
-  schema.method('include', async function include(include) {
+  schema.method('include', async function include(include, options) {
     if (include) {
-      const { select, populate } = getDocumentParams(this, include);
+      const { select, populate } = getDocumentParams(this, include, options);
       this.$locals.select = select;
       await this.populate(populate);
     }
@@ -140,11 +140,15 @@ export function getParams(modelName, arg) {
 }
 
 // Exported for testing.
-export function getDocumentParams(doc, arg) {
+export function getDocumentParams(doc, arg, options = {}) {
   const params = getParams(doc.constructor.modelName, arg);
-  params.populate = params.populate.filter((p) => {
-    return !isDocumentPopulated(doc, p);
-  });
+
+  if (!options.force) {
+    params.populate = params.populate.filter((p) => {
+      return !isDocumentPopulated(doc, p);
+    });
+  }
+
   return params;
 }
 

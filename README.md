@@ -752,8 +752,7 @@ queries and more unneeded data transfer over the wire.
 
 For this reason calling `populate` manually is highly preferable, however in
 complex situations this can easily be a lot of overhead. The include module
-attempts to greatly streamline this process by adding an `include` method to
-queries:
+attempts to streamline this process by adding an `include` method to queries:
 
 ```js
 const product = await Product.findById(id).include([
@@ -904,6 +903,31 @@ router.post('/', validateBody(User.getSearchValidation()), async (ctx) => {
 The `getSearchValidation` will allow the `include` property to be passed,
 letting the client populate documents as they require. Note that the fields a
 client is able to include is subject to [access control](#access-control).
+
+#### Other Differences with Populate
+
+Calling `populate` on a Mongoose document will always load the current data. In
+contrast, `include` will only load when not yet populated, providing better
+performance for most situations such as pre save hooks:
+
+```js
+schema.pre('save', async () => {
+  // Will not result in a populate call if the
+  // owner document has already been populated.
+  await this.include('owner');
+
+  this.ownerName = this.owner.name;
+});
+```
+
+If always fetching the current document is preferred, the `force` option can be
+passed:
+
+```js
+await shop.include('owner', {
+  force: true,
+});
+```
 
 ### Access Control
 

@@ -903,6 +903,43 @@ describe('instance methods', () => {
       await user.include('name');
       expect(user.toObject().email).toBeUndefined();
     });
+
+    it('should not refresh if already populated', async () => {
+      const user = await User.create({
+        name: 'Bob',
+      });
+      const shop = await Shop.create({
+        name: 'foo',
+        user,
+      });
+
+      await user.updateOne({
+        name: 'Jack',
+      });
+
+      await shop.include('user');
+      expect(shop.user.name).toBe('Bob');
+    });
+
+    it('should force refresh even if already populated', async () => {
+      const user = await User.create({
+        name: 'Bob',
+      });
+      const shop = await Shop.create({
+        name: 'foo',
+        user,
+      });
+
+      await user.updateOne({
+        name: 'Jack',
+      });
+
+      await shop.include('user', {
+        force: true,
+      });
+
+      expect(shop.user.name).toBe('Jack');
+    });
   });
 });
 
