@@ -31,7 +31,7 @@ export function applyInclude(schema) {
   schema.pre(/^find/, function (next) {
     const filter = this.getFilter();
     if (filter.include) {
-      const { select, populate } = getQueryIncludes(this, filter.include);
+      const { select, populate } = getQueryParams(this, filter.include);
       this.select(select);
       this.populate(populate);
       delete filter.include;
@@ -70,7 +70,7 @@ export function applyInclude(schema) {
     this.assign(rest);
 
     if (include) {
-      const { select, populate } = getDocumentIncludes(this, include);
+      const { select, populate } = getDocumentParams(this, include);
       this.$locals.select = select;
       this.$locals.populate = populate;
     }
@@ -91,7 +91,7 @@ export function applyInclude(schema) {
   // during serialization.
   schema.method('include', async function include(include) {
     if (include) {
-      const { select, populate } = getDocumentIncludes(this, include);
+      const { select, populate } = getDocumentParams(this, include);
       this.$locals.select = select;
       await this.populate(populate);
     }
@@ -133,19 +133,19 @@ export function checkSelects(doc, ret) {
 }
 
 // Exported for testing.
-export function getIncludes(modelName, arg) {
+export function getParams(modelName, arg) {
   const paths = Array.isArray(arg) ? arg : [arg];
   const node = pathsToNode(paths, modelName);
   return nodeToPopulates(node);
 }
 
 // Exported for testing.
-export function getDocumentIncludes(doc, arg) {
-  const includes = getIncludes(doc.constructor.modelName, arg);
-  includes.populate = includes.populate.filter((p) => {
+export function getDocumentParams(doc, arg) {
+  const params = getParams(doc.constructor.modelName, arg);
+  params.populate = params.populate.filter((p) => {
     return !isDocumentPopulated(doc, p);
   });
-  return includes;
+  return params;
 }
 
 function isDocumentPopulated(doc, params) {
@@ -159,8 +159,8 @@ function isDocumentPopulated(doc, params) {
   }
 }
 
-function getQueryIncludes(query, arg) {
-  return getIncludes(query.model.modelName, arg);
+function getQueryParams(query, arg) {
+  return getParams(query.model.modelName, arg);
 }
 
 // Note that:

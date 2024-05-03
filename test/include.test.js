@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 
-import { getIncludes, getDocumentIncludes } from '../src/include';
+import { getParams, getDocumentParams } from '../src/include';
 import { createSchema } from '../src/schema';
 import { createTestModel, getTestModelName } from '../src/testing';
 
@@ -94,26 +94,26 @@ afterEach(async () => {
   await Comment.deleteMany({});
 });
 
-describe('getIncludes', () => {
+describe('getParams', () => {
   it('should have select for single field', async () => {
-    const data = getIncludes(Shop.modelName, 'name');
-    expect(data).toEqual({
+    const params = getParams(Shop.modelName, 'name');
+    expect(params).toEqual({
       select: ['name'],
       populate: [],
     });
   });
 
   it('should have select for multiple fields', async () => {
-    const data = getIncludes(Shop.modelName, ['name', 'email']);
-    expect(data).toEqual({
+    const params = getParams(Shop.modelName, ['name', 'email']);
+    expect(params).toEqual({
       select: ['name', 'email'],
       populate: [],
     });
   });
 
   it('should have populate for single foreign field', async () => {
-    const data = getIncludes(Shop.modelName, 'user');
-    expect(data).toEqual({
+    const params = getParams(Shop.modelName, 'user');
+    expect(params).toEqual({
       select: [],
       populate: [
         {
@@ -126,8 +126,8 @@ describe('getIncludes', () => {
   });
 
   it('should have populate for multiple foreign fields', async () => {
-    const data = getIncludes(Shop.modelName, ['user', 'deep.user']);
-    expect(data).toEqual({
+    const params = getParams(Shop.modelName, ['user', 'deep.user']);
+    expect(params).toEqual({
       select: [],
       populate: [
         {
@@ -145,13 +145,13 @@ describe('getIncludes', () => {
   });
 
   it('should be correct for combining selection and population', async () => {
-    const data = getIncludes(Shop.modelName, [
+    const params = getParams(Shop.modelName, [
       'name',
       'email',
       'user',
       'deep.user',
     ]);
-    expect(data).toEqual({
+    expect(params).toEqual({
       select: ['name', 'email'],
       populate: [
         {
@@ -169,8 +169,8 @@ describe('getIncludes', () => {
   });
 
   it('should select a populated field', async () => {
-    const data = getIncludes(Shop.modelName, 'user.name');
-    expect(data).toEqual({
+    const params = getParams(Shop.modelName, 'user.name');
+    expect(params).toEqual({
       select: [],
       populate: [
         {
@@ -183,8 +183,8 @@ describe('getIncludes', () => {
   });
 
   it('should select a nested populated field', async () => {
-    const data = getIncludes(Shop.modelName, 'user.address.line1');
-    expect(data).toEqual({
+    const params = getParams(Shop.modelName, 'user.address.line1');
+    expect(params).toEqual({
       select: [],
       populate: [
         {
@@ -197,8 +197,8 @@ describe('getIncludes', () => {
   });
 
   it('should select double nested populated field', async () => {
-    const data = getIncludes(Shop.modelName, 'deep.user.address.line1');
-    expect(data).toEqual({
+    const params = getParams(Shop.modelName, 'deep.user.address.line1');
+    expect(params).toEqual({
       select: [],
       populate: [
         {
@@ -211,8 +211,8 @@ describe('getIncludes', () => {
   });
 
   it('should not override previously selected fields', async () => {
-    const data = getIncludes(Shop.modelName, ['user.name', 'user.email']);
-    expect(data).toEqual({
+    const params = getParams(Shop.modelName, ['user.name', 'user.email']);
+    expect(params).toEqual({
       select: [],
       populate: [
         {
@@ -225,8 +225,8 @@ describe('getIncludes', () => {
   });
 
   it('should override root with select', async () => {
-    const data = getIncludes(Shop.modelName, ['user', 'user.name']);
-    expect(data).toEqual({
+    const params = getParams(Shop.modelName, ['user', 'user.name']);
+    expect(params).toEqual({
       select: [],
       populate: [
         {
@@ -239,8 +239,8 @@ describe('getIncludes', () => {
   });
 
   it('should override root with select reversed', async () => {
-    const data = getIncludes(Shop.modelName, ['user.name', 'user']);
-    expect(data).toEqual({
+    const params = getParams(Shop.modelName, ['user.name', 'user']);
+    expect(params).toEqual({
       select: [],
       populate: [
         {
@@ -253,16 +253,16 @@ describe('getIncludes', () => {
   });
 
   it('should select an array field', async () => {
-    const data = getIncludes(Shop.modelName, 'tags');
-    expect(data).toEqual({
+    const params = getParams(Shop.modelName, 'tags');
+    expect(params).toEqual({
       select: ['tags'],
       populate: [],
     });
   });
 
   it('should select a foreign array field', async () => {
-    const data = getIncludes(Shop.modelName, 'user.tags');
-    expect(data).toEqual({
+    const params = getParams(Shop.modelName, 'user.tags');
+    expect(params).toEqual({
       select: [],
       populate: [
         {
@@ -275,8 +275,8 @@ describe('getIncludes', () => {
   });
 
   it('should populate an array field', async () => {
-    const data = getIncludes(Shop.modelName, 'customers');
-    expect(data).toEqual({
+    const params = getParams(Shop.modelName, 'customers');
+    expect(params).toEqual({
       select: [],
       populate: [
         {
@@ -289,8 +289,8 @@ describe('getIncludes', () => {
   });
 
   it('should populate a foreign array field', async () => {
-    const data = getIncludes(Product.modelName, 'shop.customers');
-    expect(data).toEqual({
+    const params = getParams(Product.modelName, 'shop.customers');
+    expect(params).toEqual({
       select: [],
       populate: [
         {
@@ -309,8 +309,8 @@ describe('getIncludes', () => {
   });
 
   it('should populate and select a foreign array field', async () => {
-    const data = getIncludes(Product.modelName, 'shop.customers.address.line1');
-    expect(data).toEqual({
+    const params = getParams(Product.modelName, 'shop.customers.address.line1');
+    expect(params).toEqual({
       select: [],
       populate: [
         {
@@ -329,8 +329,8 @@ describe('getIncludes', () => {
   });
 
   it('should select deeply populated field', async () => {
-    const data = getIncludes(Product.modelName, 'shop.user.address.line1');
-    expect(data).toEqual({
+    const params = getParams(Product.modelName, 'shop.user.address.line1');
+    expect(params).toEqual({
       select: [],
       populate: [
         {
@@ -349,11 +349,11 @@ describe('getIncludes', () => {
   });
 
   it('should select a shallow and deeply populated field', async () => {
-    const data = getIncludes(Product.modelName, [
+    const params = getParams(Product.modelName, [
       'name',
       'shop.user.address.line1',
     ]);
-    expect(data).toEqual({
+    expect(params).toEqual({
       select: ['name'],
       populate: [
         {
@@ -372,14 +372,14 @@ describe('getIncludes', () => {
   });
 
   it('should handle complex population of many fields', async () => {
-    const data = getIncludes(Product.modelName, [
+    const params = getParams(Product.modelName, [
       'name',
       'shop.email',
       'shop.user.name',
       'shop.user.address.line1',
       'shop.customers.self.self.tags',
     ]);
-    expect(data).toEqual({
+    expect(params).toEqual({
       select: ['name'],
       populate: [
         {
@@ -415,8 +415,8 @@ describe('getIncludes', () => {
   });
 
   it('should populate recursive field', async () => {
-    const data = getIncludes(User.modelName, 'self.self.self');
-    expect(data).toEqual({
+    const params = getParams(User.modelName, 'self.self.self');
+    expect(params).toEqual({
       select: [],
       populate: [
         {
@@ -441,8 +441,8 @@ describe('getIncludes', () => {
   });
 
   it('should populate a virtual', async () => {
-    const data = getIncludes(Product.modelName, 'comments');
-    expect(data).toEqual({
+    const params = getParams(Product.modelName, 'comments');
+    expect(params).toEqual({
       select: [],
       populate: [
         {
@@ -455,8 +455,8 @@ describe('getIncludes', () => {
   });
 
   it('should populate into virtual nested fields', async () => {
-    const data = getIncludes(Product.modelName, 'comments.product');
-    expect(data).toEqual({
+    const params = getParams(Product.modelName, 'comments.product');
+    expect(params).toEqual({
       select: [],
       populate: [
         {
@@ -476,14 +476,14 @@ describe('getIncludes', () => {
 
   it('should throw an error on unknown path', async () => {
     expect(() => {
-      getIncludes(User.modelName, 'name.foo');
+      getParams(User.modelName, 'name.foo');
     }).toThrow(`Unknown path on ${User.modelName}: name.foo.`);
   });
 
   it('should error on massive recusrion', async () => {
     const include = 'self'.repeat(6).match(/.{4}/g).join('.');
     expect(() => {
-      getIncludes(User.modelName, include);
+      getParams(User.modelName, include);
     }).toThrow('Cannot populate more than 5 levels.');
   });
 
@@ -504,8 +504,8 @@ describe('getIncludes', () => {
       },
       nam: 'String',
     });
-    const data = getIncludes(User.modelName, ['name*', 'deep.deep.name*']);
-    expect(data).toEqual({
+    const params = getParams(User.modelName, ['name*', 'deep.deep.name*']);
+    expect(params).toEqual({
       select: [
         'name1',
         'name2',
@@ -545,8 +545,8 @@ describe('getIncludes', () => {
         },
       },
     });
-    const data = getIncludes(User.modelName, ['*Name', 'deep.deep.*Name']);
-    expect(data).toEqual({
+    const params = getParams(User.modelName, ['*Name', 'deep.deep.*Name']);
+    expect(params).toEqual({
       select: [
         'fName',
         'FName',
@@ -562,8 +562,8 @@ describe('getIncludes', () => {
   });
 
   it('should not choke on recursion', async () => {
-    const data = getIncludes(User.modelName, '**');
-    expect(data).toEqual({
+    const params = getParams(User.modelName, '**');
+    expect(params).toEqual({
       select: [
         'name',
         'email',
@@ -591,8 +591,8 @@ describe('getIncludes', () => {
   });
 
   it('should allow wildcards across deep paths', async () => {
-    const data = getIncludes(Product.modelName, 'shop.**');
-    expect(data).toEqual({
+    const params = getParams(Product.modelName, 'shop.**');
+    expect(params).toEqual({
       select: [],
       populate: [
         {
@@ -635,8 +635,8 @@ describe('getIncludes', () => {
   });
 
   it('should have populate for nested ref field on array', async () => {
-    const data = getIncludes(Shop.modelName, 'inventory.product');
-    expect(data).toEqual({
+    const params = getParams(Shop.modelName, 'inventory.product');
+    expect(params).toEqual({
       select: [],
       populate: [
         {
@@ -649,7 +649,7 @@ describe('getIncludes', () => {
   });
 });
 
-describe('getDocumentIncludes', () => {
+describe('getDocumentParams', () => {
   describe('basic', () => {
     it('should not populate fields that have already been populated', async () => {
       const user = await User.create({
@@ -660,8 +660,8 @@ describe('getDocumentIncludes', () => {
         user,
       });
 
-      const data = getDocumentIncludes(shop, 'user');
-      expect(data).toEqual({
+      const params = getDocumentParams(shop, 'user');
+      expect(params).toEqual({
         select: [],
         populate: [],
       });
@@ -676,8 +676,8 @@ describe('getDocumentIncludes', () => {
         user: user.id,
       });
 
-      const data = getDocumentIncludes(shop, 'user');
-      expect(data).toEqual({
+      const params = getDocumentParams(shop, 'user');
+      expect(params).toEqual({
         select: [],
         populate: [
           {
@@ -704,7 +704,7 @@ describe('getDocumentIncludes', () => {
         customers: [user1.id, user2.id],
       });
 
-      expect(getDocumentIncludes(shop, 'customers')).toEqual({
+      expect(getDocumentParams(shop, 'customers')).toEqual({
         select: [],
         populate: [
           {
@@ -720,7 +720,7 @@ describe('getDocumentIncludes', () => {
         customers: [user1, user2.id],
       });
 
-      expect(getDocumentIncludes(shop, 'customers')).toEqual({
+      expect(getDocumentParams(shop, 'customers')).toEqual({
         select: [],
         populate: [
           {
@@ -736,7 +736,7 @@ describe('getDocumentIncludes', () => {
         customers: [user1, user2],
       });
 
-      expect(getDocumentIncludes(shop, 'customers')).toEqual({
+      expect(getDocumentParams(shop, 'customers')).toEqual({
         select: [],
         populate: [],
       });
@@ -759,7 +759,7 @@ describe('getDocumentIncludes', () => {
         shop,
       });
 
-      expect(getDocumentIncludes(product, 'shop.user')).toEqual({
+      expect(getDocumentParams(product, 'shop.user')).toEqual({
         select: [],
         populate: [],
       });
@@ -780,7 +780,7 @@ describe('getDocumentIncludes', () => {
         shop,
       });
 
-      expect(getDocumentIncludes(product, 'shop.user')).toEqual({
+      expect(getDocumentParams(product, 'shop.user')).toEqual({
         select: [],
         populate: [
           {
@@ -933,8 +933,8 @@ describe('static methods', () => {
         shop: shop.id,
         include: ['name', 'shop.user'],
       });
-      const data = JSON.parse(JSON.stringify(product));
-      expect(data).toEqual({
+      const params = JSON.parse(JSON.stringify(product));
+      expect(params).toEqual({
         id: product.id,
         name: 'Product',
         shop: {
@@ -968,8 +968,8 @@ describe('static methods', () => {
         user: user.id,
         include: ['name', 'user'],
       });
-      const data = JSON.parse(JSON.stringify(shop));
-      expect(data).toEqual({
+      const params = JSON.parse(JSON.stringify(shop));
+      expect(params).toEqual({
         id: shop.id,
         name: 'foo',
         user: {
@@ -991,8 +991,8 @@ describe('static methods', () => {
         tags: ['a', 'b', 'c'],
         include: ['-name', '-tags'],
       });
-      const data = JSON.parse(JSON.stringify(user));
-      expect(data).toEqual({
+      const params = JSON.parse(JSON.stringify(user));
+      expect(params).toEqual({
         id: user.id,
         email: 'foo@bar.com',
         likedProducts: [],
@@ -1012,8 +1012,8 @@ describe('static methods', () => {
         user: user.id,
         include: ['-name', '-user'],
       });
-      const data = JSON.parse(JSON.stringify(shop));
-      expect(data).toEqual({
+      const params = JSON.parse(JSON.stringify(shop));
+      expect(params).toEqual({
         id: shop.id,
         email: 'shop@bar.com',
         tags: [],
@@ -1038,8 +1038,8 @@ describe('static methods', () => {
         user: user.id,
         include: ['user', '-user.name', '-user.address.line1'],
       });
-      const data = JSON.parse(JSON.stringify(shop));
-      expect(data).toEqual({
+      const params = JSON.parse(JSON.stringify(shop));
+      expect(params).toEqual({
         id: shop.id,
         name: 'Shop',
         user: {
@@ -1111,8 +1111,8 @@ describe('static methods', () => {
 
       await shop.save();
 
-      const data = JSON.parse(JSON.stringify(shop));
-      expect(data).toEqual({
+      const params = JSON.parse(JSON.stringify(shop));
+      expect(params).toEqual({
         id: shop.id,
         name: 'Jack',
         user: {
