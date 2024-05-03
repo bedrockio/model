@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 
-import { getIncludes } from '../src/include';
+import { getIncludes, getDocumentIncludes } from '../src/include';
 import { createSchema } from '../src/schema';
 import { createTestModel, getTestModelName } from '../src/testing';
 
@@ -645,6 +645,157 @@ describe('getIncludes', () => {
           select: [],
         },
       ],
+    });
+  });
+});
+
+describe('getDocumentIncludes', () => {
+  describe('basic', () => {
+    it('should not populate fields that have already been populated', async () => {
+      const user = await User.create({
+        name: 'Bob',
+      });
+      const shop = await Shop.create({
+        name: 'foo',
+        user,
+      });
+
+      const data = getDocumentIncludes(shop, 'user');
+      expect(data).toEqual({
+        select: [],
+        populate: [],
+      });
+    });
+
+    it('should populate fields that have not been populated', async () => {
+      const user = await User.create({
+        name: 'Bob',
+      });
+      const shop = await Shop.create({
+        name: 'foo',
+        user: user.id,
+      });
+
+      const data = getDocumentIncludes(shop, 'user');
+      expect(data).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'user',
+            populate: [],
+            select: [],
+          },
+        ],
+      });
+    });
+
+    it('should have correct populates for array population', async () => {
+      let shop;
+
+      const user1 = await User.create({
+        name: 'Bob',
+      });
+      const user2 = await User.create({
+        name: 'Jake',
+      });
+
+      shop = await Shop.create({
+        name: 'foo',
+        customers: [user1.id, user2.id],
+      });
+
+      expect(getDocumentIncludes(shop, 'customers')).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'customers',
+            populate: [],
+            select: [],
+          },
+        ],
+      });
+
+      shop = await Shop.create({
+        name: 'foo',
+        customers: [user1, user2.id],
+      });
+
+      expect(getDocumentIncludes(shop, 'customers')).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'customers',
+            populate: [],
+            select: [],
+          },
+        ],
+      });
+
+      shop = await Shop.create({
+        name: 'foo',
+        customers: [user1, user2],
+      });
+
+      expect(getDocumentIncludes(shop, 'customers')).toEqual({
+        select: [],
+        populate: [],
+      });
+    });
+  });
+
+  describe('complex', () => {
+    it('should be correct for populated inner', async () => {
+      const user = await User.create({
+        name: 'Bob',
+      });
+
+      const shop = await Shop.create({
+        name: 'foo',
+        user,
+      });
+
+      const product = await Product.create({
+        name: 'Product',
+        shop,
+      });
+
+      expect(getDocumentIncludes(product, 'shop.user')).toEqual({
+        select: [],
+        populate: [],
+      });
+    });
+
+    it('should be correct for non-populated inner', async () => {
+      const user = await User.create({
+        name: 'Bob',
+      });
+
+      const shop = await Shop.create({
+        name: 'foo',
+        user: user.id,
+      });
+
+      const product = await Product.create({
+        name: 'Product',
+        shop,
+      });
+
+      expect(getDocumentIncludes(product, 'shop.user')).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'shop',
+            populate: [
+              {
+                path: 'user',
+                populate: [],
+                select: [],
+              },
+            ],
+            select: [],
+          },
+        ],
+      });
     });
   });
 });

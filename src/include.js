@@ -139,12 +139,28 @@ export function getIncludes(modelName, arg) {
   return nodeToPopulates(node);
 }
 
-function getQueryIncludes(query, arg) {
-  return getIncludes(query.model.modelName, arg);
+// Exported for testing.
+export function getDocumentIncludes(doc, arg) {
+  const includes = getIncludes(doc.constructor.modelName, arg);
+  includes.populate = includes.populate.filter((p) => {
+    return !isDocumentPopulated(doc, p);
+  });
+  return includes;
 }
 
-function getDocumentIncludes(doc, arg) {
-  return getIncludes(doc.constructor.modelName, arg);
+function isDocumentPopulated(doc, params) {
+  if (doc.populated(params.path)) {
+    const sub = doc.get(params.path);
+    return params.populate.every((p) => {
+      return isDocumentPopulated(sub, p);
+    });
+  } else {
+    return false;
+  }
+}
+
+function getQueryIncludes(query, arg) {
+  return getIncludes(query.model.modelName, arg);
 }
 
 // Note that:
