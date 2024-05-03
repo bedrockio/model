@@ -1,4 +1,5 @@
 import { ImplementationError } from './errors';
+import { isEqual } from './utils';
 import warn from './warn';
 
 /**
@@ -20,10 +21,10 @@ export function hasAccess(allowed = 'all', options = {}) {
         return document.id == authUser.id;
       } else if (token === 'user') {
         assertOptions(token, options);
-        return document.user?.id == authUser.id;
+        return isEqual(document.user, authUser);
       } else if (token === 'owner') {
         assertOptions(token, options);
-        return document.owner?.id == authUser.id;
+        return isEqual(document.owner, authUser);
       } else {
         return scopes?.includes(token);
       }

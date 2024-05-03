@@ -1442,6 +1442,67 @@ describe('getUpdateValidation', () => {
         'You do not have permissions to update this document.'
       );
     });
+
+    it('should validate document based access with id', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      const Shop = createTestModel(
+        createSchema({
+          attributes: {
+            name: 'String',
+            owner: {
+              type: 'ObjectId',
+              ref: User.modelName,
+            },
+          },
+          access: {
+            update: ['owner', 'admin'],
+          },
+        })
+      );
+
+      const schema = Shop.getUpdateValidation();
+
+      const user1 = await User.create({
+        name: 'Barry',
+      });
+
+      const user2 = await User.create({
+        name: 'Larry',
+      });
+
+      const shop = await Shop.create({
+        name: 'My Shop',
+        owner: user1.id,
+      });
+
+      await assertPass(
+        schema,
+        {
+          name: 'My New Shop',
+        },
+        {
+          name: 'My New Shop',
+        },
+        {
+          document: shop,
+          authUser: user1,
+        }
+      );
+
+      await assertFail(
+        schema,
+        {
+          name: 'My New Shop',
+        },
+        {
+          document: shop,
+          authUser: user2,
+        },
+        'You do not have permissions to update this document.'
+      );
+    });
   });
 
   describe('soft unique', () => {
