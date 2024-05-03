@@ -472,7 +472,7 @@ In the above example `getCreateValidation` returns a
 `validateBody` middleware. The `password` field is an additional field that is
 appended to the create schema.
 
-There are 3 main methods to generate schemas:
+There are 4 main methods to generate schemas:
 
 - `getCreateValidation`: Validates all fields while disallowing reserved fields
   like `id`, `createdAt`, and `updatedAt`.
@@ -488,6 +488,7 @@ There are 3 main methods to generate schemas:
     allowed.
   - Array fields are "unwound". This means that for example given an array field
     `categories`, input may be either a string or an array of strings.
+- `getDeleteValidation`: Only used for access validation (more below).
 
 #### Named Validations
 
@@ -933,14 +934,19 @@ await shop.include('owner', {
 
 This package applies two forms of access control:
 
-#### Read Access
+- [Field Access](#field-access)
+- [Document Access](#document-access)
+
+#### Field Access:
+
+##### Read Access
 
 Read access influences how documents are serialized. Fields that have been
 denied access will be stripped out. Additionally it will influence the
 validation schema for `getSearchValidation`. Fields that have been denied access
 are not allowed to be searched on and will throw an error.
 
-#### Write Access
+##### Write Access
 
 Write access influences validation in `getCreateValidation` and
 `getUpdateValidation`. Fields that have been denied access will throw an error
@@ -948,7 +954,7 @@ unless they are identical to what is already set on the document. Note that in
 the case of `getCreateValidation` no document has been created yet so a denied
 field will always result in an error if passed.
 
-#### Defining Access
+##### Defining Field Access
 
 Access is defined in schemas with the `readAccess` and `writeAccess` options:
 
@@ -1122,7 +1128,7 @@ owner, as this example illustrates:
 }
 ```
 
-#### Notes on Read Access
+##### Notes on Read Access
 
 Note that all forms of read access require that `.toObject` is called on the
 document with special parameters, however this method is called on internal
@@ -1131,10 +1137,53 @@ this reason it will never fail even if it cannot perform the correct access
 checks. Instead any fields with `readAccess` defined on them will be stripped
 out.
 
-#### Notes on Write Access
+##### Notes on Write Access
 
 Note that `self` is generally only meaningful on a User model as it will always
 check the document is the same as `authUser`.
+
+#### Document Access
+
+In addition to the fine grained control of accessing fields, documents
+themselves may also have access control. This can be defined in the `access` key
+of the model definition:
+
+```jsonc
+// user.json
+{
+  "attributes": {
+    // ...
+  },
+  "access": {
+    // A user may update themselves or an admin.
+    "update": ["self", "admin"],
+    // Only an admin may delete a user.
+    "delete": ["admin"]
+  }
+}
+```
+
+The same options can be used as
+[document based access on fields](#document-based-access), so this could be
+`owner`, etc:
+
+```jsonc
+// shop.json
+{
+  "attributes": {
+    "owner": {
+      "type": "ObjectId",
+      "ref": "User"
+    }
+  },
+  "access": {
+    // An owner may update their own shop.
+    "update": ["owner", "admin"],
+    // Only an admin may delete a shop.
+    "delete": ["admin"]
+  }
+}
+```
 
 ### Delete Hooks
 

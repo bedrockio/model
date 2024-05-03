@@ -7,6 +7,7 @@ import {
   addValidators,
 } from '../src/validation';
 import { createTestModel } from '../src/testing';
+import { createSchema } from '../src/schema';
 
 async function assertPass(schema, obj, expected, options) {
   try {
@@ -243,16 +244,29 @@ describe('getCreateValidation', () => {
         },
       });
       const schema = User.getCreateValidation();
+
       await assertPass(schema, {
         name: 'Barry',
       });
-      await assertFail(schema, {
-        name: 'Barry',
-        verified: true,
-      });
-      await assertFail(schema, {
-        verified: false,
-      });
+
+      await assertFail(
+        schema,
+        {
+          name: 'Barry',
+          verified: true,
+        },
+        {},
+        'Unknown field "verified".'
+      );
+
+      await assertFail(
+        schema,
+        {
+          verified: false,
+        },
+        {},
+        'Unknown field "verified".'
+      );
     });
 
     it('should deny access to an array field', async () => {
@@ -338,13 +352,11 @@ describe('getCreateValidation', () => {
         },
       });
       const schema = User.getCreateValidation();
+
       await assertPass(schema, {
         name: 'Barry',
       });
-      await assertFail(schema, {
-        name: 'Barry',
-        password: 'fake password',
-      });
+
       await assertPassOptions(
         schema,
         {
@@ -352,6 +364,16 @@ describe('getCreateValidation', () => {
           password: 'fake password',
         },
         { scope: 'admin' }
+      );
+
+      await assertFail(
+        schema,
+        {
+          name: 'Barry',
+          password: 'fake password',
+        },
+        {},
+        'Field "password" requires write permissions.'
       );
     });
 
@@ -1323,6 +1345,103 @@ describe('getUpdateValidation', () => {
         )
       ).rejects.toThrow();
     });
+
+    it('should validate document based access', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      const Shop = createTestModel(
+        createSchema({
+          attributes: {
+            name: 'String',
+            owner: {
+              type: 'ObjectId',
+              ref: User.modelName,
+            },
+          },
+          access: {
+            update: ['owner', 'admin'],
+          },
+        })
+      );
+
+      const schema = Shop.getUpdateValidation();
+
+      const user1 = await User.create({
+        name: 'Barry',
+      });
+
+      const user2 = await User.create({
+        name: 'Larry',
+      });
+
+      const admin = await User.create({
+        name: 'Admin',
+      });
+
+      const viewer = await User.create({
+        name: 'Viewer',
+      });
+
+      const shop = await Shop.create({
+        name: 'My Shop',
+        owner: user1,
+      });
+
+      await assertPass(
+        schema,
+        {
+          name: 'My New Shop',
+        },
+        {
+          name: 'My New Shop',
+        },
+        {
+          document: shop,
+          authUser: user1,
+        }
+      );
+
+      await assertPass(
+        schema,
+        {
+          name: 'My New Shop',
+        },
+        {
+          name: 'My New Shop',
+        },
+        {
+          document: shop,
+          authUser: admin,
+          scopes: ['admin'],
+        }
+      );
+
+      await assertFail(
+        schema,
+        {
+          name: 'My New Shop',
+        },
+        {
+          document: shop,
+          authUser: user2,
+        },
+        'You do not have permissions to update this document.'
+      );
+
+      await assertFail(
+        schema,
+        {
+          name: 'My New Shop',
+        },
+        {
+          document: shop,
+          authUser: viewer,
+          scopes: ['viewer'],
+        },
+        'You do not have permissions to update this document.'
+      );
+    });
   });
 
   describe('soft unique', () => {
@@ -1420,6 +1539,217 @@ describe('getUpdateValidation', () => {
         },
       });
     });
+  });
+});
+
+describe('getDeleteValidation', () => {
+  it('should validate document based access', async () => {
+    const User = createTestModel({
+      name: {
+        type: 'String',
+        required: true,
+      },
+    });
+    const Shop = createTestModel(
+      createSchema({
+        attributes: {
+          name: {
+            type: 'String',
+            required: true,
+          },
+          owner: {
+            type: 'ObjectId',
+            ref: User.modelName,
+            required: true,
+          },
+        },
+        access: {
+          delete: ['owner', 'admin'],
+        },
+      })
+    );
+
+    const schema = Shop.getDeleteValidation();
+
+    const user1 = await User.create({
+      name: 'Barry',
+    });
+
+    const user2 = await User.create({
+      name: 'Larry',
+    });
+
+    const admin = await User.create({
+      name: 'Admin',
+    });
+
+    const viewer = await User.create({
+      name: 'Viewer',
+    });
+
+    const shop = await Shop.create({
+      name: 'My Shop',
+      owner: user1,
+    });
+
+    await assertPass(
+      schema,
+      {
+        name: 'My New Shop',
+      },
+      {
+        name: 'My New Shop',
+      },
+      {
+        document: shop,
+        authUser: user1,
+      }
+    );
+
+    await assertPass(
+      schema,
+      {
+        name: 'My New Shop',
+      },
+      {
+        name: 'My New Shop',
+      },
+      {
+        document: shop,
+        authUser: admin,
+        scopes: ['admin'],
+      }
+    );
+
+    await assertFail(
+      schema,
+      {
+        name: 'My New Shop',
+      },
+      {
+        document: shop,
+        authUser: user2,
+      },
+      'You do not have permissions to delete this document.'
+    );
+
+    await assertFail(
+      schema,
+      {
+        name: 'My New Shop',
+      },
+      {
+        document: shop,
+        authUser: viewer,
+        scopes: ['viewer'],
+      },
+      'You do not have permissions to delete this document.'
+    );
+  });
+
+  it('should not validate access if not defined', async () => {
+    const User = createTestModel({
+      name: {
+        type: 'String',
+        required: true,
+      },
+    });
+    const Shop = createTestModel(
+      createSchema({
+        attributes: {
+          name: {
+            type: 'String',
+            required: true,
+          },
+          owner: {
+            type: 'ObjectId',
+            ref: User.modelName,
+            required: true,
+          },
+        },
+      })
+    );
+
+    const schema = Shop.getDeleteValidation();
+
+    const user1 = await User.create({
+      name: 'Barry',
+    });
+
+    const user2 = await User.create({
+      name: 'Larry',
+    });
+
+    const admin = await User.create({
+      name: 'Admin',
+    });
+
+    const viewer = await User.create({
+      name: 'Viewer',
+    });
+
+    const shop = await Shop.create({
+      name: 'My Shop',
+      owner: user1,
+    });
+
+    await assertPass(
+      schema,
+      {
+        name: 'My New Shop',
+      },
+      {
+        name: 'My New Shop',
+      },
+      {
+        document: shop,
+        authUser: user1,
+      }
+    );
+
+    await assertPass(
+      schema,
+      {
+        name: 'My New Shop',
+      },
+      {
+        name: 'My New Shop',
+      },
+      {
+        document: shop,
+        authUser: admin,
+        scopes: ['admin'],
+      }
+    );
+
+    await assertPass(
+      schema,
+      {
+        name: 'My New Shop',
+      },
+      {
+        name: 'My New Shop',
+      },
+      {
+        document: shop,
+        authUser: user2,
+      }
+    );
+
+    await assertPass(
+      schema,
+      {
+        name: 'My New Shop',
+      },
+      {
+        name: 'My New Shop',
+      },
+      {
+        document: shop,
+        authUser: viewer,
+        scopes: ['viewer'],
+      }
+    );
   });
 });
 

@@ -125,6 +125,7 @@ export function applyValidation(schema, definition) {
         stripTimestamps: true,
         allowExpandedRefs: true,
         requireWriteAccess: true,
+        updateAccess: definition.access?.update,
         ...(hasUnique && {
           assertUniqueOptions: {
             schema,
@@ -134,6 +135,14 @@ export function applyValidation(schema, definition) {
       });
     }
   );
+
+  schema.static('getDeleteValidation', function getDeleteValidation() {
+    const allowed = definition.access?.delete || 'all';
+    return validateAccess('delete', yd, allowed, {
+      model: this,
+      message: 'You do not have permissions to delete this document.',
+    });
+  });
 
   schema.static(
     'getSearchValidation',
@@ -192,7 +201,8 @@ function getMongooseFields(schema, options) {
 
 // Exported for testing
 export function getValidationSchema(attributes, options = {}) {
-  const { appendSchema, assertUniqueOptions, allowInclude } = options;
+  const { appendSchema, assertUniqueOptions, allowInclude, updateAccess } =
+    options;
   let schema = getObjectSchema(attributes, options);
   if (assertUniqueOptions) {
     schema = schema.custom(async (obj, { root }) => {
@@ -208,6 +218,14 @@ export function getValidationSchema(attributes, options = {}) {
   if (allowInclude) {
     schema = schema.append(INCLUDE_FIELD_SCHEMA);
   }
+
+  if (updateAccess) {
+    return validateAccess('update', schema, updateAccess, {
+      ...options,
+      message: 'You do not have permissions to update this document.',
+    });
+  }
+
   return schema;
 }
 
@@ -321,10 +339,10 @@ function getSchemaForTypedef(typedef, options = {}) {
     schema = getSearchSchema(schema, type);
   }
   if (typedef.readAccess && options.requireReadAccess) {
-    schema = validateReadAccess(schema, typedef.readAccess, options);
+    schema = validateAccess('read', schema, typedef.readAccess, options);
   }
   if (typedef.writeAccess && options.requireWriteAccess) {
-    schema = validateWriteAccess(schema, typedef.writeAccess, options);
+    schema = validateAccess('write', schema, typedef.writeAccess, options);
   }
   return schema;
 }
@@ -449,15 +467,8 @@ function isExcludedField(field, options) {
   return false;
 }
 
-function validateReadAccess(schema, allowed, options) {
-  return validateAccess('read', schema, allowed, options);
-}
-
-function validateWriteAccess(schema, allowed, options) {
-  return validateAccess('write', schema, allowed, options);
-}
-
 function validateAccess(type, schema, allowed, options) {
+  let { message } = options;
   const { modelName } = options.model;
   return schema.custom((val, options) => {
     const document = options[lowerFirst(modelName)] || options['document'];
@@ -476,9 +487,9 @@ function validateAccess(type, schema, allowed, options) {
           // against, so continue on to throw a normal permissions error
           // here instead of raising a problem with the implementation.
           isAllowed = false;
-        } else if (type === 'write') {
+        } else {
           throw new Error(
-            `Write access "${error.name}" requires passing { document, authUser } to the validator.`
+            `Access validation "${error.name}" requires passing { document, authUser } to the validator.`
           );
         }
       } else {
@@ -487,10 +498,17 @@ function validateAccess(type, schema, allowed, options) {
     }
 
     if (!isAllowed) {
-      const currentValue = get(document, options.path);
-      if (val !== currentValue) {
-        throw new PermissionsError(`requires ${type} permissions.`);
+      const { path } = options;
+      if (path) {
+        if (get(document, path) === val) {
+          // If there is a path being accessed and the current
+          // value is the same as what is being set then do not
+          // throw the error.
+          return;
+        }
+        message ||= `Field "${path.join('.')}" requires ${type} permissions.`;
       }
+      throw new PermissionsError(message);
     }
   });
 }
