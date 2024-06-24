@@ -1,4 +1,5 @@
 import { isPlainObject } from 'lodash';
+import mongoose from 'mongoose';
 
 import { isReferenceField, getField } from './utils';
 
@@ -8,7 +9,6 @@ export function applyAssign(schema) {
     for (let [path, value] of Object.entries(flattenObject(fields))) {
       if (value === null) {
         this.set(path, undefined);
-        this.markModified(path);
       } else {
         this.set(path, value);
       }
@@ -23,6 +23,8 @@ function unsetReferenceFields(fields, schema = {}) {
   for (let [key, value] of Object.entries(fields)) {
     if (!value && isReferenceField(schema, key)) {
       fields[key] = undefined;
+    } else if (value instanceof mongoose.Document) {
+      fields[key] = value;
     } else if (value && typeof value === 'object') {
       unsetReferenceFields(value, getField(schema, key));
     }

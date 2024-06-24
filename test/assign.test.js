@@ -196,12 +196,28 @@ describe('assign', () => {
         age: null,
       },
     });
+    expect(user.isModified('profile.age')).toBe(true);
     await user.save();
 
     user = await User.findById(user.id);
 
     expect(user.profile.name).toBe('Bob');
     expect('age' in user.profile).toBe(false);
+  });
+
+  it('should delete mixed content fields with undefined', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+
+    let user = await User.create({
+      name: 'Frank',
+    });
+
+    user.assign({
+      name: undefined,
+    });
+    expect(user.isModified('name')).toBe(true);
   });
 
   it('should allow 0 to be set on number fields', async () => {
@@ -221,5 +237,27 @@ describe('assign', () => {
     user = await User.findById(user.id);
 
     expect(user.age).toBe(0);
+  });
+
+  it('should not fail on a mongoose document', async () => {
+    const User = createTestModel({
+      name: 'String',
+      tags: ['String'],
+    });
+    const Shop = createTestModel({
+      owner: {
+        type: 'ObjectId',
+        ref: User.modelName,
+      },
+    });
+    const user = await User.create({
+      name: 'Frank',
+      tags: ['foo'],
+    });
+    const shop = new Shop();
+    shop.assign({
+      owner: user,
+    });
+    expect(shop.owner.name).toBe('Frank');
   });
 });
