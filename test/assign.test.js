@@ -69,6 +69,31 @@ describe('assign', () => {
     });
   });
 
+  it('should be able to set reference fields', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const Shop = createTestModel({
+      user: {
+        type: 'ObjectId',
+        ref: User.modelName,
+      },
+    });
+
+    const user = await User.create({
+      name: 'Frank',
+    });
+    let shop = new Shop();
+
+    shop.assign({
+      user,
+    });
+    await shop.save();
+
+    shop = await Shop.findById(shop.id);
+    expect(shop.user.toString()).toEqual(user.id);
+  });
+
   it('should still allow assignment of empty arrays for multi-reference fields', async () => {
     const User = createTestModel();
     const Shop = createTestModel({
