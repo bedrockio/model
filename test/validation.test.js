@@ -865,6 +865,20 @@ describe('getUpdateValidation', () => {
         shop: '',
       });
     });
+
+    it('should not allow null or empty on array fields', async () => {
+      const User = createTestModel({
+        tags: ['String'],
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertFail(schema, {
+        tags: null,
+      });
+      await assertFail(schema, {
+        tags: '',
+      });
+    });
   });
 
   it('should not enforce a schema on unstructured objects', async () => {

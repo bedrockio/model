@@ -297,12 +297,15 @@ function getSchemaForTypedef(typedef, options = {}) {
     schema = getObjectSchema(type, options);
   } else {
     schema = getSchemaForType(type, options);
+
+    // Unsetting only allowed for primitive types.
+    if (allowUnset(typedef, options)) {
+      schema = yd.allow(null, '', schema);
+    }
   }
 
   if (isRequired(typedef, options)) {
     schema = schema.required();
-  } else if (allowUnset(typedef, options)) {
-    schema = yd.allow(null, '', schema);
   }
 
   if (typedef.default && options.allowDefaultTags) {
