@@ -749,6 +749,65 @@ describe('keyword search', () => {
       })
     ).resolves.not.toThrow();
   });
+
+  it('should not override incoming $or query', async () => {
+    const schema = createSchema({
+      attributes: {
+        name: 'String',
+        email: 'String',
+        age: 'Number',
+      },
+      search: {
+        fields: ['name', 'email'],
+      },
+    });
+    const User = createTestModel(schema);
+
+    await User.create({
+      name: 'Frank',
+      email: 'frank@gmail.com',
+      age: 15,
+    });
+
+    await User.create({
+      name: 'William',
+      email: 'billy-2@gmail.com',
+      age: 15,
+    });
+
+    await User.create({
+      name: 'Billy',
+      email: 'billy@gmail.com',
+      age: 20,
+    });
+
+    const { data, meta } = await User.search({
+      keyword: 'billy',
+      $or: [
+        {
+          age: 15,
+        },
+        {
+          age: 20,
+        },
+      ],
+      sort: {
+        field: 'name',
+        order: 'asc',
+      },
+    });
+    expect(data).toMatchObject([
+      {
+        name: 'Billy',
+        age: 20,
+      },
+      {
+        name: 'William',
+        age: 15,
+      },
+    ]);
+    expect(meta.total).toBe(2);
+  });
 });
 
 describe('cached fields', () => {

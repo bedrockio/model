@@ -15,7 +15,7 @@ import { isDateField, isNumberField, getField } from './utils';
 import { SEARCH_DEFAULTS } from './const';
 import { OBJECT_ID_SCHEMA } from './validation';
 import { debug } from './env';
-import { wrapQuery } from './query';
+import { mergeQuery, wrapQuery } from './query';
 
 import warn from './warn';
 
@@ -26,29 +26,30 @@ export function applySearch(schema, definition) {
   validateDefinition(definition);
   applySearchCache(schema, definition);
 
+  const { query: searchQuery, fields: searchFields } = definition.search || {};
+
   schema.static('search', function search(body = {}) {
     const options = {
       ...SEARCH_DEFAULTS,
-      ...definition.search?.query,
+      ...searchQuery,
       ...body,
     };
 
     const { ids, keyword, skip = 0, limit, sort, ...rest } = options;
 
-    const query = {};
+    let query = normalizeQuery(rest, schema.obj);
 
     if (ids?.length) {
-      query._id = { $in: ids };
+      query = {
+        ...query,
+        _id: { $in: ids },
+      };
     }
 
     if (keyword) {
-      Object.assign(
-        query,
-        buildKeywordQuery(schema, keyword, definition.search?.fields)
-      );
+      const keywordQuery = buildKeywordQuery(schema, keyword, searchFields);
+      query = mergeQuery(query, keywordQuery);
     }
-
-    Object.assign(query, normalizeQuery(rest, schema.obj));
 
     if (debug) {
       logger.info(

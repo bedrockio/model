@@ -13,3 +13,16 @@ export function wrapQuery(query, fn) {
   };
   return query;
 }
+
+export function mergeQuery(target, source) {
+  const result = Object.assign({}, target, source);
+  if (target.$or && source.$or) {
+    const { $or } = target;
+    result.$or = source.$or.map((conditions) => {
+      return {
+        $and: [conditions, { $or }],
+      };
+    });
+  }
+  return result;
+}
