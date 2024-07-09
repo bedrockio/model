@@ -234,6 +234,32 @@ describe('getCreateValidation', () => {
     ).resolves.not.toThrow();
   });
 
+  it('should not fail on an empty string', async () => {
+    const User = createTestModel({
+      name: 'String',
+      nested: {
+        field: 'String',
+      },
+      array: [
+        {
+          field: 'String',
+        },
+      ],
+    });
+    const schema = User.getCreateValidation();
+    await assertPass(schema, {
+      name: '',
+      nested: {
+        field: '',
+      },
+      array: [
+        {
+          field: '',
+        },
+      ],
+    });
+  });
+
   describe('write access', () => {
     it('should deny access', async () => {
       const User = createTestModel({
@@ -778,6 +804,29 @@ describe('getUpdateValidation', () => {
       });
       await assertPass(schema, {
         count: '',
+      });
+    });
+
+    it('should allow null or empty on nested primitive fields', async () => {
+      const User = createTestModel({
+        nested: {
+          name: 'String',
+          count: 'Number',
+        },
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertPass(schema, {
+        nested: {
+          name: null,
+          count: null,
+        },
+      });
+      await assertPass(schema, {
+        nested: {
+          name: '',
+          count: '',
+        },
       });
     });
 

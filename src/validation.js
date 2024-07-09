@@ -95,6 +95,7 @@ export function applyValidation(schema, definition) {
         model: this,
         appendSchema,
         allowInclude,
+        allowEmpty: true,
         stripDeleted: true,
         stripTimestamps: true,
         allowDefaultTags: true,
@@ -301,6 +302,10 @@ function getSchemaForTypedef(typedef, options = {}) {
     // Unsetting only allowed for primitive types.
     if (allowUnset(typedef, options)) {
       schema = yd.allow(null, '', schema);
+    } else if (allowEmpty(typedef, options)) {
+      schema = schema.options({
+        allowEmpty: true,
+      });
     }
   }
 
@@ -457,6 +462,10 @@ function isRequired(typedef, options) {
 
 function allowUnset(typedef, options) {
   return options.allowUnset && !typedef.required;
+}
+
+function allowEmpty(typedef, options) {
+  return options.allowEmpty && typedef.type === 'String';
 }
 
 function isExcludedField(field, options) {
