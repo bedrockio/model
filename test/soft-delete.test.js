@@ -230,7 +230,7 @@ describe('soft delete', () => {
 
       user = await User.findByIdDeleted(user.id);
       await expect(user.restore()).rejects.toThrow(
-        `email: Input failed validation`
+        'Validator failed for path `email`'
       );
     });
   });
