@@ -95,313 +95,655 @@ afterEach(async () => {
 });
 
 describe('getParams', () => {
-  it('should have select for single field', async () => {
-    const params = getParams(Shop.modelName, 'name');
-    expect(params).toEqual({
-      select: ['name'],
-      populate: [],
+  describe('inclusive', () => {
+    it('should do nothing on a top-level field', async () => {
+      const params = getParams(Shop.modelName, 'name');
+      expect(params).toEqual({
+        select: [],
+        populate: [],
+      });
+    });
+
+    it('should do nothing on multiple top-level fields', async () => {
+      const params = getParams(Shop.modelName, ['name', 'email']);
+      expect(params).toEqual({
+        select: [],
+        populate: [],
+      });
+    });
+
+    it('should populate single foreign field', async () => {
+      const params = getParams(Shop.modelName, 'user');
+      expect(params).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'user',
+            select: [],
+            populate: [],
+          },
+        ],
+      });
+    });
+
+    it('should populate multiple foreign fields', async () => {
+      const params = getParams(Shop.modelName, ['user', 'deep.user']);
+      expect(params).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'user',
+            select: [],
+            populate: [],
+          },
+          {
+            path: 'deep.user',
+            select: [],
+            populate: [],
+          },
+        ],
+      });
+    });
+
+    it('should not select on populated field', async () => {
+      const params = getParams(Shop.modelName, 'user.name');
+      expect(params).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'user',
+            select: [],
+            populate: [],
+          },
+        ],
+      });
+    });
+
+    it('should not select on a nested populated field', async () => {
+      const params = getParams(Shop.modelName, 'user.address.line1');
+      expect(params).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'user',
+            select: [],
+            populate: [],
+          },
+        ],
+      });
+    });
+
+    it('should not select within double nested populated field', async () => {
+      const params = getParams(Shop.modelName, 'deep.user.address.line1');
+      expect(params).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'deep.user',
+            select: [],
+            populate: [],
+          },
+        ],
+      });
+    });
+
+    it('should populate an array field', async () => {
+      const params = getParams(Shop.modelName, 'customers');
+      expect(params).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'customers',
+            select: [],
+            populate: [],
+          },
+        ],
+      });
+    });
+
+    it('should populate a foreign array field', async () => {
+      const params = getParams(Product.modelName, 'shop.customers');
+      expect(params).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'shop',
+            select: [],
+            populate: [
+              {
+                path: 'customers',
+                select: [],
+                populate: [],
+              },
+            ],
+          },
+        ],
+      });
+    });
+
+    it('should not perform select on a deep populated foreign array field', async () => {
+      const params = getParams(
+        Product.modelName,
+        'shop.customers.address.line1'
+      );
+      expect(params).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'shop',
+            select: [],
+            populate: [
+              {
+                path: 'customers',
+                select: [],
+                populate: [],
+              },
+            ],
+          },
+        ],
+      });
+    });
+
+    it('should populate recursive field', async () => {
+      const params = getParams(User.modelName, 'self.self.self');
+      expect(params).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'self',
+            select: [],
+            populate: [
+              {
+                path: 'self',
+                select: [],
+                populate: [
+                  {
+                    path: 'self',
+                    select: [],
+                    populate: [],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+    });
+
+    it('should populate a virtual', async () => {
+      const params = getParams(Product.modelName, 'comments');
+      expect(params).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'comments',
+            select: [],
+            populate: [],
+          },
+        ],
+      });
+    });
+
+    it('should populate into virtual nested fields', async () => {
+      const params = getParams(Product.modelName, 'comments.product');
+      expect(params).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'comments',
+            select: [],
+            populate: [
+              {
+                path: 'product',
+                select: [],
+                populate: [],
+              },
+            ],
+          },
+        ],
+      });
+    });
+
+    it('should have populate for nested ref field on array', async () => {
+      const params = getParams(Shop.modelName, 'inventory.product');
+      expect(params).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'inventory.product',
+            populate: [],
+            select: [],
+          },
+        ],
+      });
     });
   });
 
-  it('should have select for multiple fields', async () => {
-    const params = getParams(Shop.modelName, ['name', 'email']);
-    expect(params).toEqual({
-      select: ['name', 'email'],
-      populate: [],
+  describe('exclusive', () => {
+    it('should select a top-level field', async () => {
+      const params = getParams(Shop.modelName, '^name');
+      expect(params).toEqual({
+        select: ['name'],
+        populate: [],
+      });
     });
-  });
 
-  it('should have populate for single foreign field', async () => {
-    const params = getParams(Shop.modelName, 'user');
-    expect(params).toEqual({
-      select: [],
-      populate: [
-        {
-          path: 'user',
-          select: [],
-          populate: [],
-        },
-      ],
+    it('should select multiple fields', async () => {
+      const params = getParams(Shop.modelName, ['^name', '^email']);
+      expect(params).toEqual({
+        select: ['name', 'email'],
+        populate: [],
+      });
     });
-  });
 
-  it('should have populate for multiple foreign fields', async () => {
-    const params = getParams(Shop.modelName, ['user', 'deep.user']);
-    expect(params).toEqual({
-      select: [],
-      populate: [
-        {
-          path: 'user',
-          select: [],
-          populate: [],
-        },
-        {
-          path: 'deep.user',
-          select: [],
-          populate: [],
-        },
-      ],
+    it('should select single foreign field', async () => {
+      const params = getParams(Shop.modelName, '^user');
+      expect(params).toEqual({
+        select: ['user'],
+        populate: [
+          {
+            path: 'user',
+            select: [],
+            populate: [],
+          },
+        ],
+      });
     });
-  });
 
-  it('should be correct for combining selection and population', async () => {
-    const params = getParams(Shop.modelName, [
-      'name',
-      'email',
-      'user',
-      'deep.user',
-    ]);
-    expect(params).toEqual({
-      select: ['name', 'email'],
-      populate: [
-        {
-          path: 'user',
-          select: [],
-          populate: [],
-        },
-        {
-          path: 'deep.user',
-          select: [],
-          populate: [],
-        },
-      ],
+    it('should select multiple foreign fields', async () => {
+      const params = getParams(Shop.modelName, ['^user', '^deep.user']);
+      expect(params).toEqual({
+        select: ['user', 'deep.user'],
+        populate: [
+          {
+            path: 'user',
+            select: [],
+            populate: [],
+          },
+          {
+            path: 'deep.user',
+            select: [],
+            populate: [],
+          },
+        ],
+      });
     });
-  });
 
-  it('should select a populated field', async () => {
-    const params = getParams(Shop.modelName, 'user.name');
-    expect(params).toEqual({
-      select: [],
-      populate: [
-        {
-          path: 'user',
-          select: ['name'],
-          populate: [],
-        },
-      ],
+    it('should combine selection and inclusion', async () => {
+      const params = getParams(Shop.modelName, [
+        '^name',
+        '^email',
+        'user',
+        'deep.user',
+      ]);
+      expect(params).toEqual({
+        select: ['name', 'email'],
+        populate: [
+          {
+            path: 'user',
+            select: [],
+            populate: [],
+          },
+          {
+            path: 'deep.user',
+            select: [],
+            populate: [],
+          },
+        ],
+      });
     });
-  });
 
-  it('should select a nested populated field', async () => {
-    const params = getParams(Shop.modelName, 'user.address.line1');
-    expect(params).toEqual({
-      select: [],
-      populate: [
-        {
-          path: 'user',
-          select: ['address.line1'],
-          populate: [],
-        },
-      ],
+    it('should select within populated field', async () => {
+      const params = getParams(Shop.modelName, '^user.name');
+      expect(params).toEqual({
+        select: ['user'],
+        populate: [
+          {
+            path: 'user',
+            select: ['name'],
+            populate: [],
+          },
+        ],
+      });
     });
-  });
 
-  it('should select double nested populated field', async () => {
-    const params = getParams(Shop.modelName, 'deep.user.address.line1');
-    expect(params).toEqual({
-      select: [],
-      populate: [
-        {
-          path: 'deep.user',
-          select: ['address.line1'],
-          populate: [],
-        },
-      ],
+    it('should select within a nested populated field', async () => {
+      const params = getParams(Shop.modelName, '^user.address.line1');
+      expect(params).toEqual({
+        select: ['user'],
+        populate: [
+          {
+            path: 'user',
+            select: ['address.line1'],
+            populate: [],
+          },
+        ],
+      });
     });
-  });
 
-  it('should not override previously selected fields', async () => {
-    const params = getParams(Shop.modelName, ['user.name', 'user.email']);
-    expect(params).toEqual({
-      select: [],
-      populate: [
-        {
-          path: 'user',
-          select: ['name', 'email'],
-          populate: [],
-        },
-      ],
+    it('should select within double nested populated field', async () => {
+      const params = getParams(Shop.modelName, '^deep.user.address.line1');
+      expect(params).toEqual({
+        select: ['deep.user'],
+        populate: [
+          {
+            path: 'deep.user',
+            select: ['address.line1'],
+            populate: [],
+          },
+        ],
+      });
     });
-  });
 
-  it('should override root with select', async () => {
-    const params = getParams(Shop.modelName, ['user', 'user.name']);
-    expect(params).toEqual({
-      select: [],
-      populate: [
-        {
-          path: 'user',
-          select: ['name'],
-          populate: [],
-        },
-      ],
+    it('should exclusively select multiple fields', async () => {
+      const params = getParams(Shop.modelName, ['^user.name', '^user.email']);
+      expect(params).toEqual({
+        select: ['user'],
+        populate: [
+          {
+            path: 'user',
+            select: ['name', 'email'],
+            populate: [],
+          },
+        ],
+      });
     });
-  });
 
-  it('should override root with select reversed', async () => {
-    const params = getParams(Shop.modelName, ['user.name', 'user']);
-    expect(params).toEqual({
-      select: [],
-      populate: [
-        {
-          path: 'user',
-          select: ['name'],
-          populate: [],
-        },
-      ],
+    it('should not override root include with select', async () => {
+      const params = getParams(Shop.modelName, ['user', '^user.name']);
+      expect(params).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'user',
+            select: ['name'],
+            populate: [],
+          },
+        ],
+      });
     });
-  });
 
-  it('should select an array field', async () => {
-    const params = getParams(Shop.modelName, 'tags');
-    expect(params).toEqual({
-      select: ['tags'],
-      populate: [],
+    it('should not override root with select reversed', async () => {
+      const params = getParams(Shop.modelName, ['^user.name', 'user']);
+      expect(params).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'user',
+            select: ['name'],
+            populate: [],
+          },
+        ],
+      });
     });
-  });
 
-  it('should select a foreign array field', async () => {
-    const params = getParams(Shop.modelName, 'user.tags');
-    expect(params).toEqual({
-      select: [],
-      populate: [
-        {
-          path: 'user',
-          select: ['tags'],
-          populate: [],
-        },
-      ],
+    it('should select an array field', async () => {
+      const params = getParams(Shop.modelName, '^tags');
+      expect(params).toEqual({
+        select: ['tags'],
+        populate: [],
+      });
     });
-  });
 
-  it('should populate an array field', async () => {
-    const params = getParams(Shop.modelName, 'customers');
-    expect(params).toEqual({
-      select: [],
-      populate: [
-        {
-          path: 'customers',
-          select: [],
-          populate: [],
-        },
-      ],
+    it('should select a foreign array field', async () => {
+      const params = getParams(Shop.modelName, '^user.tags');
+      expect(params).toEqual({
+        select: ['user'],
+        populate: [
+          {
+            path: 'user',
+            select: ['tags'],
+            populate: [],
+          },
+        ],
+      });
     });
-  });
 
-  it('should populate a foreign array field', async () => {
-    const params = getParams(Product.modelName, 'shop.customers');
-    expect(params).toEqual({
-      select: [],
-      populate: [
-        {
-          path: 'shop',
-          select: [],
-          populate: [
-            {
-              path: 'customers',
-              select: [],
-              populate: [],
-            },
-          ],
-        },
-      ],
+    it('should select deeply populated field', async () => {
+      const params = getParams(Product.modelName, '^shop.user.address.line1');
+      expect(params).toEqual({
+        select: ['shop'],
+        populate: [
+          {
+            path: 'shop',
+            select: ['user'],
+            populate: [
+              {
+                path: 'user',
+                select: ['address.line1'],
+                populate: [],
+              },
+            ],
+          },
+        ],
+      });
     });
-  });
 
-  it('should populate and select a foreign array field', async () => {
-    const params = getParams(Product.modelName, 'shop.customers.address.line1');
-    expect(params).toEqual({
-      select: [],
-      populate: [
-        {
-          path: 'shop',
-          select: [],
-          populate: [
-            {
-              path: 'customers',
-              select: ['address.line1'],
-              populate: [],
-            },
-          ],
-        },
-      ],
+    it('should select both a shallow and deeply populated field', async () => {
+      const params = getParams(Product.modelName, [
+        '^name',
+        '^shop.user.address.line1',
+      ]);
+      expect(params).toEqual({
+        select: ['name', 'shop'],
+        populate: [
+          {
+            path: 'shop',
+            select: ['user'],
+            populate: [
+              {
+                path: 'user',
+                select: ['address.line1'],
+                populate: [],
+              },
+            ],
+          },
+        ],
+      });
     });
-  });
 
-  it('should select deeply populated field', async () => {
-    const params = getParams(Product.modelName, 'shop.user.address.line1');
-    expect(params).toEqual({
-      select: [],
-      populate: [
-        {
-          path: 'shop',
+    it('should handle complex population of many fields', async () => {
+      const params = getParams(Product.modelName, [
+        '^name',
+        '^shop.email',
+        '^shop.user.name',
+        '^shop.user.address.line1',
+        '^shop.customers.self.self.tags',
+      ]);
+      expect(params).toEqual({
+        select: ['name', 'shop'],
+        populate: [
+          {
+            path: 'shop',
+            select: ['email', 'user', 'customers'],
+            populate: [
+              {
+                path: 'user',
+                select: ['name', 'address.line1'],
+                populate: [],
+              },
+              {
+                path: 'customers',
+                select: ['self'],
+                populate: [
+                  {
+                    path: 'self',
+                    select: ['self'],
+                    populate: [
+                      {
+                        path: 'self',
+                        select: ['tags'],
+                        populate: [],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+    });
+
+    it('should select recursive field', async () => {
+      const params = getParams(User.modelName, '^self.self.self');
+      expect(params).toEqual({
+        select: ['self'],
+        populate: [
+          {
+            path: 'self',
+            select: ['self'],
+            populate: [
+              {
+                path: 'self',
+                select: ['self'],
+                populate: [
+                  {
+                    path: 'self',
+                    select: [],
+                    populate: [],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+    });
+
+    it('should select a virtual', async () => {
+      const params = getParams(Product.modelName, '^comments');
+      expect(params).toEqual({
+        select: ['comments'],
+        populate: [
+          {
+            path: 'comments',
+            select: [],
+            populate: [],
+          },
+        ],
+      });
+    });
+
+    describe('subpaths', () => {
+      it('should exclusively select populated field', async () => {
+        const params = getParams(Shop.modelName, 'user.^name');
+        expect(params).toEqual({
           select: [],
           populate: [
             {
               path: 'user',
-              select: ['address.line1'],
+              select: ['name'],
               populate: [],
             },
           ],
-        },
-      ],
-    });
-  });
+        });
+      });
 
-  it('should select a shallow and deeply populated field', async () => {
-    const params = getParams(Product.modelName, [
-      'name',
-      'shop.user.address.line1',
-    ]);
-    expect(params).toEqual({
-      select: ['name'],
-      populate: [
-        {
-          path: 'shop',
+      it('should exclusively select deep populated field', async () => {
+        const params = getParams(Shop.modelName, 'deep.user.^name');
+        expect(params).toEqual({
+          select: [],
+          populate: [
+            {
+              path: 'deep.user',
+              select: ['name'],
+              populate: [],
+            },
+          ],
+        });
+      });
+
+      it('should exclusively select populated array field', async () => {
+        const params = getParams(Shop.modelName, 'user.^tags');
+        expect(params).toEqual({
           select: [],
           populate: [
             {
               path: 'user',
-              select: ['address.line1'],
+              select: ['tags'],
               populate: [],
             },
           ],
-        },
-      ],
-    });
-  });
+        });
+      });
 
-  it('should handle complex population of many fields', async () => {
-    const params = getParams(Product.modelName, [
-      'name',
-      'shop.email',
-      'shop.user.name',
-      'shop.user.address.line1',
-      'shop.customers.self.self.tags',
-    ]);
-    expect(params).toEqual({
-      select: ['name'],
-      populate: [
-        {
-          path: 'shop',
-          select: ['email'],
+      it('should select mid-level nested field', async () => {
+        const params = getParams(Product.modelName, 'shop.^user.address.line1');
+        expect(params).toEqual({
+          select: [],
           populate: [
             {
-              path: 'user',
-              select: ['name', 'address.line1'],
-              populate: [],
+              path: 'shop',
+              select: ['user'],
+              populate: [
+                {
+                  path: 'user',
+                  select: ['address.line1'],
+                  populate: [],
+                },
+              ],
             },
+          ],
+        });
+      });
+
+      it('should select final nested field', async () => {
+        const params = getParams(Product.modelName, 'shop.user.^address.line1');
+        expect(params).toEqual({
+          select: [],
+          populate: [
             {
-              path: 'customers',
+              path: 'shop',
               select: [],
               populate: [
                 {
+                  path: 'user',
+                  select: ['address.line1'],
+                  populate: [],
+                },
+              ],
+            },
+          ],
+        });
+      });
+
+      it('should select synonymous final nested field', async () => {
+        const params = getParams(Product.modelName, 'shop.user.address.^line1');
+        expect(params).toEqual({
+          select: [],
+          populate: [
+            {
+              path: 'shop',
+              select: [],
+              populate: [
+                {
+                  path: 'user',
+                  select: ['address.line1'],
+                  populate: [],
+                },
+              ],
+            },
+          ],
+        });
+      });
+
+      it('should handle mid-level recursion', async () => {
+        const params = getParams(User.modelName, 'self.^self.self');
+        expect(params).toEqual({
+          select: [],
+          populate: [
+            {
+              path: 'self',
+              select: ['self'],
+              populate: [
+                {
                   path: 'self',
-                  select: [],
+                  select: ['self'],
                   populate: [
                     {
                       path: 'self',
-                      select: ['tags'],
+                      select: [],
                       populate: [],
                     },
                   ],
@@ -409,18 +751,12 @@ describe('getParams', () => {
               ],
             },
           ],
-        },
-      ],
-    });
-  });
+        });
+      });
 
-  it('should populate recursive field', async () => {
-    const params = getParams(User.modelName, 'self.self.self');
-    expect(params).toEqual({
-      select: [],
-      populate: [
-        {
-          path: 'self',
+      it('should handle final recursion', async () => {
+        const params = getParams(User.modelName, 'self.self.^self');
+        expect(params).toEqual({
           select: [],
           populate: [
             {
@@ -429,109 +765,56 @@ describe('getParams', () => {
               populate: [
                 {
                   path: 'self',
-                  select: [],
-                  populate: [],
+                  select: ['self'],
+                  populate: [
+                    {
+                      path: 'self',
+                      select: [],
+                      populate: [],
+                    },
+                  ],
                 },
               ],
             },
           ],
-        },
-      ],
+        });
+      });
     });
-  });
 
-  it('should populate a virtual', async () => {
-    const params = getParams(Product.modelName, 'comments');
-    expect(params).toEqual({
-      select: [],
-      populate: [
-        {
-          path: 'comments',
-          select: [],
-          populate: [],
-        },
-      ],
-    });
-  });
-
-  it('should populate into virtual nested fields', async () => {
-    const params = getParams(Product.modelName, 'comments.product');
-    expect(params).toEqual({
-      select: [],
-      populate: [
-        {
-          path: 'comments',
-          select: [],
-          populate: [
-            {
-              path: 'product',
-              select: [],
-              populate: [],
-            },
-          ],
-        },
-      ],
-    });
-  });
-
-  it('should throw an error on unknown path', async () => {
-    expect(() => {
-      getParams(User.modelName, 'name.foo');
-    }).toThrow(`Unknown path on ${User.modelName}: name.foo.`);
-  });
-
-  it('should error on massive recusrion', async () => {
-    const include = 'self'.repeat(6).match(/.{4}/g).join('.');
-    expect(() => {
-      getParams(User.modelName, include);
-    }).toThrow('Cannot populate more than 5 levels.');
-  });
-
-  it('should allow trailing wildcards in includes', async () => {
-    const User = createTestModel({
-      name: 'String',
-      name1: 'String',
-      name2: 'String',
-      nameFirst: 'String',
-      nameLast: 'String',
-      naming: 'String',
-      deep: {
-        deep: {
+    describe('wildcards', () => {
+      it('should allow trailing wildcards in includes', async () => {
+        const User = createTestModel({
           name: 'String',
           name1: 'String',
           name2: 'String',
-        },
-      },
-      nam: 'String',
-    });
-    const params = getParams(User.modelName, ['name*', 'deep.deep.name*']);
-    expect(params).toEqual({
-      select: [
-        'name1',
-        'name2',
-        'nameFirst',
-        'nameLast',
-        'deep.deep.name1',
-        'deep.deep.name2',
-      ],
-      populate: [],
-    });
-  });
+          nameFirst: 'String',
+          nameLast: 'String',
+          naming: 'String',
+          deep: {
+            deep: {
+              name: 'String',
+              name1: 'String',
+              name2: 'String',
+            },
+          },
+          nam: 'String',
+        });
+        const params = getParams(User.modelName, ['name*', 'deep.deep.name*']);
+        expect(params).toEqual({
+          select: [
+            'name1',
+            'name2',
+            'nameFirst',
+            'nameLast',
+            'deep.deep.name1',
+            'deep.deep.name2',
+          ],
+          populate: [],
+        });
+      });
 
-  it('should allow leading wildcards in includes', async () => {
-    const User = createTestModel({
-      nam: 'String',
-      name: 'String',
-      Name: 'String',
-      fName: 'String',
-      FName: 'String',
-      firstName: 'String',
-      lastName: 'String',
-      aname: 'String',
-      name1: 'String',
-      name2: 'String',
-      deep: {
-        deep: {
+      it('should allow leading wildcards in includes', async () => {
+        const User = createTestModel({
           nam: 'String',
           name: 'String',
           Name: 'String',
@@ -542,66 +825,48 @@ describe('getParams', () => {
           aname: 'String',
           name1: 'String',
           name2: 'String',
-        },
-      },
-    });
-    const params = getParams(User.modelName, ['*Name', 'deep.deep.*Name']);
-    expect(params).toEqual({
-      select: [
-        'fName',
-        'FName',
-        'firstName',
-        'lastName',
-        'deep.deep.fName',
-        'deep.deep.FName',
-        'deep.deep.firstName',
-        'deep.deep.lastName',
-      ],
-      populate: [],
-    });
-  });
-
-  it('should not choke on recursion', async () => {
-    const params = getParams(User.modelName, '**');
-    expect(params).toEqual({
-      select: [
-        'name',
-        'email',
-        'tags',
-        'address.line1',
-        'address.line2',
-        'createdAt',
-        'updatedAt',
-        'deletedAt',
-        'deleted',
-      ],
-      populate: [
-        {
-          path: 'likedProducts',
-          select: [],
+          deep: {
+            deep: {
+              nam: 'String',
+              name: 'String',
+              Name: 'String',
+              fName: 'String',
+              FName: 'String',
+              firstName: 'String',
+              lastName: 'String',
+              aname: 'String',
+              name1: 'String',
+              name2: 'String',
+            },
+          },
+        });
+        const params = getParams(User.modelName, ['*Name', 'deep.deep.*Name']);
+        expect(params).toEqual({
+          select: [
+            'fName',
+            'FName',
+            'firstName',
+            'lastName',
+            'deep.deep.fName',
+            'deep.deep.FName',
+            'deep.deep.firstName',
+            'deep.deep.lastName',
+          ],
           populate: [],
-        },
-        {
-          path: 'self',
-          select: [],
-          populate: [],
-        },
-      ],
-    });
-  });
+        });
+      });
 
-  it('should allow wildcards across deep paths', async () => {
-    const params = getParams(Product.modelName, 'shop.**');
-    expect(params).toEqual({
-      select: [],
-      populate: [
-        {
-          path: 'shop',
+      it('should not choke on recursion', async () => {
+        const params = getParams(User.modelName, '**');
+        expect(params).toEqual({
           select: [
             'name',
             'email',
             'tags',
-            'inventory.quantity',
+            'address.line1',
+            'address.line2',
+            'likedProducts',
+            'self',
             'createdAt',
             'updatedAt',
             'deletedAt',
@@ -609,42 +874,381 @@ describe('getParams', () => {
           ],
           populate: [
             {
-              path: 'user',
-              populate: [],
+              path: 'likedProducts',
               select: [],
+              populate: [],
             },
             {
-              path: 'customers',
-              populate: [],
+              path: 'self',
               select: [],
-            },
-            {
-              path: 'inventory.product',
               populate: [],
-              select: [],
-            },
-            {
-              path: 'deep.user',
-              populate: [],
-              select: [],
             },
           ],
-        },
-      ],
+        });
+      });
+
+      it('should allow wildcards across deep paths', async () => {
+        const params = getParams(Product.modelName, 'shop.**');
+        expect(params).toEqual({
+          select: [],
+          populate: [
+            {
+              path: 'shop',
+              select: [
+                'name',
+                'email',
+                'tags',
+                'user',
+                'customers',
+                'inventory.quantity',
+                'inventory.product',
+                'deep.user',
+                'createdAt',
+                'updatedAt',
+                'deletedAt',
+                'deleted',
+              ],
+              populate: [
+                {
+                  path: 'user',
+                  populate: [],
+                  select: [],
+                },
+                {
+                  path: 'customers',
+                  populate: [],
+                  select: [],
+                },
+                {
+                  path: 'inventory.product',
+                  populate: [],
+                  select: [],
+                },
+                {
+                  path: 'deep.user',
+                  populate: [],
+                  select: [],
+                },
+              ],
+            },
+          ],
+        });
+      });
     });
   });
 
-  it('should have populate for nested ref field on array', async () => {
-    const params = getParams(Shop.modelName, 'inventory.product');
-    expect(params).toEqual({
-      select: [],
-      populate: [
-        {
-          path: 'inventory.product',
+  describe('exclude', () => {
+    it('should exclude top-level field', async () => {
+      const params = getParams(Shop.modelName, '-name');
+      expect(params).toEqual({
+        select: ['-name'],
+        populate: [],
+      });
+    });
+
+    it('should exclude multiple top-level fields', async () => {
+      const params = getParams(Shop.modelName, ['-name', '-email']);
+      expect(params).toEqual({
+        select: ['-name', '-email'],
+        populate: [],
+      });
+    });
+
+    it('should exclude single foreign field', async () => {
+      const params = getParams(Shop.modelName, '-user');
+      expect(params).toEqual({
+        select: ['-user'],
+        populate: [],
+      });
+    });
+
+    it('should exclude multiple foreign fields', async () => {
+      const params = getParams(Shop.modelName, ['-user', '-deep.user']);
+      expect(params).toEqual({
+        select: ['-user', '-deep.user'],
+        populate: [],
+      });
+    });
+
+    it('should imply population but exclude populated field', async () => {
+      const params = getParams(Shop.modelName, '-user.name');
+      expect(params).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'user',
+            select: ['-name'],
+            populate: [],
+          },
+        ],
+      });
+    });
+
+    it('should imply population but exclude nested field', async () => {
+      const params = getParams(Shop.modelName, '-user.address.line1');
+      expect(params).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'user',
+            select: ['-address.line1'],
+            populate: [],
+          },
+        ],
+      });
+    });
+
+    it('should exclude double nested field', async () => {
+      const params = getParams(Shop.modelName, '-deep.user.address.line1');
+      expect(params).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'deep.user',
+            select: ['-address.line1'],
+            populate: [],
+          },
+        ],
+      });
+    });
+
+    it('should exclude an array field', async () => {
+      const params = getParams(Shop.modelName, '-customers');
+      expect(params).toEqual({
+        select: ['-customers'],
+        populate: [],
+      });
+    });
+
+    it('should exclude a foreign array field', async () => {
+      const params = getParams(Product.modelName, '-shop.customers');
+      expect(params).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'shop',
+            select: ['-customers'],
+            populate: [],
+          },
+        ],
+      });
+    });
+
+    it('should exclude a deep populated foreign array field', async () => {
+      const params = getParams(
+        Product.modelName,
+        '-shop.customers.address.line1'
+      );
+      expect(params).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'shop',
+            select: [],
+            populate: [
+              {
+                path: 'customers',
+                select: ['-address.line1'],
+                populate: [],
+              },
+            ],
+          },
+        ],
+      });
+    });
+
+    it('should exclude recursive field', async () => {
+      const params = getParams(User.modelName, '-self.self.self');
+      expect(params).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'self',
+            select: [],
+            populate: [
+              {
+                path: 'self',
+                select: ['-self'],
+                populate: [],
+              },
+            ],
+          },
+        ],
+      });
+    });
+
+    it('should exclude a virtual', async () => {
+      const params = getParams(Product.modelName, '-comments');
+      expect(params).toEqual({
+        select: ['-comments'],
+        populate: [],
+      });
+    });
+
+    it('should exclude a virtual nested fields', async () => {
+      const params = getParams(Product.modelName, '-comments.product');
+      expect(params).toEqual({
+        select: [],
+        populate: [
+          {
+            path: 'comments',
+            select: ['-product'],
+            populate: [],
+          },
+        ],
+      });
+    });
+
+    it('should exclude nested ref field on array', async () => {
+      const params = getParams(Shop.modelName, '-inventory.product');
+      expect(params).toEqual({
+        select: ['-inventory.product'],
+        populate: [],
+      });
+    });
+
+    describe('wildcards', () => {
+      it('should allow trailing wildcards in exclude', async () => {
+        const User = createTestModel({
+          name: 'String',
+          name1: 'String',
+          name2: 'String',
+          nameFirst: 'String',
+          nameLast: 'String',
+          naming: 'String',
+          deep: {
+            deep: {
+              name: 'String',
+              name1: 'String',
+              name2: 'String',
+            },
+          },
+          nam: 'String',
+        });
+        const params = getParams(User.modelName, [
+          '-name*',
+          '-deep.deep.name*',
+        ]);
+        expect(params).toEqual({
+          select: [
+            '-name1',
+            '-name2',
+            '-nameFirst',
+            '-nameLast',
+            '-deep.deep.name1',
+            '-deep.deep.name2',
+          ],
           populate: [],
+        });
+      });
+
+      it('should allow leading wildcards in excludes', async () => {
+        const User = createTestModel({
+          nam: 'String',
+          name: 'String',
+          Name: 'String',
+          fName: 'String',
+          FName: 'String',
+          firstName: 'String',
+          lastName: 'String',
+          aname: 'String',
+          name1: 'String',
+          name2: 'String',
+          deep: {
+            deep: {
+              nam: 'String',
+              name: 'String',
+              Name: 'String',
+              fName: 'String',
+              FName: 'String',
+              firstName: 'String',
+              lastName: 'String',
+              aname: 'String',
+              name1: 'String',
+              name2: 'String',
+            },
+          },
+        });
+        const params = getParams(User.modelName, [
+          '-*Name',
+          '-deep.deep.*Name',
+        ]);
+        expect(params).toEqual({
+          select: [
+            '-fName',
+            '-FName',
+            '-firstName',
+            '-lastName',
+            '-deep.deep.fName',
+            '-deep.deep.FName',
+            '-deep.deep.firstName',
+            '-deep.deep.lastName',
+          ],
+          populate: [],
+        });
+      });
+
+      it('should not choke on recursion', async () => {
+        const params = getParams(User.modelName, '-**');
+        expect(params).toEqual({
+          select: [
+            '-name',
+            '-email',
+            '-tags',
+            '-address.line1',
+            '-address.line2',
+            '-likedProducts',
+            '-self',
+            '-createdAt',
+            '-updatedAt',
+            '-deletedAt',
+            '-deleted',
+          ],
+          populate: [],
+        });
+      });
+
+      it('should allow wildcards across deep paths', async () => {
+        const params = getParams(Product.modelName, '-shop.**');
+        expect(params).toEqual({
           select: [],
-        },
-      ],
+          populate: [
+            {
+              path: 'shop',
+              select: [
+                '-name',
+                '-email',
+                '-tags',
+                '-user',
+                '-customers',
+                '-inventory.quantity',
+                '-inventory.product',
+                '-deep.user',
+                '-createdAt',
+                '-updatedAt',
+                '-deletedAt',
+                '-deleted',
+              ],
+              populate: [],
+            },
+          ],
+        });
+      });
+    });
+  });
+
+  describe('other', () => {
+    it('should throw an error on unknown path', async () => {
+      expect(() => {
+        getParams(User.modelName, 'name.foo');
+      }).toThrow(`Unknown path on ${User.modelName}: name.foo.`);
+    });
+
+    it('should error on massive recursion', async () => {
+      const include = 'self'.repeat(6).match(/.{4}/g).join('.');
+      expect(() => {
+        getParams(User.modelName, include);
+      }).toThrow('Cannot populate more than 5 levels.');
     });
   });
 });
@@ -900,7 +1504,7 @@ describe('instance methods', () => {
         name: 'Bob',
         email: 'bob@bar.com',
       });
-      await user.include('name');
+      await user.include('^name');
       expect(user.toObject().email).toBeUndefined();
     });
 
@@ -968,7 +1572,7 @@ describe('static methods', () => {
       const product = await Product.createWithInclude({
         name: 'Product',
         shop: shop.id,
-        include: ['name', 'shop.user'],
+        include: ['^name', 'shop.user'],
       });
       const params = JSON.parse(JSON.stringify(product));
       expect(params).toEqual({
@@ -1003,7 +1607,7 @@ describe('static methods', () => {
         name: 'foo',
         email: 'foo@bar.com',
         user: user.id,
-        include: ['name', 'user'],
+        include: ['^name', '^user'],
       });
       const params = JSON.parse(JSON.stringify(shop));
       expect(params).toEqual({
@@ -1143,7 +1747,7 @@ describe('static methods', () => {
       shop.assignWithInclude({
         name: 'Jack',
         email: 'foo@bar.com',
-        include: ['name', 'user'],
+        include: ['^name', '^user'],
       });
 
       await shop.save();
@@ -1240,6 +1844,31 @@ describe('search integration', () => {
     });
     expect(data.length).toBe(1);
     expect(data[0].user.name).toBe('Bob');
+  });
+
+  it('should allow exclusion in search', async () => {
+    const user = await User.create({
+      name: 'Bob',
+      email: 'bob@bob.com',
+    });
+    const shop = await Shop.create({
+      name: 'foo',
+      email: 'shop@shop.com',
+      user: user.id,
+    });
+
+    const { data } = await Shop.search({
+      name: 'foo',
+      include: '^user.name',
+    });
+    expect(data.length).toBe(1);
+    expect(data[0].toObject()).toEqual({
+      id: shop.id,
+      user: {
+        id: user.id,
+        name: 'Bob',
+      },
+    });
   });
 
   it('should allow include field as array in search', async () => {

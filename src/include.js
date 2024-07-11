@@ -175,13 +175,19 @@ function nodeToPopulates(node) {
   const select = [];
   const populate = [];
   for (let [key, value] of Object.entries(node)) {
+    if (key.startsWith('-')) {
+      select.push(key);
+      continue;
+    }
+    if (key.startsWith('^')) {
+      key = key.slice(1);
+      select.push(key);
+    }
     if (value) {
       populate.push({
         path: key,
         ...nodeToPopulates(value),
       });
-    } else {
-      select.push(key);
     }
   }
   return {
@@ -202,75 +208,127 @@ function pathsToNode(paths, modelName) {
     if (typeof str !== 'string') {
       throw new Error('Provided include path was not as string.');
     }
-    let exclude = false;
-    if (str.startsWith('-')) {
-      exclude = true;
-      str = str.slice(1);
-    }
     setNodePath(node, {
       path: str.split('.'),
       modelName,
-      exclude,
     });
   }
   return node;
 }
 
 function setNodePath(node, options) {
-  const { path, modelName, exclude, depth = 0 } = options;
+  const { modelName, path: fullPath, depth = 0 } = options;
   if (depth > POPULATE_MAX_DEPTH) {
     throw new Error(`Cannot populate more than ${POPULATE_MAX_DEPTH} levels.`);
   }
+
   const schema = mongoose.models[modelName]?.schema;
   if (!schema) {
     throw new Error(`Could not derive schema for ${modelName}.`);
   }
+
+  let { excluded = false, exclusive = false } = options;
+
   const parts = [];
-  for (let part of path) {
+  for (let part of fullPath) {
+    if (part.startsWith('-')) {
+      // Field is excluded. Note that this occurs only at
+      // top level and should take precedence:
+      // -name      -> "name" is excluded
+      // -user.name -> "user" is populated but "name" is
+      //               excluded
+      excluded = true;
+      part = part.slice(1);
+    } else if (!excluded && part.startsWith('^')) {
+      // Field is exclusive. Note that this can happen at
+      // any part of the path:
+      // ^name      -> "name" is exclusively selected
+      // user.^name -> "user" is populated with "name"
+      //                exclusively selected within
+      // ^user.name -> "user" is exclusively selected
+      //               ("name" is redundant)
+      exclusive = true;
+      part = part.slice(1);
+    } else if (!excluded && part.includes('*')) {
+      // Wildcards in field implies exclusion, but only
+      // if path is not already excluded:
+      // *name       -> "firstName" and "lastName" are exclusively
+      //                selected
+      // user.*name  -> "user" is populated, "user.firstName"
+      //                and "user.lastName" are exclusively selected
+      // -*name      -> "firstName" and "lastName" are excluded
+      // -user.*name -> "user" is populated but "user.firstName"
+      //                and "user.lastName" are excluded
+      exclusive = true;
+    }
+
     parts.push(part);
-    const str = parts.join('.');
-    const isExact = parts.length === path.length;
+    const isExact = parts.length === fullPath.length;
+
     let halt = false;
 
-    for (let [key, type] of resolvePaths(schema, str)) {
+    for (let [path, type] of resolvePaths(schema, parts.join('.'))) {
+      // The exclusive key.
+      const eKey = '^' + path;
+      // The negative (excluded) key.
+      const nKey = '-' + path;
+
+      let key = path;
+      if (exclusive && !node[key]) {
+        // Add the exclusive flag if the node
+        // has not already been included.
+        key = eKey;
+      } else if (!exclusive && node[eKey]) {
+        // If the node has already been marked exclusive
+        // and another include overrides it, then we need
+        // to move that node over to be inclusive. This
+        // step is needed as includes should always take
+        // priority over exclusion regardless of the order.
+        node[key] = node[eKey];
+        delete node[eKey];
+      } else if (excluded && isExact) {
+        // Only flag the node as excluded if the path is an
+        // exact match:
+        // -name      -> Exclude "name" field.
+        // -user.name -> Exclude "user.name" field, however this
+        //               implies that we must populate "user" so
+        //               continue traversing and flag for include.
+        key = nKey;
+      }
+
       if (type === 'real') {
-        const field = getInnerField(schema.obj, key);
-        // Only exclude the field if the match is exact, ie:
-        // -name - Exclude "name"
-        // -user.name - Implies population of "user" but exclude "user.name",
-        //  so continue traversing into object when part is "user".
-        if (isExact && exclude) {
-          node['-' + key] = LEAF_NODE;
-        } else if (field.ref) {
+        const field = getInnerField(schema.obj, path);
+        if (field.ref) {
           node[key] ||= {};
           setNodePath(node[key], {
             modelName: field.ref,
-            path: path.slice(parts.length),
+            path: fullPath.slice(parts.length),
             depth: depth + 1,
-            exclude,
+            excluded,
+            exclusive,
           });
           halt = true;
         } else if (isSchemaTypedef(field)) {
           node[key] = LEAF_NODE;
         }
       } else if (type === 'virtual') {
-        const virtual = schema.virtual(key);
+        const virtual = schema.virtual(path);
         // @ts-ignore
         const ref = virtual.options.ref;
 
         if (ref) {
           node[key] ||= {};
           setNodePath(node[key], {
-            // @ts-ignore
             modelName: ref,
-            path: path.slice(parts.length),
+            path: fullPath.slice(parts.length),
             depth: depth + 1,
-            exclude,
+            excluded,
+            exclusive,
           });
         }
         halt = true;
       } else if (type !== 'nested') {
-        throw new Error(`Unknown path on ${modelName}: ${key}.`);
+        throw new Error(`Unknown path on ${modelName}: ${path}.`);
       }
     }
 

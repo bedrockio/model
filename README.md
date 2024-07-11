@@ -756,13 +756,7 @@ complex situations this can easily be a lot of overhead. The include module
 attempts to streamline this process by adding an `include` method to queries:
 
 ```js
-const product = await Product.findById(id).include([
-  'name',
-  'shop.email',
-  'shop.user.name',
-  'shop.user.address.line1',
-  'shop.customers.tags',
-]);
+const product = await Product.findById(id).include('shop.user.customers');
 ```
 
 This method accepts a string or array of strings that will map to a `populate`
@@ -771,20 +765,21 @@ call that can be far more complex:
 ```js
 const product = await Product.findById(id).populate([
   {
-    select: ['name'],
+    select: [],
     populate: [
       {
         path: 'shop',
-        select: ['email'],
+        select: [],
         populate: [
           {
             path: 'user',
-            select: ['name', 'address.line1'],
+            select: [],
             populate: [],
           },
           {
             path: 'customers',
-            select: ['tags'],
+            select: [],
+            populate: [],
           },
         ],
       },
@@ -794,11 +789,131 @@ const product = await Product.findById(id).populate([
 ```
 
 In addition to brevity, one major advantage of using `include` is that the
-caller does not need to know whether the documents are subdocuments or foreign
+caller does not need to know whether the path contains subdocuments or foreign
 references. As Bedrock has knowledge of the schemas, it is able to build the
 appropriate call to `populate` for you.
 
-#### Excluding Fields
+#### Exclusive Fields
+
+By default, arguments to `include` are for population. However often field
+projection (selection) is also desired to avoid excessive data transfer. The `^`
+token can be used here to build the `select` option to populates:
+
+```js
+const product = await Product.findById(id).include([
+  '^name',
+  '^shop.name',
+  '^shop.user.name',
+]);
+```
+
+This will map to a selective inclusion of fields in the `populate` call:
+
+```js
+const product = await Product.findById(id).populate([
+  {
+    select: ['name', 'shop'],
+    populate: [
+      {
+        path: 'shop',
+        select: ['name', 'user'],
+        populate: [
+          {
+            path: 'user',
+            select: ['name'],
+            populate: [],
+          },
+        ],
+      },
+    ],
+  },
+]);
+```
+
+The resulting data will include only the specified fields:
+
+```json
+{
+  "name": "Product Name",
+  "shop": {
+    "name": "Shop Name",
+    "user": {
+      "name": "User Name"
+    }
+  }
+}
+```
+
+Note that the exclusive operator can be used anywhere in the path. The exclusion
+(select) will be applied at the depth in which it is specified:
+
+Example 1:
+
+- Top level exclusion
+- Only exact field returned.
+
+```js
+await Product.findById(id).include('^shop.user.name').
+```
+
+```json
+{
+  "shop": {
+    "user": {
+      "name": "User Name"
+    }
+  }
+}
+```
+
+Example 2:
+
+- Mid-level exclusion.
+- Top level fields included, mid-level begins exclusion.
+
+```js
+await Product.findById(id).include('shop.^user.name').
+```
+
+```json
+{
+  "name": "Product Name",
+  "cost": 10,
+  // etc
+  "shop": {
+    "user": {
+      "name": "User Name"
+    }
+  }
+}
+```
+
+Example 3:
+
+- Final level exclusion.
+- All fields returned except in final `user` population.
+
+```js
+await Product.findById(id).include('shop.user.^name').
+```
+
+```json
+{
+  "name": "Product Name",
+  "cost": 10,
+  // etc
+  "shop": {
+    "name": "Shop Name",
+    "rating": 5,
+    // etc
+    "user": {
+      "name": "User Name"
+    }
+  }
+}
+```
+
+#### Excluded Fields
 
 Fields can be excluded rather than included using `-`:
 
@@ -813,6 +928,7 @@ The above will return all fields except `profile`. Note that:
 - An excluded field on a foreign reference will implicitly be populated. This
   means that passing `-profile.name` where `profile` is a foreign field will
   populate `profile` but exclude `name`.
+- Note that `-` can only be used at the beginning of the path.
 
 #### Wildcards
 
@@ -820,33 +936,41 @@ Multiple fields can be selected using wildcards:
 
 - `*` - Matches anything except `.`.
 - `**` - Matches anything including `.`.
+- Note that the use of wildcards implies that other fields are excluded.
+
+Example 1: Single wildcard
 
 ```js
-// Assuming a schema of:
-// {
-//   "firstName": "String"
-//   "lastName": "String"
-// }
 const user = await User.findById(id).include('*Name');
 ```
 
-The example above will select both `firstName` and `lastName`.
+```json
+{
+  "firstName": "Frank",
+  "lastName": "Reynolds"
+  // Other fields excluded.
+}
+```
+
+Example 2: Double wildcard
 
 ```js
-// Assuming a schema of:
-// {
-//   "profile1": {
-//     "address": {
-//       "phone": "String"
-//     }
-//   },
-//   "profile2": {
-//     "address": {
-//       "phone": "String"
-//     }
-//   }
-// }
 const user = await User.findById(id).include('**.phone');
+```
+
+```json
+{
+  "profile1": {
+    "address": {
+      "phone": "String"
+    }
+  },
+  "profile2": {
+    "address": {
+      "phone": "String"
+    }
+  }
+}
 ```
 
 This example above will select both `profile1.address.phone` and
