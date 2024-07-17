@@ -808,6 +808,47 @@ describe('keyword search', () => {
     ]);
     expect(meta.total).toBe(2);
   });
+
+  it('should be able to search on subdocument fields', async () => {
+    const schema = createSchema({
+      attributes: {
+        address: {
+          zipcode: {
+            type: 'String',
+          },
+        },
+      },
+      search: {
+        fields: ['address.zipcode'],
+      },
+    });
+    const User = createTestModel(schema);
+
+    await User.create({
+      address: {
+        zipcode: '80906',
+      },
+    });
+
+    await User.create({
+      address: {
+        zipcode: '10011',
+      },
+    });
+
+    const { data, meta } = await User.search({
+      keyword: '10011',
+    });
+
+    expect(meta.total).toBe(1);
+    expect(data).toMatchObject([
+      {
+        address: {
+          zipcode: '10011',
+        },
+      },
+    ]);
+  });
 });
 
 describe('cached fields', () => {

@@ -473,7 +473,7 @@ function getRefField(schema, path) {
   for (let i = 1; i < split.length; i++) {
     const base = split.slice(0, i);
     const rest = split.slice(i);
-    const type = schema.path(base);
+    const type = schema.path(base.join('.'));
     if (type instanceof SchemaTypes.ObjectId) {
       return {
         type,
