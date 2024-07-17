@@ -1072,7 +1072,6 @@ describe('getUpdateValidation', () => {
         id: user.profile.id,
         firstName: 'John',
         lastName: 'Doe',
-        fullName: 'John Doe',
       },
     });
     const schema = User.getUpdateValidation();
