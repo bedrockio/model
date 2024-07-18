@@ -656,7 +656,7 @@ schema.pre('save', function () {
 Specifying a foreign path in `fields` serves as a shortcut to manually defining
 the cached fields:
 
-```json
+```jsonc
 // Equivalent to the above example.
 {
   "attributes": {
@@ -876,7 +876,7 @@ Example 2:
 await Product.findById(id).include('shop.^user.name').
 ```
 
-```json
+```jsonc
 {
   "name": "Product Name",
   "cost": 10,
@@ -898,7 +898,7 @@ Example 3:
 await Product.findById(id).include('shop.user.^name').
 ```
 
-```json
+```jsonc
 {
   "name": "Product Name",
   "cost": 10,
@@ -945,7 +945,7 @@ Example 1: Single wildcard
 const user = await User.findById(id).include('*Name');
 ```
 
-```json
+```jsonc
 {
   "firstName": "Frank",
   "lastName": "Reynolds"
@@ -1382,7 +1382,7 @@ for (let shop of shops) {
 
 Operations may filter on additional fields with `query`:
 
-```json
+```jsonc
 // user.json
 {
   "onDelete": {
@@ -1422,7 +1422,7 @@ operators have special behavior with multiple paths (see note below).
 An operation that specified an array of `paths` will implicitly run an `$or`
 query:
 
-```json
+```jsonc
 // user.json
 {
   "onDelete": {
