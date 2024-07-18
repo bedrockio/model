@@ -1567,9 +1567,9 @@ is this?
 
 A: When a model has fields with `readAccess`, documents require extra context to
 be able to serialize properly. In practice this means calling `toObject` on the
-document without a `scopes` option will generate this warning. This also means
-that methods like `console.log` that internally call `toString` on the document
-will also cause this. Possible causes include:
+document without the `scopes` option will generate this warning. This also means
+that functions like `console.log` that internally call `toString` on the
+document will also show warnings. Possible causes include:
 
 - `console.log(document)` - solution here is to remove the log or use the
   `serializeDocument` helper in bedrock core.
