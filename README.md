@@ -21,6 +21,7 @@ Bedrock utilities for model creation.
   - [Assign](#assign)
   - [Slugs](#slugs)
 - [Testing](#testing)
+- [Troubleshooting](#troubleshooting)
 
 ## Install
 
@@ -1558,3 +1559,19 @@ const Post = createTestModel('Post', {
 ```
 
 Make sure in this case that the model name is unique.
+
+## Troubleshooting
+
+Q: I'm seeing `scopes were requested but not provided` messages everywhere. What
+is this?
+
+A: When a model has fields with `readAccess`, documents require extra context to
+be able to serialize properly. In practice this means calling `toObject` on the
+document without a `scopes` option will generate this warning. This also means
+that methods like `console.log` that internally call `toString` on the document
+will also cause this. Possible causes include:
+
+- `console.log(document)` - solution here is to remove the log or use the
+  `serializeDocument` helper in bedrock core.
+- A bug in Mongoose (observed in v8.3.2) prevents serialize options from being
+  passed down to nested documents. Bumping the Mongoose version should fix this.
