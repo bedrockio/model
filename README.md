@@ -630,45 +630,27 @@ cache foreign fields on the model to allow filtering on them.
   },
   "search": {
     "cache": {
-      "cachedUserName": {
+      "userName": {
         "type": "String",
         "path": "user.name"
       }
     },
-    "fields": ["cachedUserName"]
+    "fields": ["userName"]
   }
 }
 ```
 
-The above example is equivalent to creating a field called `cachedUserName` and
+The above example is equivalent to creating a field called `userName` and
 updating it when a document is saved:
 
 ```js
 schema.add({
-  cachedUserName: 'String',
+  userName: 'String',
 });
 schema.pre('save', function () {
   await this.populate('user');
-  this.cachedUserName = this.user.name;
+  this.userName = this.user.name;
 });
-```
-
-Specifying a foreign path in `fields` serves as a shortcut to manually defining
-the cached fields:
-
-```jsonc
-// Equivalent to the above example.
-{
-  "attributes": {
-    "user": {
-      "type": "ObjectId",
-      "ref": "User"
-    }
-  },
-  "search": {
-    "fields": ["user.name"]
-  }
-}
 ```
 
 ##### Syncing Search Fields
@@ -705,12 +687,13 @@ Cached fields can be made lazy:
   },
   "search": {
     "cache": {
-      "cachedUserName": {
-        "lazy": true,
-        "path": "user.name"
+      "userName": {
+        "type": "String",
+        "path": "user.name",
+        "lazy": true
       }
     },
-    "fields": ["user.name"]
+    "fields": ["userName"]
   }
 }
 ```

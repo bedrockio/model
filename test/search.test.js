@@ -865,12 +865,12 @@ describe('cached fields', () => {
       },
       search: {
         cache: {
-          cachedUserName: {
+          userName: {
             type: 'String',
             path: 'user.name',
           },
         },
-        fields: ['cachedUserName'],
+        fields: ['userName'],
       },
     });
     const Shop = createTestModel(schema);
@@ -928,16 +928,16 @@ describe('cached fields', () => {
       },
       search: {
         cache: {
-          cachedFirstName: {
+          userFirstName: {
             type: 'String',
             path: 'user.firstName',
           },
-          cachedLastName: {
+          userLastName: {
             type: 'String',
             path: 'user.lastName',
           },
         },
-        fields: ['cachedFirstName', 'cachedLastName'],
+        fields: ['userFirstName', 'userLastName'],
       },
     });
     const Shop = createTestModel(schema);
@@ -983,67 +983,24 @@ describe('cached fields', () => {
     expect(result.meta.total).toBe(0);
   });
 
-  it('should derive cached fields if not specified', async () => {
+  it('should error if cached fields not specified', async () => {
     const User = createTestModel({
       firstName: 'String',
       lastName: 'String',
     });
-    const schema = createSchema({
-      attributes: {
-        user: {
-          type: 'ObjectId',
-          ref: User.modelName,
+    expect(() => {
+      createSchema({
+        attributes: {
+          user: {
+            type: 'ObjectId',
+            ref: User.modelName,
+          },
         },
-      },
-      search: {
-        fields: ['user.firstName', 'user.lastName'],
-      },
-    });
-    const Shop = createTestModel(schema);
-
-    expect(Object.keys(Shop.schema.obj)).toEqual(
-      expect.arrayContaining(['cachedUserFirstName', 'cachedUserLastName'])
-    );
-
-    const user1 = await User.create({
-      firstName: 'Frank',
-      lastName: 'Reynolds',
-    });
-
-    const shop1 = await Shop.create({
-      user: user1,
-    });
-
-    const user2 = await User.create({
-      firstName: 'Charlie',
-      lastName: 'Kelly',
-    });
-
-    const shop2 = await Shop.create({
-      user: user2,
-    });
-
-    let result;
-
-    result = await Shop.search({
-      keyword: 'Frank',
-    });
-
-    expect(result.meta.total).toBe(1);
-    expect(result.data[0].id).toBe(shop1.id);
-
-    result = await Shop.search({
-      keyword: 'Kelly',
-    });
-
-    expect(result.meta.total).toBe(1);
-    expect(result.data[0].id).toBe(shop2.id);
-
-    result = await Shop.search({
-      keyword: 'foo',
-    });
-
-    expect(result.meta.total).toBe(0);
+        search: {
+          fields: ['user.firstName', 'user.lastName'],
+        },
+      });
+    }).toThrow('Foreign field "user.firstName" not allowed in search.');
   });
 
   it('should cache a deep field', async () => {
@@ -1064,7 +1021,13 @@ describe('cached fields', () => {
         },
       },
       search: {
-        fields: ['shop.user.name'],
+        cache: {
+          shopUserName: {
+            type: 'String',
+            path: 'shop.user.name',
+          },
+        },
+        fields: ['shopUserName'],
       },
     });
     const Product = createTestModel(schema);
@@ -1120,7 +1083,13 @@ describe('cached fields', () => {
         },
       },
       search: {
-        fields: ['user.names'],
+        cache: {
+          userNames: {
+            type: ['String'],
+            path: 'user.names',
+          },
+        },
+        fields: ['userNames'],
       },
     });
     const Shop = createTestModel(schema);
@@ -1169,7 +1138,13 @@ describe('cached fields', () => {
         },
       },
       search: {
-        fields: ['user.name'],
+        cache: {
+          userName: {
+            type: 'String',
+            path: 'user.name',
+          },
+        },
+        fields: ['userName'],
       },
     });
     const Shop = createTestModel(shopSchema);
@@ -1201,7 +1176,13 @@ describe('cached fields', () => {
         },
       },
       search: {
-        fields: ['user.name'],
+        cache: {
+          userName: {
+            type: 'String',
+            path: 'user.name',
+          },
+        },
+        fields: ['userName'],
       },
     });
     const Shop = createTestModel(schema);
@@ -1228,12 +1209,12 @@ describe('cached fields', () => {
       },
       search: {
         cache: {
-          cachedUserName: {
+          userName: {
             type: 'String',
             path: 'user.name',
           },
         },
-        fields: ['cachedUserName'],
+        fields: ['userName'],
       },
     });
     const Shop = createTestModel(schema);
@@ -1246,8 +1227,8 @@ describe('cached fields', () => {
       user,
     });
 
-    expect(shop.cachedUserName).toBe('Frank');
-    expect(shop.toObject().cachedUserName).toBeUndefined();
+    expect(shop.userName).toBe('Frank');
+    expect(shop.toObject().userName).toBeUndefined();
   });
 });
 
@@ -1265,13 +1246,13 @@ describe('lazy cached fields', () => {
       },
       search: {
         cache: {
-          cachedUserName: {
+          userName: {
             type: 'String',
             path: 'user.name',
             lazy: true,
           },
         },
-        fields: ['cachedUserName'],
+        fields: ['userName'],
       },
     });
     const Shop = createTestModel(schema);
@@ -1284,13 +1265,13 @@ describe('lazy cached fields', () => {
       user,
     });
 
-    expect(shop.cachedUserName).toBe('Frank');
+    expect(shop.userName).toBe('Frank');
 
     user.name = 'Dennis';
     await user.save();
 
     await shop.save();
-    expect(shop.cachedUserName).toBe('Frank');
+    expect(shop.userName).toBe('Frank');
   });
 });
 
@@ -1307,7 +1288,13 @@ describe('syncSearchFields', () => {
         },
       },
       search: {
-        fields: ['user.name'],
+        cache: {
+          userName: {
+            type: 'String',
+            path: 'user.name',
+          },
+        },
+        fields: ['userName'],
       },
     });
     const Shop = createTestModel(schema);
@@ -1357,7 +1344,13 @@ describe('syncSearchFields', () => {
         },
       },
       search: {
-        fields: ['user.name'],
+        cache: {
+          userName: {
+            type: 'String',
+            path: 'user.name',
+          },
+        },
+        fields: ['userName'],
       },
     });
     const Shop = createTestModel(schema);
@@ -1407,7 +1400,7 @@ describe('syncSearchFields', () => {
     }).rejects.toThrow();
   });
 
-  it('should not sync fields that do not have ref field', async () => {
+  it('should not error on missing foreign field', async () => {
     const User = createTestModel({
       name: 'String',
     });
@@ -1419,7 +1412,13 @@ describe('syncSearchFields', () => {
         },
       },
       search: {
-        fields: ['user.name'],
+        cache: {
+          userName: {
+            type: 'String',
+            path: 'user.name',
+          },
+        },
+        fields: ['userName'],
       },
     });
     const Shop = createTestModel(schema);
@@ -1429,8 +1428,7 @@ describe('syncSearchFields', () => {
     await Shop.syncSearchFields();
 
     const updated = await Shop.findById(shop.id);
-
-    expect(updated.updatedAt).toEqual(shop.updatedAt);
+    expect(updated.userName).toBeUndefined();
   });
 
   it('should not sync a lazy cached field that is already set', async () => {
@@ -1446,13 +1444,13 @@ describe('syncSearchFields', () => {
       },
       search: {
         cache: {
-          cachedUserName: {
+          userName: {
             type: 'String',
             path: 'user.name',
             lazy: true,
           },
         },
-        fields: ['cachedUserName'],
+        fields: ['userName'],
       },
     });
     const Shop = createTestModel(schema);
@@ -1465,7 +1463,7 @@ describe('syncSearchFields', () => {
       user,
     });
 
-    expect(shop.cachedUserName).toBe('Frank');
+    expect(shop.userName).toBe('Frank');
 
     user.name = 'Dennis';
     await user.save();
@@ -1473,7 +1471,7 @@ describe('syncSearchFields', () => {
     await Shop.syncSearchFields();
 
     shop = await Shop.findById(shop.id);
-    expect(shop.cachedUserName).toBe('Frank');
+    expect(shop.userName).toBe('Frank');
   });
 
   it('should force sync a lazy cached field that is already set', async () => {
@@ -1489,13 +1487,13 @@ describe('syncSearchFields', () => {
       },
       search: {
         cache: {
-          cachedUserName: {
+          userName: {
             type: 'String',
             path: 'user.name',
             lazy: true,
           },
         },
-        fields: ['cachedUserName'],
+        fields: ['userName'],
       },
     });
     const Shop = createTestModel(schema);
@@ -1508,7 +1506,7 @@ describe('syncSearchFields', () => {
       user,
     });
 
-    expect(shop.cachedUserName).toBe('Frank');
+    expect(shop.userName).toBe('Frank');
 
     user.name = 'Dennis';
     await user.save();
@@ -1518,7 +1516,7 @@ describe('syncSearchFields', () => {
     });
 
     shop = await Shop.findById(shop.id);
-    expect(shop.cachedUserName).toBe('Dennis');
+    expect(shop.userName).toBe('Dennis');
   });
 });
 
@@ -1535,7 +1533,13 @@ describe('validation integration', () => {
         },
       },
       search: {
-        fields: ['user.name'],
+        cache: {
+          userName: {
+            type: 'String',
+            path: 'user.name',
+          },
+        },
+        fields: ['userName'],
       },
     });
     const Shop = createTestModel(schema);

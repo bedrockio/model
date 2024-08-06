@@ -1,15 +1,7 @@
 import yd from '@bedrockio/yada';
 import logger from '@bedrockio/logger';
 import mongoose from 'mongoose';
-import {
-  get,
-  pick,
-  isEmpty,
-  camelCase,
-  upperFirst,
-  escapeRegExp,
-  isPlainObject,
-} from 'lodash';
+import { get, pick, isEmpty, escapeRegExp, isPlainObject } from 'lodash';
 
 import { isDateField, isNumberField, getField } from './utils';
 import { SEARCH_DEFAULTS } from './const';
@@ -24,6 +16,7 @@ const { ObjectId } = mongoose.Types;
 
 export function applySearch(schema, definition) {
   validateDefinition(definition);
+  validateSearchFields(schema, definition);
   applySearchCache(schema, definition);
 
   const { query: searchQuery, fields: searchFields } = definition.search || {};
@@ -318,8 +311,6 @@ function parseRegexQuery(str) {
 // Search field caching
 
 function applySearchCache(schema, definition) {
-  normalizeCacheFields(schema, definition);
-
   if (!definition.search?.cache) {
     return;
   }
@@ -346,13 +337,8 @@ function applySearchCache(schema, definition) {
       const query = {};
 
       if (!force) {
-        const $or = Object.entries(cache).map((entry) => {
-          const [cachedField, def] = entry;
-          const { base } = def;
+        const $or = Object.keys(cache).map((cachedField) => {
           return {
-            [base]: {
-              $exists: true,
-            },
             [cachedField]: {
               $exists: false,
             },
@@ -381,32 +367,18 @@ function applySearchCache(schema, definition) {
   );
 }
 
-function normalizeCacheFields(schema, definition) {
-  const { fields, cache = {} } = definition.search || {};
+function validateSearchFields(schema, definition) {
+  const { fields } = definition.search || {};
+
   if (!fields) {
     return;
   }
 
-  const normalized = [];
-
   for (let path of fields) {
     if (isForeignField(schema, path)) {
-      const cacheName = generateCacheFieldName(path);
-      const type = resolveSchemaType(schema, path);
-      const base = getRefBase(schema, path);
-      cache[cacheName] = {
-        type,
-        base,
-        path: path,
-      };
-      normalized.push(cacheName);
-    } else {
-      normalized.push(path);
+      throw new Error(`Foreign field "${path}" not allowed in search.`);
     }
   }
-
-  definition.search.cache = cache;
-  definition.search.fields = normalized;
 }
 
 function createCacheFields(schema, definition) {
@@ -442,30 +414,11 @@ function applyCacheHook(schema, definition) {
   });
 }
 
-function resolveSchemaType(schema, path) {
-  if (!path.includes('.')) {
-    return get(schema.obj, path)?.type;
-  }
-  const field = getRefField(schema, path);
-  if (field) {
-    const { type, rest } = field;
-    const Model = mongoose.models[type.options.ref];
-    return resolveSchemaType(Model.schema, rest.join('.'));
-  }
-}
-
 function isForeignField(schema, path) {
   if (!path.includes('.')) {
     return false;
   }
   return !!getRefField(schema, path);
-}
-
-function getRefBase(schema, path) {
-  const field = getRefField(schema, path);
-  if (field) {
-    return field.base.join('.');
-  }
 }
 
 function getRefField(schema, path) {
@@ -509,10 +462,6 @@ function getCachePaths(definition, filter) {
     .map((entry) => {
       return entry[1].path;
     });
-}
-
-function generateCacheFieldName(field) {
-  return `cached${upperFirst(camelCase(field))}`;
 }
 
 // Assertions
