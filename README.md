@@ -653,22 +653,22 @@ schema.pre('save', function () {
 });
 ```
 
-##### Syncing Search Fields
+##### Syncing Cache Fields
 
 When first applying or making changes to defined cached search fields, existing
-documents will be out of sync. The static method `syncSearchFields` is provided
+documents will be out of sync. The static method `syncCacheFields` is provided
 to synchronize them:
 
 ```js
 // Find and update any documents that do not have
 // existing cached fields. Generally called when
 // adding a cached field.
-await Model.syncSearchFields();
+await Model.syncCacheFields();
 
 // Force an update on ALL documents to resync their
 // cached fields. Generally called to force a cache
 // refresh.
-await Model.syncSearchFields({
+await Model.syncCacheFields({
   force: true,
 });
 ```
@@ -702,7 +702,7 @@ Lazy cached fields will not update themselves once set. They can only be updated
 by forcing a sync:
 
 ```js
-await Model.syncSearchFields({
+await Model.syncCacheFields({
   force: true,
 });
 ```

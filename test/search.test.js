@@ -1060,7 +1060,7 @@ describe('cached fields', () => {
     user.name = 'Dennis';
     await user.save();
 
-    await Product.syncSearchFields({
+    await Product.syncCacheFields({
       force: true,
     });
 
@@ -1275,7 +1275,7 @@ describe('lazy cached fields', () => {
   });
 });
 
-describe('syncSearchFields', () => {
+describe('syncCacheFields', () => {
   it('should sync searched fields', async () => {
     const User = createTestModel({
       name: 'String',
@@ -1318,7 +1318,7 @@ describe('syncSearchFields', () => {
     });
     expect(result.meta.total).toBe(0);
 
-    const ret = await Shop.syncSearchFields();
+    const ret = await Shop.syncCacheFields();
 
     expect(ret).toMatchObject({
       matchedCount: 1,
@@ -1373,14 +1373,14 @@ describe('syncSearchFields', () => {
     });
     expect(result.meta.total).toBe(0);
 
-    await Shop.syncSearchFields();
+    await Shop.syncCacheFields();
 
     result = await Shop.search({
       keyword: 'Dennis',
     });
     expect(result.meta.total).toBe(0);
 
-    await Shop.syncSearchFields({
+    await Shop.syncCacheFields({
       force: true,
     });
 
@@ -1396,7 +1396,7 @@ describe('syncSearchFields', () => {
     });
 
     await expect(async () => {
-      await User.syncSearchFields();
+      await User.syncCacheFields();
     }).rejects.toThrow();
   });
 
@@ -1425,7 +1425,7 @@ describe('syncSearchFields', () => {
 
     const shop = await Shop.create({});
 
-    await Shop.syncSearchFields();
+    await Shop.syncCacheFields();
 
     const updated = await Shop.findById(shop.id);
     expect(updated.userName).toBeUndefined();
@@ -1468,7 +1468,7 @@ describe('syncSearchFields', () => {
     user.name = 'Dennis';
     await user.save();
 
-    await Shop.syncSearchFields();
+    await Shop.syncCacheFields();
 
     shop = await Shop.findById(shop.id);
     expect(shop.userName).toBe('Frank');
@@ -1511,7 +1511,7 @@ describe('syncSearchFields', () => {
     user.name = 'Dennis';
     await user.save();
 
-    await Shop.syncSearchFields({
+    await Shop.syncCacheFields({
       force: true,
     });
 

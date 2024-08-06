@@ -319,8 +319,8 @@ function applySearchCache(schema, definition) {
   applyCacheHook(schema, definition);
 
   schema.static(
-    'syncSearchFields',
-    async function syncSearchFields(options = {}) {
+    'syncCacheFields',
+    async function syncCacheFields(options = {}) {
       assertIncludeModule(this);
 
       const { force } = options;
