@@ -1212,6 +1212,7 @@ describe('cached fields', () => {
           userName: {
             type: 'String',
             path: 'user.name',
+            readAccess: 'none',
           },
         },
         fields: ['userName'],
@@ -1555,5 +1556,37 @@ describe('validation integration', () => {
     expect(() => {
       Shop.getSearchValidation();
     }).not.toThrow();
+  });
+
+  it('should accept search fields', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const schema = createSchema({
+      attributes: {
+        user: {
+          type: 'ObjectId',
+          ref: User.modelName,
+        },
+      },
+      search: {
+        cache: {
+          userName: {
+            type: 'String',
+            path: 'user.name',
+          },
+        },
+        fields: ['userName'],
+      },
+    });
+    const Shop = createTestModel(schema);
+
+    const validator = Shop.getSearchValidation();
+
+    await expect(
+      validator.validate({
+        userName: 'Frank',
+      })
+    ).resolves.not.toThrow();
   });
 });

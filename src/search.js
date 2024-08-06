@@ -384,13 +384,14 @@ function validateSearchFields(schema, definition) {
 function createCacheFields(schema, definition) {
   for (let [cachedField, def] of Object.entries(definition.search.cache)) {
     // Fall back to string type for virtuals or not defined.
-    const { type = 'String' } = def;
+    const { type = 'String', path, ...rest } = def;
+
     schema.add({
       [cachedField]: type,
     });
     schema.obj[cachedField] = {
       type,
-      readAccess: 'none',
+      ...rest,
     };
   }
 }
