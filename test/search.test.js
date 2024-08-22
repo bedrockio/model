@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 import { createSchema } from '../src/schema';
-import { createTestModel } from '../src/testing';
+import { createTestModel, getTestModelName } from '../src/testing';
 
 describe('search', () => {
   it('should search on name', async () => {
@@ -1273,6 +1273,66 @@ describe('lazy cached fields', () => {
 
     await shop.save();
     expect(shop.userName).toBe('Frank');
+  });
+});
+
+describe('synced fields', () => {
+  it('should update foreign cached fields when the referenced document is saved', async () => {
+    const userModelName = getTestModelName();
+    const shopModelName = getTestModelName();
+
+    const User = createTestModel(
+      userModelName,
+      createSchema({
+        attributes: {
+          name: 'String',
+        },
+        search: {
+          sync: [
+            {
+              ref: shopModelName,
+              path: 'user',
+            },
+          ],
+        },
+      })
+    );
+    const Shop = createTestModel(
+      shopModelName,
+      createSchema({
+        attributes: {
+          user: {
+            type: 'ObjectId',
+            ref: userModelName,
+          },
+        },
+        search: {
+          cache: {
+            userName: {
+              type: 'String',
+              path: 'user.name',
+            },
+          },
+          fields: ['userName'],
+        },
+      })
+    );
+
+    const user = await User.create({
+      name: 'Frank',
+    });
+
+    let shop = await Shop.create({
+      user,
+    });
+
+    expect(shop.userName).toBe('Frank');
+
+    user.name = 'Dennis';
+    await user.save();
+
+    shop = await Shop.findById(shop.id);
+    expect(shop.userName).toBe('Dennis');
   });
 });
 

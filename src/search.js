@@ -18,6 +18,7 @@ export function applySearch(schema, definition) {
   validateDefinition(definition);
   validateSearchFields(schema, definition);
   applySearchCache(schema, definition);
+  applySearchSync(schema, definition);
 
   const { query: searchQuery, fields: searchFields } = definition.search || {};
 
@@ -414,6 +415,32 @@ function applyCacheHook(schema, definition) {
     this.assign(getUpdates(this, paths, definition));
   });
 }
+
+// Search field syncing
+
+function applySearchSync(schema, definition) {
+  if (!definition.search?.sync) {
+    return;
+  }
+
+  schema.post('save', async function postSave() {
+    for (let entry of definition.search.sync) {
+      const { ref, path } = entry;
+      const Model = mongoose.models[ref];
+      const docs = await Model.find({
+        [path]: this.id,
+      });
+
+      await Promise.all(
+        docs.map(async (doc) => {
+          await doc.save();
+        })
+      );
+    }
+  });
+}
+
+// Utils
 
 function isForeignField(schema, path) {
   if (!path.includes('.')) {
