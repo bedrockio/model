@@ -19,6 +19,7 @@ Bedrock utilities for model creation.
   - [Delete Hooks](#delete-hooks)
   - [Access Control](#access-control)
   - [Assign](#assign)
+  - [Upsert](#upsert)
   - [Slugs](#slugs)
 - [Testing](#testing)
 - [Troubleshooting](#troubleshooting)
@@ -653,7 +654,57 @@ schema.pre('save', function () {
 });
 ```
 
-##### Syncing Cache Fields
+#### Syncing Cached Fields
+
+When a foreign document is updated the cached fields will be out of sync, for
+example:
+
+```js
+await shop.save();
+console.log(shop.userName);
+// The current user name
+
+user.name = 'New Name';
+await user.save();
+
+shop = await Shop.findById(shop.id);
+console.log(shop.userName);
+// Cached userName is out of sync as the user has been updated
+```
+
+A simple mechanism is provided via the `sync` key to keep the documents in sync:
+
+```jsonc
+// In user.json
+{
+  "attributes": {
+    "name": "String"
+  },
+  "search": {
+    "sync": [
+      {
+        "ref": "Shop",
+        "path": "user"
+      }
+    ]
+  }
+}
+```
+
+This is the equivalent of running the following in a post save hook:
+
+```js
+const shops = await Shop.find({
+  user: user.id,
+});
+for (let shop of shops) {
+  await shop.save();
+}
+```
+
+This will run the hooks on each shop, synchronizing the cached fields.
+
+##### Initial Sync
 
 When first applying or making changes to defined cached search fields, existing
 documents will be out of sync. The static method `syncCacheFields` is provided
@@ -1489,6 +1540,12 @@ This is functionally identical to `Object.assign` with the exception that
 provided as `undefined` cannot be represented in JSON which requires using
 either a `null` or empty string, both of which would be stored in the database
 if naively assigned with `Object.assign`.
+
+### Upsert
+
+This module adds a single `findOrCreate` convenience method that is easy to
+understand and avoids some of the gotchas that come with upserting documents in
+Mongoose.
 
 ### Slugs
 
