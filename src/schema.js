@@ -7,6 +7,7 @@ import { serializeOptions } from './serialization';
 import { applySlug } from './slug';
 import { applySearch } from './search';
 import { applyAssign } from './assign';
+import { applyUpsert } from './upsert';
 import { applyHydrate } from './hydrate';
 import { applyInclude } from './include';
 import { applySoftDelete } from './soft-delete';
@@ -61,6 +62,7 @@ export function createSchema(definition, options = {}) {
   applyInclude(schema);
   applyHydrate(schema);
   applyAssign(schema);
+  applyUpsert(schema);
   applySlug(schema);
 
   return schema;
