@@ -36,6 +36,11 @@ export function isNumberField(obj, path) {
   return isType(obj, path, 'Number');
 }
 
+export function isArrayField(obj, path) {
+  const field = getField(obj, path);
+  return Array.isArray(field?.type);
+}
+
 function isType(obj, path, test) {
   const { type } = getInnerField(obj, path);
   return type === test || type === mongoose.Schema.Types[test];

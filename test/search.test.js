@@ -24,7 +24,7 @@ describe('search', () => {
     });
   });
 
-  it('should search on an array field', async () => {
+  it('should search on any in an array field', async () => {
     const User = createTestModel({
       order: 'Number',
       categories: ['String'],
@@ -51,6 +51,28 @@ describe('search', () => {
     });
     expect(result.data).toMatchObject([{ id: user1.id }, { id: user2.id }]);
     expect(result.meta.total).toBe(2);
+  });
+
+  it('should not match an empty array field', async () => {
+    const User = createTestModel({
+      order: 'Number',
+      categories: ['String'],
+    });
+
+    await User.create({
+      order: 1,
+      categories: [],
+    });
+
+    await User.create({
+      order: 2,
+      categories: ['owner'],
+    });
+
+    const result = await User.search({
+      categories: [],
+    });
+    expect(result.meta.total).toBe(0);
   });
 
   it('should allow shorthand for a regex query', async () => {
@@ -322,120 +344,6 @@ describe('search', () => {
     expect(data.length).toBe(1);
   });
 
-  it('should allow date range search', async () => {
-    let result;
-    const User = createTestModel({
-      name: 'String',
-      archivedAt: 'Date',
-    });
-    await Promise.all([
-      User.create({ name: 'Billy', archivedAt: '2020-01-01' }),
-      User.create({ name: 'Willy', archivedAt: '2021-01-01' }),
-    ]);
-
-    result = await User.search({ archivedAt: { lte: '2020-06-01' } });
-    expect(result.data).toMatchObject([{ name: 'Billy' }]);
-    expect(result.meta.total).toBe(1);
-
-    result = await User.search({ archivedAt: { gte: '2020-06-01' } });
-    expect(result.data).toMatchObject([{ name: 'Willy' }]);
-    expect(result.meta.total).toBe(1);
-
-    result = await User.search({
-      archivedAt: { gte: '2019-06-01' },
-      sort: {
-        field: 'name',
-        order: 'asc',
-      },
-    });
-    expect(result.data).toMatchObject([{ name: 'Billy' }, { name: 'Willy' }]);
-    expect(result.meta.total).toBe(2);
-
-    result = await User.search({
-      archivedAt: {},
-      sort: {
-        field: 'name',
-        order: 'asc',
-      },
-    });
-    expect(result.data).toMatchObject([{ name: 'Billy' }, { name: 'Willy' }]);
-    expect(result.meta.total).toBe(2);
-  });
-
-  it('should allow date range search on dot path', async () => {
-    let result;
-    const User = createTestModel({
-      user: {
-        name: 'String',
-        archivedAt: 'Date',
-      },
-    });
-    await Promise.all([
-      User.create({ user: { name: 'Billy', archivedAt: '2020-01-01' } }),
-      User.create({ user: { name: 'Willy', archivedAt: '2021-01-01' } }),
-    ]);
-
-    result = await User.search({ 'user.archivedAt': { lte: '2020-06-01' } });
-    expect(result.data).toMatchObject([{ user: { name: 'Billy' } }]);
-    expect(result.meta.total).toBe(1);
-  });
-
-  it('should still allow a date range query with mongo operators', async () => {
-    let result;
-    const User = createTestModel({
-      name: 'String',
-      archivedAt: 'Date',
-    });
-    await Promise.all([
-      User.create({ name: 'Billy', archivedAt: '2020-01-01' }),
-      User.create({ name: 'Willy', archivedAt: '2021-01-01' }),
-    ]);
-
-    result = await User.search({ archivedAt: { $lte: '2020-06-01' } });
-    expect(result.data).toMatchObject([{ name: 'Billy' }]);
-    expect(result.meta.total).toBe(1);
-  });
-
-  it('should allow number range search', async () => {
-    let result;
-    const User = createTestModel({
-      name: 'String',
-      age: 'Number',
-    });
-    await Promise.all([
-      User.create({ name: 'Billy', age: 22 }),
-      User.create({ name: 'Willy', age: 54 }),
-    ]);
-
-    result = await User.search({ age: { lte: 25 } });
-    expect(result.data).toMatchObject([{ name: 'Billy' }]);
-    expect(result.meta.total).toBe(1);
-
-    result = await User.search({ age: { gte: 25 } });
-    expect(result.data).toMatchObject([{ name: 'Willy' }]);
-    expect(result.meta.total).toBe(1);
-
-    result = await User.search({
-      age: { gte: 10 },
-      sort: {
-        field: 'name',
-        order: 'asc',
-      },
-    });
-    expect(result.data).toMatchObject([{ name: 'Billy' }, { name: 'Willy' }]);
-    expect(result.meta.total).toBe(2);
-
-    result = await User.search({
-      age: {},
-      sort: {
-        field: 'name',
-        order: 'asc',
-      },
-    });
-    expect(result.data).toMatchObject([{ name: 'Billy' }, { name: 'Willy' }]);
-    expect(result.meta.total).toBe(2);
-  });
-
   it('should return the query to allow population', async () => {
     const User = createTestModel({
       name: 'String',
@@ -589,6 +497,184 @@ describe('search', () => {
       sort: null,
     });
     expect(users.data.length).toBe(2);
+  });
+
+  describe('ranges', () => {
+    it('should allow date range search', async () => {
+      let result;
+      const User = createTestModel({
+        name: 'String',
+        archivedAt: 'Date',
+      });
+      await Promise.all([
+        User.create({ name: 'Billy', archivedAt: '2020-01-01' }),
+        User.create({ name: 'Willy', archivedAt: '2021-01-01' }),
+      ]);
+
+      result = await User.search({ archivedAt: { lte: '2020-06-01' } });
+      expect(result.data).toMatchObject([{ name: 'Billy' }]);
+      expect(result.meta.total).toBe(1);
+
+      result = await User.search({ archivedAt: { gte: '2020-06-01' } });
+      expect(result.data).toMatchObject([{ name: 'Willy' }]);
+      expect(result.meta.total).toBe(1);
+
+      result = await User.search({
+        archivedAt: { gte: '2019-06-01' },
+        sort: {
+          field: 'name',
+          order: 'asc',
+        },
+      });
+      expect(result.data).toMatchObject([{ name: 'Billy' }, { name: 'Willy' }]);
+      expect(result.meta.total).toBe(2);
+
+      result = await User.search({
+        archivedAt: {},
+        sort: {
+          field: 'name',
+          order: 'asc',
+        },
+      });
+      expect(result.data).toMatchObject([{ name: 'Billy' }, { name: 'Willy' }]);
+      expect(result.meta.total).toBe(2);
+    });
+
+    it('should allow date range search on dot path', async () => {
+      let result;
+      const User = createTestModel({
+        user: {
+          name: 'String',
+          archivedAt: 'Date',
+        },
+      });
+      await Promise.all([
+        User.create({ user: { name: 'Billy', archivedAt: '2020-01-01' } }),
+        User.create({ user: { name: 'Willy', archivedAt: '2021-01-01' } }),
+      ]);
+
+      result = await User.search({ 'user.archivedAt': { lte: '2020-06-01' } });
+      expect(result.data).toMatchObject([{ user: { name: 'Billy' } }]);
+      expect(result.meta.total).toBe(1);
+    });
+
+    it('should still allow a date range query with mongo operators', async () => {
+      let result;
+      const User = createTestModel({
+        name: 'String',
+        archivedAt: 'Date',
+      });
+      await Promise.all([
+        User.create({ name: 'Billy', archivedAt: '2020-01-01' }),
+        User.create({ name: 'Willy', archivedAt: '2021-01-01' }),
+      ]);
+
+      result = await User.search({ archivedAt: { $lte: '2020-06-01' } });
+      expect(result.data).toMatchObject([{ name: 'Billy' }]);
+      expect(result.meta.total).toBe(1);
+    });
+
+    it('should allow number range search', async () => {
+      let result;
+      const User = createTestModel({
+        name: 'String',
+        age: 'Number',
+      });
+      await Promise.all([
+        User.create({ name: 'Billy', age: 22 }),
+        User.create({ name: 'Willy', age: 54 }),
+      ]);
+
+      result = await User.search({ age: { lte: 25 } });
+      expect(result.data).toMatchObject([{ name: 'Billy' }]);
+      expect(result.meta.total).toBe(1);
+
+      result = await User.search({ age: { gte: 25 } });
+      expect(result.data).toMatchObject([{ name: 'Willy' }]);
+      expect(result.meta.total).toBe(1);
+
+      result = await User.search({
+        age: { gte: 10 },
+        sort: {
+          field: 'name',
+          order: 'asc',
+        },
+      });
+      expect(result.data).toMatchObject([{ name: 'Billy' }, { name: 'Willy' }]);
+      expect(result.meta.total).toBe(2);
+
+      result = await User.search({
+        age: {},
+        sort: {
+          field: 'name',
+          order: 'asc',
+        },
+      });
+      expect(result.data).toMatchObject([{ name: 'Billy' }, { name: 'Willy' }]);
+      expect(result.meta.total).toBe(2);
+    });
+  });
+
+  describe('null', () => {
+    it('should allow null in search', async () => {
+      const User = createTestModel({
+        name: 'String',
+        age: 'Number',
+      });
+      await User.create({
+        name: 'foo',
+        age: 24,
+      });
+      await User.create({
+        name: 'bar',
+      });
+      const users = await User.search({
+        age: null,
+      });
+      expect(users.data.length).toBe(1);
+    });
+
+    it('should allow null search on dot path', async () => {
+      const User = createTestModel({
+        profile: {
+          name: 'String',
+          age: 'Number',
+        },
+      });
+      await User.create({
+        profile: {
+          name: 'foo',
+          age: 24,
+        },
+      });
+      await User.create({
+        profile: {
+          name: 'bar',
+        },
+      });
+
+      const users = await User.search({
+        'profile.age': null,
+      });
+      expect(users.data.length).toBe(1);
+    });
+
+    it('should search empty array fields with null', async () => {
+      const User = createTestModel({
+        tags: ['String'],
+      });
+      await User.create({
+        tags: [],
+      });
+      await User.create({
+        tags: ['foo'],
+      });
+
+      const users = await User.search({
+        tags: null,
+      });
+      expect(users.data.length).toBe(1);
+    });
   });
 });
 

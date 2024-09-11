@@ -152,6 +152,7 @@ export function applyValidation(schema, definition) {
 
       return getSchemaFromMongoose(schema, {
         model: this,
+        allowNull: true,
         allowSearch: true,
         skipRequired: true,
         allowInclude: true,
@@ -299,9 +300,11 @@ function getSchemaForTypedef(typedef, options = {}) {
   } else {
     schema = getSchemaForType(type, options);
 
-    // Unsetting only allowed for primitive types.
+    // Only allowed for primitive types.
     if (allowUnset(typedef, options)) {
-      schema = yd.allow(null, '', schema);
+      schema = yd.allow(schema, '').nullable();
+    } else if (allowNull(typedef, options)) {
+      schema = schema.nullable();
     } else if (allowEmpty(typedef, options)) {
       schema = schema.options({
         allowEmpty: true,
@@ -352,6 +355,7 @@ function getSchemaForTypedef(typedef, options = {}) {
   if (typedef.writeAccess && options.requireWriteAccess) {
     schema = validateAccess('write', schema, typedef.writeAccess, options);
   }
+
   return schema;
 }
 
@@ -458,6 +462,10 @@ function getSearchSchema(schema, type) {
 
 function isRequired(typedef, options) {
   return typedef.required && !typedef.default && !options.skipRequired;
+}
+
+function allowNull(typedef, options) {
+  return options.allowNull && !typedef.required;
 }
 
 function allowUnset(typedef, options) {

@@ -3,7 +3,7 @@ import logger from '@bedrockio/logger';
 import mongoose from 'mongoose';
 import { get, pick, isEmpty, escapeRegExp, isPlainObject } from 'lodash';
 
-import { isDateField, isNumberField, getField } from './utils';
+import { isArrayField, isDateField, isNumberField, getField } from './utils';
 import { SEARCH_DEFAULTS } from './const';
 import { OBJECT_ID_SCHEMA } from './validation';
 import { debug } from './env';
@@ -241,6 +241,8 @@ function normalizeQuery(query, schema, root = {}, rootPath = []) {
       root[path.join('.')] = parseRegexQuery(value);
     } else if (isArrayQuery(key, value)) {
       root[path.join('.')] = { $in: value };
+    } else if (isEmptyArrayQuery(schema, key, value)) {
+      root[path.join('.')] = [];
     } else {
       root[path.join('.')] = value;
     }
@@ -262,12 +264,16 @@ function isArrayQuery(key, value) {
   return !isMongoOperator(key) && !isInclude(key) && Array.isArray(value);
 }
 
+function isEmptyArrayQuery(schema, key, value) {
+  return !isMongoOperator(key) && isArrayField(schema, key) && value === null;
+}
+
 function isRangeQuery(schema, key, value) {
   // Range queries only allowed on Date and Number fields.
   if (!isDateField(schema, key) && !isNumberField(schema, key)) {
     return false;
   }
-  return typeof value === 'object';
+  return typeof value === 'object' && !!value;
 }
 
 function mapOperatorQuery(obj) {
@@ -340,9 +346,7 @@ function applySearchCache(schema, definition) {
       if (!force) {
         const $or = Object.keys(cache).map((cachedField) => {
           return {
-            [cachedField]: {
-              $exists: false,
-            },
+            [cachedField]: null,
           };
         });
         query.$or = $or;

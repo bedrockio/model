@@ -569,11 +569,55 @@ will be flattened to:
 }
 ```
 
+#### Searching Arrays
+
+Passing an array to `search` will perform a query using `$in`, which matches on
+the intersection of any elements. For example,
+
+```json
+tags: ["one", "two"]
+```
+
+is effectively saying "match any documents whose `tags` array contains any of
+`one` or `two`".
+
+For this reason, passing an empty array here is ambiguous as it could be asking:
+
+- Match any documents whose `tags` array is empty.
+- Match any documents whose `tags` array contains any of `[]` (ie. no elements
+  passed so no match).
+
+The difference here is subtle, but for example in a UI field where tags can be
+chosen but none happen to be selected, it would be unexpected to return
+documents simply because their `tags` array happens to be empty.
+
+The `search` method takes the simpler approach here where an empty array will
+simply be passed along to `$in`, which will never result in a match.
+
+However, as a special case, `null` may instead be passed to `search` for array
+fields to explicitly search for empty arrays:
+
+```js
+await User.search({
+  tags: null,
+});
+// Equivalent to:
+await User.find({
+  tags: [],
+});
+```
+
+This works because Mongoose will always initialize an array field in its
+documents (ie. the field is always guarnateed to exist and be an array), so an
+empty array can be thought of as equivalent to `{ $exists: false }` for array
+fields. Thinking of it this way makes it more intuitive that `null` should
+match.
+
 #### Range Based Search
 
 Additionally, date and number fields allow range queries in the form:
 
-```
+```json
 age: {
   gt: 1
   lt: 2

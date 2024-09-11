@@ -2174,6 +2174,7 @@ describe('getSearchValidation', () => {
             oneOf: [
               {
                 type: 'string',
+                nullable: true,
               },
               {
                 type: 'array',
@@ -2290,6 +2291,31 @@ describe('getSearchValidation', () => {
     await assertPass(schema, {
       name: 'foo',
       age: 25,
+    });
+  });
+
+  it('should allow null', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const schema = User.getSearchValidation();
+    expect(yd.isSchema(schema)).toBe(true);
+    await assertPass(schema, {
+      name: null,
+    });
+  });
+
+  it('should not allow null on required fields', async () => {
+    const User = createTestModel({
+      name: {
+        type: 'String',
+        required: true,
+      },
+    });
+    const schema = User.getSearchValidation();
+    expect(yd.isSchema(schema)).toBe(true);
+    await assertFail(schema, {
+      name: null,
     });
   });
 });
