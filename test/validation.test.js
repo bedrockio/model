@@ -260,6 +260,17 @@ describe('getCreateValidation', () => {
     });
   });
 
+  it('should strip empty strings', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const schema = User.getCreateValidation();
+    const result = await schema.validate({
+      name: '',
+    });
+    expect(result).toEqual({});
+  });
+
   describe('write access', () => {
     it('should deny access', async () => {
       const User = createTestModel({
@@ -790,8 +801,47 @@ describe('getUpdateValidation', () => {
     });
   });
 
+  it('should not require reference fields', async () => {
+    const Shop = createTestModel({
+      name: 'String',
+    });
+    const User = createTestModel({
+      name: 'String',
+      shop: {
+        type: 'ObjectId',
+        ref: Shop.modelName,
+        required: true,
+      },
+    });
+    const schema = User.getUpdateValidation();
+    expect(yd.isSchema(schema)).toBe(true);
+    await assertPass(schema, {
+      name: 'foo',
+    });
+    await assertPass(schema, {
+      shop: '5fd396fac80fa73203bd9554',
+    });
+    await assertFail(schema, {
+      shop: '',
+    });
+  });
+
   describe('unsetting', () => {
-    it('should allow null or empty to unset optional number fields', async () => {
+    it('should allow null or empty to unset optional string fields', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertPass(schema, {
+        name: null,
+      });
+      await assertPass(schema, {
+        name: '',
+      });
+    });
+
+    it('should allow null to unset optional number fields', async () => {
       const User = createTestModel({
         count: {
           type: 'Number',
@@ -802,7 +852,7 @@ describe('getUpdateValidation', () => {
       await assertPass(schema, {
         count: null,
       });
-      await assertPass(schema, {
+      await assertFail(schema, {
         count: '',
       });
     });
@@ -818,6 +868,12 @@ describe('getUpdateValidation', () => {
       expect(yd.isSchema(schema)).toBe(true);
       await assertPass(schema, {
         nested: {
+          name: '',
+          count: null,
+        },
+      });
+      await assertPass(schema, {
+        nested: {
           name: null,
           count: null,
         },
@@ -825,7 +881,7 @@ describe('getUpdateValidation', () => {
       await assertPass(schema, {
         nested: {
           name: '',
-          count: '',
+          count: null,
         },
       });
     });
@@ -844,22 +900,6 @@ describe('getUpdateValidation', () => {
       });
       await assertFail(schema, {
         count: '',
-      });
-    });
-
-    it('should allow null or empty to unset optional string fields', async () => {
-      const User = createTestModel({
-        name: {
-          type: 'String',
-        },
-      });
-      const schema = User.getUpdateValidation();
-      expect(yd.isSchema(schema)).toBe(true);
-      await assertPass(schema, {
-        name: null,
-      });
-      await assertPass(schema, {
-        name: '',
       });
     });
 
@@ -926,6 +966,20 @@ describe('getUpdateValidation', () => {
       });
       await assertFail(schema, {
         tags: '',
+      });
+    });
+
+    it('should not allow null or empty on boolean fields', async () => {
+      const User = createTestModel({
+        active: 'Boolean',
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertFail(schema, {
+        active: null,
+      });
+      await assertFail(schema, {
+        active: '',
       });
     });
   });
@@ -1072,6 +1126,7 @@ describe('getUpdateValidation', () => {
         id: user.profile.id,
         firstName: 'John',
         lastName: 'Doe',
+        fullName: 'John Doe',
       },
     });
     const schema = User.getUpdateValidation();
@@ -2028,6 +2083,24 @@ describe('getSearchValidation', () => {
     });
     await assertFail(schema, {
       'profile.age': 22,
+    });
+  });
+
+  it('should strip empty strings', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const schema = User.getSearchValidation();
+    const result = await schema.validate({
+      name: '',
+    });
+    expect(result).toEqual({
+      limit: 50,
+      skip: 0,
+      sort: {
+        field: 'createdAt',
+        order: 'desc',
+      },
     });
   });
 

@@ -1579,11 +1579,11 @@ user.assign(ctx.request.body);
 Object.assign(user, ctx.request.body);
 ```
 
-This is functionally identical to `Object.assign` with the exception that
-`ObjectId` reference fields can be unset by passing falsy values. This method is
-provided as `undefined` cannot be represented in JSON which requires using
-either a `null` or empty string, both of which would be stored in the database
-if naively assigned with `Object.assign`.
+This is functionally identical to `Object.assign` with the exception that fields
+can be unset by passing falsy values. This method is provided as `undefined`
+cannot be represented in JSON which requires using either a `null` or empty
+string, both of which would be stored in the database if naively assigned with
+`Object.assign`.
 
 ### Upsert
 

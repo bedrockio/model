@@ -7,7 +7,7 @@ export function applyAssign(schema) {
   schema.method('assign', function assign(fields) {
     unsetReferenceFields(fields, schema.obj);
     for (let [path, value] of Object.entries(flattenObject(fields))) {
-      if (value === null) {
+      if (value === null || value === '') {
         this.set(path, undefined);
       } else {
         this.set(path, value);

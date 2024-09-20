@@ -95,7 +95,7 @@ export function applyValidation(schema, definition) {
         model: this,
         appendSchema,
         allowInclude,
-        allowEmpty: true,
+        stripEmpty: true,
         stripDeleted: true,
         stripTimestamps: true,
         allowDefaultTags: true,
@@ -119,7 +119,7 @@ export function applyValidation(schema, definition) {
         model: this,
         appendSchema,
         allowInclude,
-        allowUnset: true,
+        allowNull: true,
         skipRequired: true,
         stripUnknown: true,
         stripDeleted: true,
@@ -137,22 +137,14 @@ export function applyValidation(schema, definition) {
     }
   );
 
-  schema.static('getDeleteValidation', function getDeleteValidation() {
-    const allowed = definition.access?.delete || 'all';
-    return validateAccess('delete', yd, allowed, {
-      model: this,
-      message: 'You do not have permissions to delete this document.',
-    });
-  });
-
   schema.static(
     'getSearchValidation',
     function getSearchValidation(options = {}) {
       const { defaults, includeDeleted, ...appendSchema } = options;
-
       return getSchemaFromMongoose(schema, {
         model: this,
         allowNull: true,
+        stripEmpty: true,
         allowSearch: true,
         skipRequired: true,
         allowInclude: true,
@@ -168,6 +160,14 @@ export function applyValidation(schema, definition) {
       });
     }
   );
+
+  schema.static('getDeleteValidation', function getDeleteValidation() {
+    const allowed = definition.access?.delete || 'all';
+    return validateAccess('delete', yd, allowed, {
+      model: this,
+      message: 'You do not have permissions to delete this document.',
+    });
+  });
 
   schema.static('getIncludeValidation', function getIncludeValidation() {
     return INCLUDE_FIELD_SCHEMA;
@@ -239,7 +239,7 @@ function getObjectSchema(arg, options) {
   } else if (Array.isArray(arg)) {
     return getArraySchema(arg, options);
   } else if (typeof arg === 'object') {
-    const { stripUnknown, expandDotSyntax } = options;
+    const { stripUnknown, stripEmpty, expandDotSyntax } = options;
     const map = {};
     for (let [key, field] of Object.entries(arg)) {
       if (!isExcludedField(field, options)) {
@@ -254,6 +254,13 @@ function getObjectSchema(arg, options) {
         stripUnknown: true,
       });
     }
+
+    if (stripEmpty) {
+      schema = schema.options({
+        stripEmpty: true,
+      });
+    }
+
     if (expandDotSyntax) {
       schema = schema.options({
         expandDotSyntax: true,
@@ -300,15 +307,24 @@ function getSchemaForTypedef(typedef, options = {}) {
   } else {
     schema = getSchemaForType(type, options);
 
-    // Only allowed for primitive types.
-    if (allowUnset(typedef, options)) {
-      schema = yd.allow(schema, '').nullable();
-    } else if (allowNull(typedef, options)) {
+    // Null may be allowed to unset non-required fields
+    // in an update operation or to search for non-existent
+    // fields in a search operation.
+    if (allowNull(typedef, options)) {
       schema = schema.nullable();
-    } else if (allowEmpty(typedef, options)) {
+    }
+
+    // Empty strings are allowed to unset non-required fields
+    // in an update operation. Technically this should be null,
+    // however empty strings are allowed here as well as they
+    // generally play nicer with front-end components. For
+    // ObjectId fields the empty string must be appended here.
+    if (disallowEmpty(typedef, options)) {
       schema = schema.options({
-        allowEmpty: true,
+        allowEmpty: false,
       });
+    } else if (appendEmpty(typedef, options)) {
+      schema = yd.allow(schema, '');
     }
   }
 
@@ -465,15 +481,31 @@ function isRequired(typedef, options) {
 }
 
 function allowNull(typedef, options) {
-  return options.allowNull && !typedef.required;
+  if (!options.allowNull) {
+    return false;
+  }
+  const { required, type } = typedef;
+  return !required && type !== 'Boolean';
 }
 
-function allowUnset(typedef, options) {
-  return options.allowUnset && !typedef.required;
+function disallowEmpty(typedef, options) {
+  if (!options.allowNull) {
+    return false;
+  }
+  const { type } = typedef;
+  if (type === 'String' || type === 'ObjectId') {
+    return typedef.required;
+  } else {
+    return false;
+  }
 }
 
-function allowEmpty(typedef, options) {
-  return options.allowEmpty && typedef.type === 'String';
+function appendEmpty(typedef, options) {
+  if (!options.allowNull) {
+    return false;
+  }
+  const { required, type } = typedef;
+  return !required && type === 'ObjectId';
 }
 
 function isExcludedField(field, options) {

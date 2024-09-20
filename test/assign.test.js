@@ -285,4 +285,18 @@ describe('assign', () => {
     });
     expect(shop.owner.name).toBe('Frank');
   });
+
+  it('should strip out fields with empty strings', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    let user = new User();
+    user.assign({
+      name: '',
+    });
+    await user.save();
+
+    user = await User.findById(user.id);
+    expect(user.name).toBeUndefined();
+  });
 });
