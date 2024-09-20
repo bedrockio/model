@@ -165,6 +165,29 @@ describe('getCreateValidation', () => {
     );
   });
 
+  it('should apply a US phone validator', async () => {
+    const User = createTestModel({
+      phone: {
+        type: 'String',
+        validate: 'phone:US',
+      },
+    });
+    const schema = User.getCreateValidation();
+    expect(yd.isSchema(schema)).toBe(true);
+    await assertPass(schema, {
+      phone: '',
+    });
+    await assertPass(schema, {
+      phone: '+15552222222',
+    });
+    await assertFail(schema, {
+      phone: '+1222',
+    });
+    await assertFail(schema, {
+      phone: '+818080103122',
+    });
+  });
+
   it('should apply a custom validator', async () => {
     const User = createTestModel({
       name: {

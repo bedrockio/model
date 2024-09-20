@@ -1332,5 +1332,113 @@ describe('createSchema', () => {
         })
       ).rejects.toThrow();
     });
+
+    it('should validate an E.164 phone field', async () => {
+      let user;
+      const User = createTestModel({
+        phone: {
+          type: 'String',
+          validate: 'phone',
+        },
+      });
+
+      await expect(async () => {
+        user = new User();
+        await user.validate();
+      }).not.toThrow();
+
+      await expect(async () => {
+        user = new User({
+          phone: 'bad',
+        });
+        await user.validate();
+      }).rejects.toThrow(mongoose.Error.ValidationError);
+
+      await expect(async () => {
+        user = new User({
+          phone: '+15551234567',
+        });
+        await user.validate();
+      }).not.toThrow();
+
+      await expect(async () => {
+        user = new User({
+          phone: '+818080103122',
+        });
+        await user.validate();
+      }).not.toThrow();
+    });
+
+    it('should validate a US phone number', async () => {
+      let user;
+      const User = createTestModel({
+        phone: {
+          type: 'String',
+          validate: 'phone:US',
+        },
+      });
+
+      await expect(async () => {
+        user = new User();
+        await user.validate();
+      }).not.toThrow();
+
+      await expect(async () => {
+        user = new User({
+          phone: 'bad',
+        });
+        await user.validate();
+      }).rejects.toThrow(mongoose.Error.ValidationError);
+
+      await expect(async () => {
+        user = new User({
+          phone: '+15552234567',
+        });
+        await user.validate();
+      }).not.toThrow();
+
+      await expect(async () => {
+        user = new User({
+          phone: '+818080103122',
+        });
+        await user.validate();
+      }).rejects.toThrow(mongoose.Error.ValidationError);
+    });
+
+    it('should validate a NANP phone number', async () => {
+      let user;
+      const User = createTestModel({
+        phone: {
+          type: 'String',
+          validate: 'phone:NANP',
+        },
+      });
+
+      await expect(async () => {
+        user = new User();
+        await user.validate();
+      }).not.toThrow();
+
+      await expect(async () => {
+        user = new User({
+          phone: 'bad',
+        });
+        await user.validate();
+      }).rejects.toThrow(mongoose.Error.ValidationError);
+
+      await expect(async () => {
+        user = new User({
+          phone: '+15552234567',
+        });
+        await user.validate();
+      }).not.toThrow();
+
+      await expect(async () => {
+        user = new User({
+          phone: '+818080103122',
+        });
+        await user.validate();
+      }).rejects.toThrow(mongoose.Error.ValidationError);
+    });
   });
 });

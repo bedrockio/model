@@ -49,7 +49,7 @@ An object with an \`id\` field may also be passed, which will be converted into 
     `.trim(),
   });
 
-const namedSchemas = {
+const NAMED_SCHEMAS = {
   // Email is special as we are assuming that in
   // all cases lowercase should be allowed but coerced.
   email: yd.string().lowercase().email(),
@@ -71,6 +71,8 @@ const namedSchemas = {
   locale: yd.string().locale(),
   md5: yd.string().md5(),
   phone: yd.string().phone(),
+  'phone:US': yd.string().phone('US'),
+  'phone:NANP': yd.string().phone('NANP'),
   postalCode: yd.string().postalCode(),
   zipcode: yd.string().zipcode(),
   sha1: yd.string().sha1(),
@@ -81,7 +83,7 @@ const namedSchemas = {
 };
 
 export function addValidators(schemas) {
-  Object.assign(namedSchemas, schemas);
+  Object.assign(NAMED_SCHEMAS, schemas);
 }
 
 export function applyValidation(schema, definition) {
@@ -611,7 +613,7 @@ function wrapMongooseValidator(validator) {
 }
 
 function getNamedSchema(name) {
-  const schema = namedSchemas[name];
+  const schema = NAMED_SCHEMAS[name];
   if (!schema) {
     throw new Error(`Cannot find schema for "${name}".`);
   }
