@@ -982,6 +982,20 @@ describe('getUpdateValidation', () => {
         active: '',
       });
     });
+
+    it('should allow unsetting a field with a format validation', async () => {
+      const User = createTestModel({
+        phone: {
+          type: 'String',
+          validate: 'phone',
+        },
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertPass(schema, {
+        phone: '',
+      });
+    });
   });
 
   it('should not enforce a schema on unstructured objects', async () => {

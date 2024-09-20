@@ -1,6 +1,6 @@
 {
   "name": "@bedrockio/model",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "Bedrock utilities for model creation.",
   "type": "module",
   "scripts": {
@@ -30,7 +30,7 @@
     "lodash": "^4.17.21"
   },
   "peerDependencies": {
-    "@bedrockio/yada": "^1.2.1",
+    "@bedrockio/yada": "^1.2.2",
     "mongoose": "^8.6.2"
   },
   "devDependencies": {
@@ -38,7 +38,7 @@
     "@babel/core": "^7.20.12",
     "@babel/preset-env": "^7.20.2",
     "@bedrockio/prettier-config": "^1.0.2",
-    "@bedrockio/yada": "^1.2.1",
+    "@bedrockio/yada": "^1.2.2",
     "@shelf/jest-mongodb": "^4.3.2",
     "eslint": "^8.33.0",
     "eslint-plugin-bedrock": "^1.0.26",
