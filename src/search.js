@@ -196,7 +196,7 @@ function buildRegexQuery(keyword, fields) {
     const regexKeyword = escapeRegExp(keyword);
     return {
       [field]: {
-        $regex: `${regexKeyword}`,
+        $regex: regexKeyword,
         $options: 'i',
       },
     };
