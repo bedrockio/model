@@ -1,0 +1,5 @@
+#!/bin/bash
+
+version=$(grep '"version"' package.json | sed -E 's/.*"version": "([^"]+)".*/\1/')
+git tag -a "v$version" -m "Release version $version"
+# && git push --tags"
