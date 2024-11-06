@@ -9,8 +9,7 @@
     "lint": "eslint",
     "build": "scripts/build",
     "eject": "scripts/eject.js",
-    "prepublish": "yarn build && yarn types",
-    "postpublish": "scripts/tag"
+    "prepublish": "yarn build && yarn types"
   },
   "main": "dist/cjs/index.js",
   "module": "src/index.js",
