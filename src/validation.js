@@ -19,7 +19,7 @@ const DATE_TAGS = {
 export const OBJECT_ID_SCHEMA = yd
   .string()
   .mongo()
-  .message('Must be an ObjectId.')
+  .message('{field} must be an id.')
   .tag({
     'x-schema': 'ObjectId',
     'x-description':
@@ -40,7 +40,7 @@ const REFERENCE_SCHEMA = yd
         return obj.id;
       })
   )
-  .message('Must be an ObjectId or object containing "id" field.')
+  .message('{field} must be an id or object containing "id" field.')
   .tag({
     'x-schema': 'Reference',
     'x-description': `

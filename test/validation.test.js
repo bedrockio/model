@@ -32,7 +32,7 @@ async function assertFail(schema, obj, options, message) {
     if (!error.details) {
       throw error;
     } else if (message) {
-      expect(error).toHaveMessage(message);
+      expect(error.getFullMessage()).toBe(message);
     }
     expect(error).not.toBeUndefined();
   }
@@ -161,7 +161,7 @@ describe('getCreateValidation', () => {
       {
         email: 'foo',
       },
-      'Must be an email address.'
+      '"email" must be an email address.'
     );
   });
 
@@ -236,7 +236,7 @@ describe('getCreateValidation', () => {
           id: 'bad-id',
         },
       },
-      'Must be an ObjectId or object containing "id" field.'
+      '"shop" must be an id or object containing "id" field.'
     );
   });
 
@@ -1240,7 +1240,7 @@ describe('getUpdateValidation', () => {
           id: 'bad-id',
         },
       },
-      'Must be an ObjectId or object containing "id" field.'
+      '"shop" must be an id or object containing "id" field.'
     );
   });
 
@@ -3385,7 +3385,7 @@ describe('named validators', () => {
         {
           zipcode: '153-0062',
         },
-        'Must be a valid zipcode.'
+        '"zipcode" must be a valid zipcode.'
       );
     });
 
@@ -3409,7 +3409,7 @@ describe('named validators', () => {
         {
           postalCode: 'foo',
         },
-        'Must be a valid postal code.'
+        '"postalCode" must be a valid postal code.'
       );
     });
   });
