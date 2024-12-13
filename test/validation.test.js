@@ -236,7 +236,7 @@ describe('getCreateValidation', () => {
           id: 'bad-id',
         },
       },
-      '"shop" must be an id or object containing "id" field.'
+      '"shop" must be an id or object containing an "id" field.'
     );
   });
 
@@ -773,6 +773,56 @@ describe('getCreateValidation', () => {
       },
     ]);
   });
+
+  it('should have correct error details', async () => {
+    const User = createTestModel({
+      shop: {
+        type: 'ObjectId',
+        ref: 'Shop',
+      },
+    });
+    const schema = User.getCreateValidation();
+    try {
+      await schema.validate({
+        shop: {
+          id: 'bad-id',
+        },
+      });
+    } catch (error) {
+      const data = JSON.parse(JSON.stringify(error));
+      expect(data.details).toEqual([
+        {
+          details: [
+            {
+              details: [
+                {
+                  details: [
+                    {
+                      details: [
+                        {
+                          format: 'mongo-object-id',
+                          message: 'Must be a valid ObjectId.',
+                          type: 'format',
+                        },
+                      ],
+                      field: 'id',
+                      message: 'Must be an id.',
+                      type: 'field',
+                    },
+                  ],
+                  type: 'validation',
+                },
+              ],
+              type: 'allowed',
+            },
+          ],
+          field: 'shop',
+          message: 'Must be an id or object containing an "id" field.',
+          type: 'field',
+        },
+      ]);
+    }
+  });
 });
 
 describe('getUpdateValidation', () => {
@@ -1240,7 +1290,7 @@ describe('getUpdateValidation', () => {
           id: 'bad-id',
         },
       },
-      '"shop" must be an id or object containing "id" field.'
+      '"shop" must be an id or object containing an "id" field.'
     );
   });
 
