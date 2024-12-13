@@ -124,7 +124,7 @@ Links:
 
 ### Schema Extensions
 
-This package provides a number of extensions to assist schema creation outside
+This module provides a number of extensions to assist schema creation outside
 the scope of Mongoose.
 
 #### Attributes
@@ -302,7 +302,7 @@ with `minLength` and `maxLength` on strings.
 
 ### Gotchas
 
-#### The `type` field is a special:
+#### The `type` field is special:
 
 ```js
 {
@@ -421,7 +421,7 @@ Note that although monogoose allows a `unique` option on fields, this will add a
 unique index to the mongo collection itself which is incompatible with soft
 deletion.
 
-This package will intercept `unique: true` to create a soft delete compatible
+This module will intercept `unique: true` to create a soft delete compatible
 validation which will:
 
 - Throw an error if other non-deleted documents with the same fields exist when
@@ -479,7 +479,7 @@ There are 4 main methods to generate schemas:
 - `getCreateValidation`: Validates all fields while disallowing reserved fields
   like `id`, `createdAt`, and `updatedAt`.
 - `getUpdateValidation`: Validates all fields as optional (ie. they will not be
-  validated if they don't exist on the object). Additionally will strip out
+  validated if they don't exist on the input). Additionally will strip out
   reserved fields to allow created objects to be passed in. Unknown fields will
   also be stripped out rather than error to allow virtuals to be passed in.
 - `getSearchValidation`: Validates fields for use with [search](#search). The
@@ -1135,7 +1135,7 @@ await shop.include('owner', {
 
 ### Access Control
 
-This package applies two forms of access control:
+This module applies two forms of access control:
 
 - [Field Access](#field-access)
 - [Document Access](#document-access)
@@ -1589,16 +1589,58 @@ string, both of which would be stored in the database if naively assigned with
 
 This module adds a single `findOrCreate` convenience method that is easy to
 understand and avoids some of the gotchas that come with upserting documents in
-Mongoose.
+Mongoose:
+
+```js
+const shop = await Shop.findOrCreate({
+  name: 'My Shop',
+});
+
+// This is equivalent to running:
+let shop = await Shop.findOne({
+  name: 'My Shop',
+});
+
+if (!shop) {
+  shop = await Shop.create({
+    name: 'My Shop',
+  });
+}
+```
+
+In most cases not all of the fields should be queried on to determine if an
+existing document exists. In this case two arguments should be passed the first
+of which is the query:
+
+```js
+const shop = await Shop.findOrCreate(
+  {
+    slug: 'my-shop',
+  },
+  {
+    name: 'My Shop',
+    slug: 'my-shop',
+  }
+);
+
+// This is equivalent to running:
+let shop = await Shop.findOne({
+  slug: 'my-shop',
+});
+
+if (!shop) {
+  shop = await Shop.create({
+    name: 'My Shop',
+    slug: 'my-shop',
+  });
+}
+```
 
 ### Slugs
 
 A common requirement is to allow slugs on documents to serve as ids for human
-readable URLs. To load a single document this way the naive approach would be to
-run a search on all documents matching the `slug` then pull the first one off.
-
-This module simplifies this by assuming a `slug` field on a model and adding a
-`findByIdOrSlug` method that allows searching on both:
+readable URLs. This module simplifies this by assuming a `slug` field on a model
+and adding a `findByIdOrSlug` method that allows searching on either:
 
 ```js
 const post = await Post.findByIdOrSlug(str);
