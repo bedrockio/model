@@ -1,9 +1,16 @@
 import yd from '@bedrockio/yada';
 import logger from '@bedrockio/logger';
 import mongoose from 'mongoose';
-import { get, pick, isEmpty, escapeRegExp, isPlainObject } from 'lodash';
+import { pick, isEmpty, escapeRegExp, isPlainObject } from 'lodash';
 
-import { isArrayField, isDateField, isNumberField, getField } from './utils';
+import {
+  getField,
+  isArrayField,
+  isDateField,
+  isNumberField,
+  resolveRefPath,
+} from './utils';
+
 import { SEARCH_DEFAULTS } from './const';
 import { OBJECT_ID_SCHEMA } from './validation';
 import { debug } from './env';
@@ -11,14 +18,11 @@ import { mergeQuery, wrapQuery } from './query';
 
 import warn from './warn';
 
-const { SchemaTypes } = mongoose;
 const { ObjectId } = mongoose.Types;
 
 export function applySearch(schema, definition) {
   validateDefinition(definition);
   validateSearchFields(schema, definition);
-  applySearchCache(schema, definition);
-  applySearchSync(schema, definition);
 
   const { query: searchQuery, fields: searchFields } = definition.search || {};
 
@@ -317,61 +321,6 @@ function parseRegexQuery(str) {
 
 // Search field caching
 
-function applySearchCache(schema, definition) {
-  if (!definition.search?.cache) {
-    return;
-  }
-
-  createCacheFields(schema, definition);
-  applyCacheHook(schema, definition);
-
-  schema.static(
-    'syncCacheFields',
-    async function syncCacheFields(options = {}) {
-      assertIncludeModule(this);
-
-      const { force } = options;
-      const { cache = {} } = definition.search || {};
-
-      const paths = getCachePaths(definition);
-
-      const cachedFields = Object.keys(cache);
-
-      if (!cachedFields.length) {
-        throw new Error('No search fields to sync.');
-      }
-
-      const query = {};
-
-      if (!force) {
-        const $or = Object.keys(cache).map((cachedField) => {
-          return {
-            [cachedField]: null,
-          };
-        });
-        query.$or = $or;
-      }
-
-      const docs = await this.find(query).include(paths);
-
-      const ops = docs.map((doc) => {
-        return {
-          updateOne: {
-            filter: {
-              _id: doc._id,
-            },
-            update: {
-              $set: getUpdates(doc, paths, definition),
-            },
-          },
-        };
-      });
-
-      return await this.bulkWrite(ops);
-    }
-  );
-}
-
 function validateSearchFields(schema, definition) {
   const { fields } = definition.search || {};
 
@@ -386,126 +335,11 @@ function validateSearchFields(schema, definition) {
   }
 }
 
-function createCacheFields(schema, definition) {
-  for (let [cachedField, def] of Object.entries(definition.search.cache)) {
-    // Fall back to string type for virtuals or not defined.
-    const { type = 'String', path, ...rest } = def;
-
-    schema.add({
-      [cachedField]: type,
-    });
-    schema.obj[cachedField] = {
-      type,
-      ...rest,
-    };
-  }
-}
-
-function applyCacheHook(schema, definition) {
-  schema.pre('save', async function () {
-    assertIncludeModule(this.constructor);
-    assertAssignModule(this.constructor);
-
-    const doc = this;
-    const paths = getCachePaths(definition, (cachedField, def) => {
-      if (def.lazy) {
-        return !get(doc, cachedField);
-      } else {
-        return true;
-      }
-    });
-
-    await this.include(paths);
-    this.assign(getUpdates(this, paths, definition));
-  });
-}
-
-// Search field syncing
-
-function applySearchSync(schema, definition) {
-  if (!definition.search?.sync) {
-    return;
-  }
-
-  schema.post('save', async function postSave() {
-    for (let entry of definition.search.sync) {
-      const { ref, path } = entry;
-      const Model = mongoose.models[ref];
-      const docs = await Model.find({
-        [path]: this.id,
-      });
-
-      await Promise.all(
-        docs.map(async (doc) => {
-          await doc.save();
-        })
-      );
-    }
-  });
-}
-
 // Utils
 
 function isForeignField(schema, path) {
   if (!path.includes('.')) {
     return false;
   }
-  return !!getRefField(schema, path);
-}
-
-function getRefField(schema, path) {
-  const split = path.split('.');
-  for (let i = 1; i < split.length; i++) {
-    const base = split.slice(0, i);
-    const rest = split.slice(i);
-    const type = schema.path(base.join('.'));
-    if (type instanceof SchemaTypes.ObjectId) {
-      return {
-        type,
-        base,
-        rest,
-      };
-    }
-  }
-}
-
-function getUpdates(doc, paths, definition) {
-  const updates = {};
-
-  const entries = Object.entries(definition.search.cache).filter((entry) => {
-    return paths.includes(entry[1].path);
-  });
-  for (let [cachedField, def] of entries) {
-    // doc.get will not return virtuals (even with specified options),
-    // so use lodash to ensure they are included here.
-    // https://mongoosejs.com/docs/api/document.html#Document.prototype.get()
-    updates[cachedField] = get(doc, def.path);
-  }
-  return updates;
-}
-
-function getCachePaths(definition, filter) {
-  filter ||= () => true;
-  const { cache } = definition.search || {};
-  return Object.entries(cache)
-    .filter((entry) => {
-      return filter(...entry);
-    })
-    .map((entry) => {
-      return entry[1].path;
-    });
-}
-
-// Assertions
-
-function assertIncludeModule(Model) {
-  if (!Model.schema.methods.include) {
-    throw new Error('Include module is required for cached search fields.');
-  }
-}
-
-function assertAssignModule(Model) {
-  if (!Model.schema.methods.assign) {
-    throw new Error('Assign module is required for cached search fields.');
-  }
+  return !!resolveRefPath(schema, path);
 }

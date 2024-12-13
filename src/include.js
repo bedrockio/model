@@ -134,9 +134,19 @@ export function checkSelects(doc, ret) {
 
 // Exported for testing.
 export function getParams(modelName, arg) {
-  const paths = Array.isArray(arg) ? arg : [arg];
+  const paths = resolvePathsArg(arg);
   const node = pathsToNode(paths, modelName);
   return nodeToPopulates(node);
+}
+
+function resolvePathsArg(arg) {
+  if (Array.isArray(arg)) {
+    return arg;
+  } else if (arg instanceof Set) {
+    return Array.from(arg);
+  } else {
+    return [arg];
+  }
 }
 
 // Exported for testing.

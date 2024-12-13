@@ -1487,6 +1487,20 @@ describe('instance methods', () => {
       expect(shop.user.name).toBe('Bob');
     });
 
+    it('should allow a set', async () => {
+      const user = await User.create({
+        name: 'Bob',
+      });
+      const shop = await Shop.create({
+        name: 'foo',
+        user: user.id,
+      });
+      const includes = new Set();
+      includes.add('user');
+      await shop.include(includes);
+      expect(shop.user.name).toBe('Bob');
+    });
+
     it('should perform no actions if passed undefined', async () => {
       const user = await User.create({
         name: 'Bob',
@@ -1883,6 +1897,26 @@ describe('search integration', () => {
     const { data } = await Shop.search({
       name: 'foo',
       include: ['user'],
+    });
+    expect(data.length).toBe(1);
+    expect(data[0].user.name).toBe('Bob');
+  });
+
+  it('should allow include field as set in search', async () => {
+    const include = new Set();
+    include.add('user');
+
+    const user = await User.create({
+      name: 'Bob',
+    });
+    await Shop.create({
+      name: 'foo',
+      user: user.id,
+    });
+
+    const { data } = await Shop.search({
+      name: 'foo',
+      include,
     });
     expect(data.length).toBe(1);
     expect(data[0].user.name).toBe('Bob');

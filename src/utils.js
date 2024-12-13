@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 
+const { SchemaTypes } = mongoose;
+
 // Mongoose provides an "equals" method on both documents and
 // ObjectIds, however it does not provide a static method to
 // compare two unknown values that may be either, so provide
@@ -84,6 +86,31 @@ export function getField(obj, path) {
     }
   });
   return field || {};
+}
+
+// Finds a reference field in a schema and splits
+// the provided path into the local and foreign
+// components of the full path.
+export function resolveRefPath(schema, path) {
+  const split = path.split('.');
+  for (let i = 1; i < split.length; i++) {
+    const base = split.slice(0, i);
+    const rest = split.slice(i);
+
+    let type = schema.path(base.join('.'));
+    if (type instanceof SchemaTypes.Array) {
+      type = type.caster;
+    }
+
+    if (type instanceof SchemaTypes.ObjectId) {
+      const { ref } = type.options;
+      return {
+        ref,
+        local: base.join('.'),
+        foreign: rest.join('.'),
+      };
+    }
+  }
 }
 
 // The same as getField but traverses into the final field

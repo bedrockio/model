@@ -15,6 +15,7 @@ Bedrock utilities for model creation.
   - [Soft Delete](#soft-delete)
   - [Validation](#validation)
   - [Search](#search)
+  - [Cache](#cache)
   - [Includes](#includes)
   - [Delete Hooks](#delete-hooks)
   - [Access Control](#access-control)
@@ -659,11 +660,16 @@ a text index applied, then a Mongo text query will be attempted:
 }
 ```
 
-#### Keyword Field Caching
+#### Search Validation
 
-A common problem with search is filtering on fields belonging to foreign models.
-The search module helps to alleviate this issue by allowing a simple way to
-cache foreign fields on the model to allow filtering on them.
+The [validation](#validation) generated for search using `getSearchValidation`
+is inherently looser and allows more fields to be passed to allow complex
+searches compatible with the above.
+
+### Cache
+
+The cache module allows a simple way to cache foreign fields on a document and
+optionally keep them in sync.
 
 ```json
 {
@@ -673,20 +679,17 @@ cache foreign fields on the model to allow filtering on them.
       "ref": "User"
     }
   },
-  "search": {
-    "cache": {
-      "userName": {
-        "type": "String",
-        "path": "user.name"
-      }
-    },
-    "fields": ["userName"]
+  "cache": {
+    "userName": {
+      "type": "String",
+      "path": "user.name"
+    }
   }
 }
 ```
 
 The above example is equivalent to creating a field called `userName` and
-updating it when a document is saved:
+setting it when a document is saved:
 
 ```js
 schema.add({
@@ -700,77 +703,10 @@ schema.pre('save', function () {
 
 #### Syncing Cached Fields
 
-When a foreign document is updated the cached fields will be out of sync, for
-example:
-
-```js
-await shop.save();
-console.log(shop.userName);
-// The current user name
-
-user.name = 'New Name';
-await user.save();
-
-shop = await Shop.findById(shop.id);
-console.log(shop.userName);
-// Cached userName is out of sync as the user has been updated
-```
-
-A simple mechanism is provided via the `sync` key to keep the documents in sync:
-
-```jsonc
-// In user.json
-{
-  "attributes": {
-    "name": "String"
-  },
-  "search": {
-    "sync": [
-      {
-        "ref": "Shop",
-        "path": "user"
-      }
-    ]
-  }
-}
-```
-
-This is the equivalent of running the following in a post save hook:
-
-```js
-const shops = await Shop.find({
-  user: user.id,
-});
-for (let shop of shops) {
-  await shop.save();
-}
-```
-
-This will run the hooks on each shop, synchronizing the cached fields.
-
-##### Initial Sync
-
-When first applying or making changes to defined cached search fields, existing
-documents will be out of sync. The static method `syncCacheFields` is provided
-to synchronize them:
-
-```js
-// Find and update any documents that do not have
-// existing cached fields. Generally called when
-// adding a cached field.
-await Model.syncCacheFields();
-
-// Force an update on ALL documents to resync their
-// cached fields. Generally called to force a cache
-// refresh.
-await Model.syncCacheFields({
-  force: true,
-});
-```
-
-##### Lazy Cached Fields
-
-Cached fields can be made lazy:
+By default cached fields are only updated when the reference changes. This is
+fine when the field on the foreign document will not change or to keep a
+snapshot of the value. However in some cases the local cached field should be
+kept in sync when the foreign field changes:
 
 ```json
 {
@@ -780,36 +716,43 @@ Cached fields can be made lazy:
       "ref": "User"
     }
   },
-  "search": {
-    "cache": {
-      "userName": {
-        "type": "String",
-        "path": "user.name",
-        "lazy": true
-      }
-    },
-    "fields": ["userName"]
+  "cache": {
+    "userName": {
+      "type": "String",
+      "path": "user.name",
+      "sync": true
+    }
   }
 }
 ```
 
-Lazy cached fields will not update themselves once set. They can only be updated
-by forcing a sync:
+The "sync" field is the equivelent of running a post save hook on the foreign
+model to keep the cached field in sync:
 
 ```js
-await Model.syncCacheFields({
-  force: true,
+userSchema.post('save', function () {
+  await Shop.updateMany({
+    user: this.id,
+  }, {
+    $set: {
+      userName: this.name
+    }
+  })
 });
 ```
 
-Making fields lazy alleviates performance impact on writes and allows caches to
-be updated at another time (such as a background job).
+##### Initial Sync
 
-#### Search Validation
+When first applying or making changes to defined cached search fields, existing
+documents will be out of sync. The static method `syncCacheFields` is provided
+to synchronize them:
 
-The [validation](#validation) generated for search using `getSearchValidation`
-is inherently looser and allows more fields to be passed to allow complex
-searches compatible with the above.
+```js
+// Find and update any documents that do not have
+// existing cached fields. Generally called after
+// adding or modifying a cached field.
+await Model.syncCacheFields();
+```
 
 ### Includes
 
