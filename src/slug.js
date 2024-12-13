@@ -26,20 +26,22 @@ export function applySlug(schema) {
   );
 }
 
-function find(Model, str, args, query) {
+function find(Model, str, args, deleted) {
   const isObjectId = str.length === 24 && ObjectId.isValid(str);
   // There is a non-zero chance of a slug colliding with an ObjectId but
   // is exceedingly rare (run of exactly 24 [a-f0-9] chars together
   // without a hyphen) so this should be acceptable.
-  if (!query && isObjectId) {
-    return Model.findById(str, ...args);
+  const query = {};
+  if (isObjectId) {
+    query._id = str;
   } else {
-    query = { ...query };
-    if (isObjectId) {
-      query._id = str;
-    } else {
-      query.slug = str;
-    }
-    return Model.findOne(query, ...args);
+    query.slug = str;
   }
+  return Model.findOne(
+    {
+      ...deleted,
+      ...query,
+    },
+    ...args
+  );
 }
