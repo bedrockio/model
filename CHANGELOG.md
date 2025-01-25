@@ -1,3 +1,7 @@
+## 0.8.2
+
+- Trim strings by default.
+
 ## 0.8.0
 
 - Moved "cache" field in "search" to definition root.

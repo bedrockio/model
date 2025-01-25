@@ -50,7 +50,7 @@ export function createSchema(definition, options = {}) {
       toJSON: serializeOptions,
       toObject: serializeOptions,
       ...options,
-    }
+    },
   );
 
   // Soft Delete needs to be applied
@@ -103,6 +103,10 @@ function normalizeSchemaTypedef(typedef, path) {
     typedef.type = normalizeAttributes(type, path);
   } else {
     assertSchemaType(type, path);
+  }
+
+  if (typedef.type === 'String') {
+    typedef.trim ??= true;
   }
 
   return typedef;

@@ -19,6 +19,7 @@ describe('normalizeAttributes', () => {
     expect(normalizeAttributes(attributes)).toEqual({
       name: {
         type: 'String',
+        trim: true,
       },
       age: {
         type: 'Number',
@@ -38,6 +39,7 @@ describe('normalizeAttributes', () => {
     expect(normalizeAttributes(attributes)).toEqual({
       name: {
         type: 'String',
+        trim: true,
       },
       age: {
         type: 'Number',
@@ -59,9 +61,11 @@ describe('normalizeAttributes', () => {
       profile: {
         firstName: {
           type: 'String',
+          trim: true,
         },
         lastName: {
           type: 'String',
+          trim: true,
         },
       },
     });
@@ -76,6 +80,7 @@ describe('normalizeAttributes', () => {
         type: [
           {
             type: 'String',
+            trim: true,
           },
         ],
       },
@@ -97,9 +102,11 @@ describe('normalizeAttributes', () => {
           {
             firstName: {
               type: 'String',
+              trim: true,
             },
             lastName: {
               type: 'String',
+              trim: true,
             },
           },
         ],
@@ -124,6 +131,7 @@ describe('normalizeAttributes', () => {
             b: {
               c: {
                 type: 'String',
+                trim: true,
               },
             },
           },
@@ -255,6 +263,7 @@ describe('normalizeAttributes', () => {
           {
             type: 'String',
             validate: 'email',
+            trim: true,
           },
         ],
       },
@@ -279,6 +288,7 @@ describe('normalizeAttributes', () => {
         type: {
           type: 'String',
           default: 'Point',
+          trim: true,
         },
         coordinates: {
           type: [
@@ -305,6 +315,7 @@ describe('normalizeAttributes', () => {
         type: {
           name: {
             type: 'String',
+            trim: true,
           },
         },
       },
@@ -401,6 +412,7 @@ describe('createSchema', () => {
       });
       expect(User.schema.obj.ref).toEqual({
         type: 'String',
+        trim: true,
       });
     });
   });
@@ -415,6 +427,7 @@ describe('createSchema', () => {
       });
       expect(User.schema.obj.email).toEqual({
         type: 'String',
+        trim: true,
         softUnique: true,
       });
     });
@@ -442,6 +455,45 @@ describe('createSchema', () => {
           email: 'foo@bar.com',
         });
       }).rejects.toThrow();
+    });
+  });
+
+  describe('strings', () => {
+    it('should always trim strings by default', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      const user = new User({ name: 'foo     ' });
+      expect(user.name).toBe('foo');
+    });
+
+    it('should trim strings inside arrays', async () => {
+      const User = createTestModel({
+        names: ['String'],
+      });
+      const user = new User({ names: ['foo     '] });
+      expect(user.names).toEqual(['foo']);
+    });
+
+    it('should trim strings inside array objects', async () => {
+      const User = createTestModel({
+        name: {
+          first: 'String',
+        },
+      });
+      const user = new User({ name: { first: 'foo   ' } });
+      expect(user.name.first).toBe('foo');
+    });
+
+    it('should optionally allow preventing trim', async () => {
+      const User = createTestModel({
+        name: {
+          type: 'String',
+          trim: false,
+        },
+      });
+      const user = new User({ name: 'foo   ' });
+      expect(user.name).toBe('foo   ');
     });
   });
 
@@ -513,7 +565,7 @@ describe('createSchema', () => {
         await expect(
           User.create({
             names: ['John Doe'],
-          })
+          }),
         ).rejects.toThrow();
       });
 
@@ -541,7 +593,7 @@ describe('createSchema', () => {
                 id: 'foo',
               },
             ],
-          })
+          }),
         ).rejects.toThrow();
 
         await expect(
@@ -552,7 +604,7 @@ describe('createSchema', () => {
                 name: 'bar',
               },
             ],
-          })
+          }),
         ).resolves.not.toThrow();
       });
 
@@ -587,7 +639,7 @@ describe('createSchema', () => {
                 },
               ],
             },
-          })
+          }),
         ).rejects.toThrow();
 
         await expect(
@@ -600,7 +652,7 @@ describe('createSchema', () => {
                 },
               ],
             },
-          })
+          }),
         ).resolves.not.toThrow();
       });
 
@@ -656,25 +708,25 @@ describe('createSchema', () => {
         await expect(
           User.create({
             names: [],
-          })
+          }),
         ).rejects.toThrow('Must have at least 1 element.');
 
         await expect(
           User.create({
             names: ['foo'],
-          })
+          }),
         ).resolves.not.toThrow();
 
         await expect(
           User.create({
             names: ['foo', 'bar'],
-          })
+          }),
         ).resolves.not.toThrow();
 
         await expect(
           User.create({
             names: ['foo', 'bar', 'baz'],
-          })
+          }),
         ).rejects.toThrow('Cannot have more than 2 elements.');
       });
 
@@ -686,31 +738,31 @@ describe('createSchema', () => {
         await expect(
           User.create({
             location: [],
-          })
+          }),
         ).resolves.not.toThrow();
 
         await expect(
           User.create({
             location: [35],
-          })
+          }),
         ).rejects.toThrow();
 
         await expect(
           User.create({
             location: [35, 139],
-          })
+          }),
         ).resolves.not.toThrow();
 
         await expect(
           User.create({
             location: [35, 139, 13],
-          })
+          }),
         ).rejects.toThrow();
 
         await expect(
           User.create({
             location: [35, '139'],
-          })
+          }),
         ).rejects.toThrow();
       });
 
@@ -729,31 +781,31 @@ describe('createSchema', () => {
         await expect(
           User.create({
             coordinates: [],
-          })
+          }),
         ).resolves.not.toThrow();
 
         await expect(
           User.create({
             coordinates: [35],
-          })
+          }),
         ).rejects.toThrow();
 
         await expect(
           User.create({
             coordinates: [35, 139],
-          })
+          }),
         ).resolves.not.toThrow();
 
         await expect(
           User.create({
             coordinates: [35, 139, 13],
-          })
+          }),
         ).rejects.toThrow();
 
         await expect(
           User.create({
             coordinates: [35, '139'],
-          })
+          }),
         ).rejects.toThrow();
       });
     });
@@ -903,7 +955,7 @@ describe('createSchema', () => {
               firstName: 'John',
               lastName: 'Doe',
             },
-          })
+          }),
         ).resolves.not.toThrow();
 
         await expect(User.create({})).rejects.toThrow();
@@ -951,13 +1003,13 @@ describe('createSchema', () => {
                 lastName: 'Doe',
               },
             },
-          })
+          }),
         ).resolves.not.toThrow();
 
         await expect(
           User.create({
             account: {},
-          })
+          }),
         ).rejects.toThrow();
       });
 
@@ -986,13 +1038,13 @@ describe('createSchema', () => {
                 },
               },
             ],
-          })
+          }),
         ).resolves.not.toThrow();
 
         await expect(
           User.create({
             accounts: [{}],
-          })
+          }),
         ).rejects.toThrow();
       });
 
@@ -1123,7 +1175,7 @@ describe('createSchema', () => {
 
       expect(user.tokens[0].lastAccessedAt.getTime()).toBeCloseTo(
         Date.now(),
-        -20
+        -20,
       );
     });
 
@@ -1150,7 +1202,7 @@ describe('createSchema', () => {
 
       expect(user.tokens[0].lastAccessedAt.getTime()).toBeCloseTo(
         Date.now(),
-        -20
+        -20,
       );
     });
 
@@ -1323,13 +1375,13 @@ describe('createSchema', () => {
       await expect(
         User.create({
           emails: ['good@email.com'],
-        })
+        }),
       ).resolves.not.toThrow();
 
       await expect(
         User.create({
           emails: ['bad@email'],
-        })
+        }),
       ).rejects.toThrow();
     });
 

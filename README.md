@@ -11,6 +11,7 @@ Bedrock utilities for model creation.
   - [Scopes](#scopes)
   - [Tuples](#tuples)
   - [Array Extensions](#array-extensions)
+  - [String Trimming](#string-trimming)
 - [Modules](#modules)
   - [Soft Delete](#soft-delete)
   - [Validation](#validation)
@@ -288,18 +289,36 @@ so the field will always exist. It also suffers from being ambiguous (is the
 array required or the elements inside?). An extension is provided here for
 explicit handling of this case:
 
-```js
+```json
 {
   "tokens": {
     "type": ["String"],
     "minLength": 1,
     "maxLength": 2
   }
-};
+}
 ```
 
 A custom validator will be created to enforce the array length, bringing parity
 with `minLength` and `maxLength` on strings.
+
+#### String Trimming
+
+Note that strings are always trimmed by default. To disable this pass `false`
+explicitly for the `trim` flag.
+
+```jsonc
+{
+  // Implies trim: true
+  "name": "String",
+
+  // Preserves surrounding whitespace
+  "nameLong": {
+    "type": "String",
+    "trim": false,
+  },
+}
+```
 
 ### Gotchas
 
@@ -462,11 +481,11 @@ router.post(
   validateBody(
     User.getCreateValidation({
       password: yd.string().password().required(),
-    })
+    }),
   ),
   async (ctx) => {
     // ....
-  }
+  },
 );
 ```
 
@@ -904,9 +923,9 @@ await Product.findById(id).include('shop.^user.name').
   // etc
   "shop": {
     "user": {
-      "name": "User Name"
-    }
-  }
+      "name": "User Name",
+    },
+  },
 }
 ```
 
@@ -929,9 +948,9 @@ await Product.findById(id).include('shop.user.^name').
     "rating": 5,
     // etc
     "user": {
-      "name": "User Name"
-    }
-  }
+      "name": "User Name",
+    },
+  },
 }
 ```
 
@@ -969,7 +988,7 @@ const user = await User.findById(id).include('*Name');
 ```jsonc
 {
   "firstName": "Frank",
-  "lastName": "Reynolds"
+  "lastName": "Reynolds",
   // Other fields excluded.
 }
 ```
@@ -1239,13 +1258,13 @@ However, only admins can set the owner of the shop:
 {
   "name": {
     "type": "String",
-    "writeAccess": ["owner", "admin"]
+    "writeAccess": ["owner", "admin"],
   },
   "owner": {
     "type": "ObjectId",
     "ref": "User",
-    "writeAccess": "admin"
-  }
+    "writeAccess": "admin",
+  },
 }
 ```
 
@@ -1304,8 +1323,8 @@ of the model definition:
     // A user may update themselves or an admin.
     "update": ["self", "admin"],
     // Only an admin may delete a user.
-    "delete": ["admin"]
-  }
+    "delete": ["admin"],
+  },
 }
 ```
 
@@ -1319,15 +1338,15 @@ The same options can be used as
   "attributes": {
     "owner": {
       "type": "ObjectId",
-      "ref": "User"
-    }
+      "ref": "User",
+    },
   },
   "access": {
     // An owner may update their own shop.
     "update": ["owner", "admin"],
     // Only an admin may delete a shop.
-    "delete": ["admin"]
-  }
+    "delete": ["admin"],
+  },
 }
 ```
 
@@ -1343,23 +1362,23 @@ deletion. They are defined in the `onDelete` field of the model definition file:
     "name": "String",
     "profile": {
       "type": "ObjectId",
-      "ref": "UserProfile"
-    }
+      "ref": "UserProfile",
+    },
   },
   "onDelete": {
     "clean": [
       {
-        "path": "profile"
+        "path": "profile",
       },
       {
         "ref": "Shop",
-        "path": "owner"
-      }
+        "path": "owner",
+      },
     ],
     "errorOnReferenced": {
-      "except": ["AuditEntry"]
-    }
-  }
+      "except": ["AuditEntry"],
+    },
+  },
 }
 ```
 
@@ -1412,11 +1431,11 @@ Operations may filter on additional fields with `query`:
         "ref": "Shop",
         "path": "owner",
         "query": {
-          "status": "active"
-        }
-      }
-    ]
-  }
+          "status": "active",
+        },
+      },
+    ],
+  },
 }
 ```
 
@@ -1450,10 +1469,10 @@ query:
     "clean": [
       {
         "ref": "Shop",
-        "path": ["owner", "administrator"]
-      }
-    ]
-  }
+        "path": ["owner", "administrator"],
+      },
+    ],
+  },
 }
 ```
 
@@ -1563,7 +1582,7 @@ const shop = await Shop.findOrCreate(
   {
     name: 'My Shop',
     slug: 'my-shop',
-  }
+  },
 );
 
 // This is equivalent to running:
