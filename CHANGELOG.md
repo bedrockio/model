@@ -1,3 +1,7 @@
+## 0.8.4
+
+- Fixed issues with external models colliding with cache module.
+
 ## 0.8.3
 
 - Bumped yada version

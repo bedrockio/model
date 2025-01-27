@@ -1,3 +1,5 @@
+import mongoose from 'mongoose';
+
 import { createSchema } from '../src/schema';
 import { createTestModel } from '../src/testing';
 
@@ -313,6 +315,18 @@ describe('cached fields', () => {
 
     expect(shop.userName).toBe('Frank');
     expect(shop.toObject().userName).toBeUndefined();
+  });
+
+  it('should not interact with models with no definition', async () => {
+    createTestModel(new mongoose.Schema());
+    const User = createTestModel({
+      name: 'String',
+    });
+    await expect(
+      User.create({
+        name: 'Frank',
+      }),
+    ).resolves.not.toThrow();
   });
 });
 
@@ -781,7 +795,7 @@ describe('integrations', () => {
     await expect(
       validator.validate({
         userName: 'Frank',
-      })
+      }),
     ).rejects.toThrow();
   });
 
@@ -813,7 +827,7 @@ describe('integrations', () => {
     await expect(
       validator.validate({
         userName: 'Frank',
-      })
+      }),
     ).resolves.not.toThrow();
   });
 });

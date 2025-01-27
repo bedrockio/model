@@ -144,7 +144,13 @@ function compileSyncOperations() {
       // Model has already been compiled so skip.
       continue;
     }
+
     const definition = definitionMap.get(schema);
+
+    if (!definition) {
+      continue;
+    }
+
     const fields = resolveCachedFields(schema, definition);
 
     for (let [ref, group] of Object.entries(groupBy(fields, 'ref'))) {
