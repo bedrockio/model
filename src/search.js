@@ -1,7 +1,7 @@
 import yd from '@bedrockio/yada';
 import logger from '@bedrockio/logger';
 import mongoose from 'mongoose';
-import { pick, isEmpty, escapeRegExp, isPlainObject } from 'lodash';
+import { pick, isEmpty, memoize, escapeRegExp, isPlainObject } from 'lodash';
 
 import {
   getField,
@@ -24,12 +24,12 @@ export function applySearch(schema, definition) {
   validateDefinition(definition);
   validateSearchFields(schema, definition);
 
-  const { query: searchQuery, fields: searchFields } = definition.search || {};
+  const { search: config = {} } = definition;
 
   schema.static('search', function search(body = {}) {
     const options = {
       ...SEARCH_DEFAULTS,
-      ...searchQuery,
+      ...config.query,
       ...body,
     };
 
@@ -45,14 +45,14 @@ export function applySearch(schema, definition) {
     }
 
     if (keyword) {
-      const keywordQuery = buildKeywordQuery(schema, keyword, searchFields);
+      const keywordQuery = buildKeywordQuery(schema, keyword, config);
       query = mergeQuery(query, keywordQuery);
     }
 
     if (debug) {
       logger.info(
         `Search query for ${this.modelName}:\n`,
-        JSON.stringify(query, null, 2)
+        JSON.stringify(query, null, 2),
       );
     }
 
@@ -121,7 +121,7 @@ function validateDefinition(definition) {
       [
         '"search" field on model definition must not be an array.',
         'Use "search.fields" to define fields for keyword queries.',
-      ].join('\n')
+      ].join('\n'),
     );
     throw new Error('Invalid model definition.');
   }
@@ -174,37 +174,113 @@ function resolveSort(sort, schema) {
 // https://stackoverflow.com/questions/44833817/mongodb-full-and-partial-text-search
 // https://jira.mongodb.org/browse/SERVER-15090
 
-function buildKeywordQuery(schema, keyword, fields) {
-  let queries;
-
-  // Prefer defined search fields over
-  // text indexes to perform keyword search.
-  if (fields) {
-    queries = buildRegexQuery(keyword, fields);
-  } else if (hasTextIndex(schema)) {
-    queries = [getTextQuery(keyword)];
-  } else {
-    throw new Error('No keyword fields defined.');
+function buildKeywordQuery(schema, keyword, config) {
+  if (hasTextIndex(schema)) {
+    logger.debug('Using text index for keyword search.');
+    return getTextIndexQuery(keyword);
   }
+
+  keyword = escapeRegExp(keyword);
+
+  const queries = [
+    ...getDecomposedQueries(keyword, config),
+    ...getFieldQueries(keyword, config),
+  ];
+
+  // Note: Mongo will error on empty $or/$and array.
+  if (queries.length > 1) {
+    return {
+      $or: queries,
+    };
+  } else if (queries.length) {
+    return queries[0];
+  } else {
+    logger.debug('Could not find search fields on the model.');
+    throw new Error('Could not compose keyword query.');
+  }
+}
+
+function getTextIndexQuery(keyword) {
+  return {
+    $text: {
+      $search: keyword,
+    },
+  };
+}
+
+function getDecomposedQueries(keyword, config) {
+  const { decompose } = config;
+  if (!decompose) {
+    return [];
+  }
+
+  const decomposers = compileDecomposers(decompose);
+
+  return decomposers
+    .map((decomposer) => {
+      return decomposer(keyword);
+    })
+    .filter(Boolean);
+}
+
+function compileDecomposers(arg) {
+  const arr = Array.isArray(arg) ? arg : [arg];
+  return arr.map(compileDecomposer);
+}
+
+const DECOMPOSE_TEMPLATE_REG = /{(\w+)(\.\.\.)?}/g;
+
+const compileDecomposer = memoize((template) => {
+  if (!template.match(DECOMPOSE_TEMPLATE_REG)) {
+    throw new Error(`Could not compile decompose template ${template}.`);
+  }
+
+  const fields = [];
+
+  let src = template;
+  src = src.replace(DECOMPOSE_TEMPLATE_REG, (_, field, rest) => {
+    fields.push(field);
+    return rest ? '(.+)' : '(\\S+)';
+  });
+  src = src.replace(/\s+/, '\\s+');
+  const reg = RegExp(src);
+
+  return (keyword) => {
+    const match = keyword.match(reg);
+    if (match) {
+      const query = {};
+      fields.forEach((field, i) => {
+        query[field] = {
+          $regex: match[i + 1],
+          $options: 'i',
+        };
+      });
+      return query;
+    }
+  };
+});
+
+function getFieldQueries(keyword, config) {
+  const { fields } = config;
+
+  if (!fields) {
+    return [];
+  }
+
+  const queries = fields.map((field) => {
+    return {
+      [field]: {
+        $regex: keyword,
+        $options: 'i',
+      },
+    };
+  });
 
   if (ObjectId.isValid(keyword)) {
     queries.push({ _id: keyword });
   }
 
-  // Note: Mongo will error on empty $or/$and array.
-  return queries.length ? { $or: queries } : {};
-}
-
-function buildRegexQuery(keyword, fields) {
-  return fields.map((field) => {
-    const regexKeyword = escapeRegExp(keyword);
-    return {
-      [field]: {
-        $regex: regexKeyword,
-        $options: 'i',
-      },
-    };
-  });
+  return queries;
 }
 
 function hasTextIndex(schema) {
@@ -213,14 +289,6 @@ function hasTextIndex(schema) {
       return type === 'text';
     });
   });
-}
-
-function getTextQuery(keyword) {
-  return {
-    $text: {
-      $search: keyword,
-    },
-  };
 }
 
 // Normalizes mongo queries. Flattens plain nested paths

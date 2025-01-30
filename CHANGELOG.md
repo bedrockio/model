@@ -1,3 +1,7 @@
+## 0.9.0
+
+- Added keyword search decomposition.
+
 ## 0.8.4
 
 - Fixed issues with external models colliding with cache module.

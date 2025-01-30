@@ -334,7 +334,7 @@ describe('search', () => {
             scopeRef: ref2,
           },
         ],
-      }
+      },
     );
     const { data } = await User.search({
       'roles.scope': 'organization',
@@ -732,9 +732,6 @@ describe('keyword search', () => {
         fields: ['name'],
       },
     });
-    schema.index({
-      name: 'text',
-    });
     const User = createTestModel(schema);
     await Promise.all([
       User.create({ name: 'Billy' }),
@@ -778,9 +775,6 @@ describe('keyword search', () => {
       search: {
         fields: ['name', 'role'],
       },
-    });
-    schema.index({
-      name: 'text',
     });
     const User = createTestModel(schema);
     await Promise.all([
@@ -835,7 +829,7 @@ describe('keyword search', () => {
 
     await expect(async () => {
       await User.search({ keyword: 'Billy' });
-    }).rejects.toThrow('No keyword fields defined.');
+    }).rejects.toThrow('Could not compose keyword query.');
   });
 
   it('should not error on regex tokens', async () => {
@@ -852,7 +846,7 @@ describe('keyword search', () => {
     await expect(
       User.search({
         keyword: 'billy(*$?.^|',
-      })
+      }),
     ).resolves.not.toThrow();
   });
 
@@ -954,6 +948,48 @@ describe('keyword search', () => {
         },
       },
     ]);
+  });
+
+  describe('decomposition', () => {
+    it('should be able to decompose a structured name', async () => {
+      const schema = createSchema({
+        attributes: {
+          firstName: 'String',
+          lastName: 'String',
+        },
+        search: {
+          decompose: '{firstName} {lastName...}',
+          fields: ['firstName', 'lastName'],
+        },
+      });
+
+      const User = createTestModel(schema);
+      const user1 = await User.create({
+        firstName: 'Frank',
+        lastName: 'Reynolds',
+      });
+      const user2 = await User.create({
+        firstName: 'Maarten',
+        lastName: 'Van der Weenhof',
+      });
+
+      async function assertMatch(keyword, user) {
+        const { data } = await User.search({
+          keyword,
+        });
+        expect(data[0].id).toBe(user.id);
+      }
+
+      await assertMatch('Frank Reynolds', user1);
+      await assertMatch('Maarten Van', user2);
+      await assertMatch('Maarten Van der', user2);
+      await assertMatch('Maarten Van der Weenhof', user2);
+      await assertMatch('Maar der', user2);
+      await assertMatch('der Weenhof', user2);
+
+      // Falling back to non-decomposed query
+      await assertMatch('Maart', user2);
+    });
   });
 });
 

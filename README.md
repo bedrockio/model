@@ -679,6 +679,62 @@ a text index applied, then a Mongo text query will be attempted:
 }
 ```
 
+#### Keyword Search Decomposition
+
+Mongo text indexes don't allow partial matches by default which can be limiting.
+Field based keyword search can do this but with limitations:
+
+```json
+{
+  "attributes": {
+    "firstName": "String",
+    "lastName": "String"
+  },
+  "search": {
+    "fields": ["firstName", "lastName"]
+  }
+}
+```
+
+Although this will perform partial matches for each field, a full name keyword
+like`Frank Reynolds` will not match:
+
+```json
+{
+  "$or": [
+    {
+      "firstName": {
+        "$regex": "Frank Reynolds"
+      }
+    },
+    {
+      "lastName": {
+        "$regex": "Frank Reynolds"
+      }
+    }
+  ]
+}
+```
+
+Field decomposition provides a hint to decompose the keyword to provide matches:
+
+```json
+{
+  "attributes": {
+    "firstName": "String",
+    "lastName": "String"
+  },
+  "search": {
+    "decompose": "{firstName} {lastName...}",
+    "fields": ["firstName", "lastName"]
+  }
+}
+```
+
+This tells the keyword query builder that the first token should be taken as the
+`firstName` and any tokens after that (`...`) should be taken as the last. Note
+the `decompose` field may also be an array.
+
 #### Search Validation
 
 The [validation](#validation) generated for search using `getSearchValidation`
