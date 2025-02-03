@@ -161,7 +161,7 @@ describe('getCreateValidation', () => {
       {
         email: 'foo',
       },
-      '"email" must be an email address.'
+      '"email" must be an email address.',
     );
   });
 
@@ -209,7 +209,7 @@ describe('getCreateValidation', () => {
       {
         name: 'bar',
       },
-      'No bars!'
+      'No bars!',
     );
   });
 
@@ -236,7 +236,7 @@ describe('getCreateValidation', () => {
           id: 'bad-id',
         },
       },
-      '"shop" must be an id or object containing an "id" field.'
+      '"shop" must be an id or object containing an "id" field.',
     );
   });
 
@@ -253,7 +253,7 @@ describe('getCreateValidation', () => {
     await expect(
       schema.validate({
         name: 'foo',
-      })
+      }),
     ).resolves.not.toThrow();
   });
 
@@ -316,7 +316,7 @@ describe('getCreateValidation', () => {
           verified: true,
         },
         {},
-        'Unknown field "verified".'
+        'Unknown field "verified".',
       );
 
       await assertFail(
@@ -325,7 +325,7 @@ describe('getCreateValidation', () => {
           verified: false,
         },
         {},
-        'Unknown field "verified".'
+        'Unknown field "verified".',
       );
     });
 
@@ -423,7 +423,7 @@ describe('getCreateValidation', () => {
           name: 'Barry',
           password: 'fake password',
         },
-        { scope: 'admin' }
+        { scope: 'admin' },
       );
 
       await assertFail(
@@ -433,7 +433,7 @@ describe('getCreateValidation', () => {
           password: 'fake password',
         },
         {},
-        'Field "password" requires write permissions.'
+        'Field "password" requires write permissions.',
       );
     });
 
@@ -460,21 +460,21 @@ describe('getCreateValidation', () => {
         {
           foo: 'foo!',
         },
-        { scopes: ['foo'] }
+        { scopes: ['foo'] },
       );
       await assertFailOptions(
         schema,
         {
           bar: 'bar!',
         },
-        { scopes: ['foo'] }
+        { scopes: ['foo'] },
       );
       await assertPassOptions(
         schema,
         {
           foobar: 'foobar!',
         },
-        { scopes: ['foo'] }
+        { scopes: ['foo'] },
       );
       await assertPassOptions(
         schema,
@@ -482,7 +482,7 @@ describe('getCreateValidation', () => {
           foo: 'foo!',
           foobar: 'foobar!',
         },
-        { scopes: ['foo'] }
+        { scopes: ['foo'] },
       );
       await assertFailOptions(
         schema,
@@ -491,7 +491,7 @@ describe('getCreateValidation', () => {
           bar: 'bar!',
           foobar: 'foobar!',
         },
-        { scopes: ['foo'] }
+        { scopes: ['foo'] },
       );
 
       // With ['bar'] scopes
@@ -500,21 +500,21 @@ describe('getCreateValidation', () => {
         {
           foo: 'foo!',
         },
-        { scopes: ['bar'] }
+        { scopes: ['bar'] },
       );
       await assertPassOptions(
         schema,
         {
           bar: 'bar!',
         },
-        { scopes: ['bar'] }
+        { scopes: ['bar'] },
       );
       await assertPassOptions(
         schema,
         {
           foobar: 'foobar!',
         },
-        { scopes: ['bar'] }
+        { scopes: ['bar'] },
       );
       await assertFailOptions(
         schema,
@@ -522,7 +522,7 @@ describe('getCreateValidation', () => {
           foo: 'foo!',
           foobar: 'foobar!',
         },
-        { scopes: ['bar'] }
+        { scopes: ['bar'] },
       );
       await assertFailOptions(
         schema,
@@ -531,7 +531,7 @@ describe('getCreateValidation', () => {
           bar: 'bar!',
           foobar: 'foobar!',
         },
-        { scopes: ['bar'] }
+        { scopes: ['bar'] },
       );
 
       // With ['foo', 'bar'] scopes
@@ -540,21 +540,21 @@ describe('getCreateValidation', () => {
         {
           foo: 'foo!',
         },
-        { scopes: ['foo', 'bar'] }
+        { scopes: ['foo', 'bar'] },
       );
       await assertPassOptions(
         schema,
         {
           bar: 'bar!',
         },
-        { scopes: ['foo', 'bar'] }
+        { scopes: ['foo', 'bar'] },
       );
       await assertPassOptions(
         schema,
         {
           foobar: 'foobar!',
         },
-        { scopes: ['foo', 'bar'] }
+        { scopes: ['foo', 'bar'] },
       );
       await assertPassOptions(
         schema,
@@ -562,7 +562,7 @@ describe('getCreateValidation', () => {
           foo: 'foo!',
           foobar: 'foobar!',
         },
-        { scopes: ['foo', 'bar'] }
+        { scopes: ['foo', 'bar'] },
       );
       await assertPassOptions(
         schema,
@@ -571,7 +571,7 @@ describe('getCreateValidation', () => {
           bar: 'bar!',
           foobar: 'foobar!',
         },
-        { scopes: ['foo', 'bar'] }
+        { scopes: ['foo', 'bar'] },
       );
     });
 
@@ -619,7 +619,7 @@ describe('getCreateValidation', () => {
         {
           email: 'foo@bar.com',
         },
-        `Cannot create ${User.modelName}. Duplicate fields exist: email.`
+        `Cannot create ${User.modelName}. Duplicate fields exist: email.`,
       );
 
       // Available again -> can create.
@@ -822,6 +822,42 @@ describe('getCreateValidation', () => {
         },
       ]);
     }
+  });
+
+  it('should get a validation on a shallow field', async () => {
+    const User = createTestModel({
+      name: {
+        type: 'String',
+        validate: 'email',
+        required: true,
+      },
+    });
+    const schema = User.getCreateValidation();
+    const name = schema.get('name');
+
+    await assertPass(name, 'foo@bar.com');
+    await assertFail(name, 'foo');
+    await assertFail(name, '');
+    await assertFail(name, null);
+  });
+
+  it('should get a validation on a deep field', async () => {
+    const User = createTestModel({
+      profile: {
+        name: {
+          type: 'String',
+          validate: 'email',
+          required: true,
+        },
+      },
+    });
+    const schema = User.getCreateValidation();
+    const name = schema.get('profile.name');
+
+    await assertPass(name, 'foo@bar.com');
+    await assertFail(name, 'foo');
+    await assertFail(name, '');
+    await assertFail(name, null);
   });
 });
 
@@ -1290,7 +1326,7 @@ describe('getUpdateValidation', () => {
           id: 'bad-id',
         },
       },
-      '"shop" must be an id or object containing an "id" field.'
+      '"shop" must be an id or object containing an "id" field.',
     );
   });
 
@@ -1312,7 +1348,7 @@ describe('getUpdateValidation', () => {
         },
         {
           name: 'Barry',
-        }
+        },
       );
     });
 
@@ -1333,8 +1369,8 @@ describe('getUpdateValidation', () => {
           },
           {
             scope: 'not admin',
-          }
-        )
+          },
+        ),
       ).rejects.toThrow();
     });
 
@@ -1366,8 +1402,8 @@ describe('getUpdateValidation', () => {
           },
           {
             document: user,
-          }
-        )
+          },
+        ),
       ).resolves.not.toThrow();
 
       await expect(
@@ -1379,8 +1415,8 @@ describe('getUpdateValidation', () => {
           },
           {
             document: user,
-          }
-        )
+          },
+        ),
       ).resolves.not.toThrow();
 
       await expect(
@@ -1393,8 +1429,8 @@ describe('getUpdateValidation', () => {
           },
           {
             document: user,
-          }
-        )
+          },
+        ),
       ).resolves.not.toThrow();
 
       await expect(
@@ -1404,8 +1440,8 @@ describe('getUpdateValidation', () => {
           },
           {
             document: user,
-          }
-        )
+          },
+        ),
       ).rejects.toThrow();
 
       await expect(
@@ -1417,8 +1453,8 @@ describe('getUpdateValidation', () => {
           },
           {
             document: user,
-          }
-        )
+          },
+        ),
       ).rejects.toThrow();
     });
 
@@ -1447,8 +1483,8 @@ describe('getUpdateValidation', () => {
           {
             document: user1,
             authUser: user1,
-          }
-        )
+          },
+        ),
       ).resolves.not.toThrow();
 
       await expect(
@@ -1460,8 +1496,8 @@ describe('getUpdateValidation', () => {
           {
             document: user1,
             authUser: user2,
-          }
-        )
+          },
+        ),
       ).rejects.toThrow();
     });
 
@@ -1487,8 +1523,8 @@ describe('getUpdateValidation', () => {
           {
             [lowerFirst(User.modelName)]: user,
             authUser: user,
-          }
-        )
+          },
+        ),
       ).resolves.not.toThrow();
     });
 
@@ -1519,8 +1555,8 @@ describe('getUpdateValidation', () => {
           {
             document: user1,
             authUser: user1,
-          }
-        )
+          },
+        ),
       ).resolves.not.toThrow();
 
       await expect(
@@ -1532,8 +1568,8 @@ describe('getUpdateValidation', () => {
           {
             document: user1,
             authUser: user2,
-          }
-        )
+          },
+        ),
       ).resolves.not.toThrow();
 
       await expect(
@@ -1545,8 +1581,8 @@ describe('getUpdateValidation', () => {
           {
             document: user1,
             authUser: user2,
-          }
-        )
+          },
+        ),
       ).rejects.toThrow();
     });
 
@@ -1566,7 +1602,7 @@ describe('getUpdateValidation', () => {
           access: {
             update: ['owner', 'admin'],
           },
-        })
+        }),
       );
 
       const schema = Shop.getUpdateValidation();
@@ -1603,7 +1639,7 @@ describe('getUpdateValidation', () => {
         {
           document: shop,
           authUser: user1,
-        }
+        },
       );
 
       await assertPass(
@@ -1618,7 +1654,7 @@ describe('getUpdateValidation', () => {
           document: shop,
           authUser: admin,
           scopes: ['admin'],
-        }
+        },
       );
 
       await assertFail(
@@ -1630,7 +1666,7 @@ describe('getUpdateValidation', () => {
           document: shop,
           authUser: user2,
         },
-        'You do not have permissions to update this document.'
+        'You do not have permissions to update this document.',
       );
 
       await assertFail(
@@ -1643,7 +1679,7 @@ describe('getUpdateValidation', () => {
           authUser: viewer,
           scopes: ['viewer'],
         },
-        'You do not have permissions to update this document.'
+        'You do not have permissions to update this document.',
       );
     });
 
@@ -1663,7 +1699,7 @@ describe('getUpdateValidation', () => {
           access: {
             update: ['owner', 'admin'],
           },
-        })
+        }),
       );
 
       const schema = Shop.getUpdateValidation();
@@ -1692,7 +1728,7 @@ describe('getUpdateValidation', () => {
         {
           document: shop,
           authUser: user1,
-        }
+        },
       );
 
       await assertFail(
@@ -1704,7 +1740,7 @@ describe('getUpdateValidation', () => {
           document: shop,
           authUser: user2,
         },
-        'You do not have permissions to update this document.'
+        'You do not have permissions to update this document.',
       );
     });
   });
@@ -1733,7 +1769,7 @@ describe('getUpdateValidation', () => {
         {
           email: 'foo@bar.com',
         },
-        `Cannot update ${User.modelName}. Duplicate fields exist: email.`
+        `Cannot update ${User.modelName}. Duplicate fields exist: email.`,
       );
 
       // Available again -> can create.
@@ -1831,7 +1867,7 @@ describe('getDeleteValidation', () => {
         access: {
           delete: ['owner', 'admin'],
         },
-      })
+      }),
     );
 
     const schema = Shop.getDeleteValidation();
@@ -1868,7 +1904,7 @@ describe('getDeleteValidation', () => {
       {
         document: shop,
         authUser: user1,
-      }
+      },
     );
 
     await assertPass(
@@ -1883,7 +1919,7 @@ describe('getDeleteValidation', () => {
         document: shop,
         authUser: admin,
         scopes: ['admin'],
-      }
+      },
     );
 
     await assertFail(
@@ -1895,7 +1931,7 @@ describe('getDeleteValidation', () => {
         document: shop,
         authUser: user2,
       },
-      'You do not have permissions to delete this document.'
+      'You do not have permissions to delete this document.',
     );
 
     await assertFail(
@@ -1908,7 +1944,7 @@ describe('getDeleteValidation', () => {
         authUser: viewer,
         scopes: ['viewer'],
       },
-      'You do not have permissions to delete this document.'
+      'You do not have permissions to delete this document.',
     );
   });
 
@@ -1932,7 +1968,7 @@ describe('getDeleteValidation', () => {
             required: true,
           },
         },
-      })
+      }),
     );
 
     const schema = Shop.getDeleteValidation();
@@ -1969,7 +2005,7 @@ describe('getDeleteValidation', () => {
       {
         document: shop,
         authUser: user1,
-      }
+      },
     );
 
     await assertPass(
@@ -1984,7 +2020,7 @@ describe('getDeleteValidation', () => {
         document: shop,
         authUser: admin,
         scopes: ['admin'],
-      }
+      },
     );
 
     await assertPass(
@@ -1998,7 +2034,7 @@ describe('getDeleteValidation', () => {
       {
         document: shop,
         authUser: user2,
-      }
+      },
     );
 
     await assertPass(
@@ -2013,7 +2049,7 @@ describe('getDeleteValidation', () => {
         document: shop,
         authUser: viewer,
         scopes: ['viewer'],
-      }
+      },
     );
   });
 });
@@ -2230,7 +2266,7 @@ describe('getSearchValidation', () => {
           name: 'Barry',
           age: 50,
         },
-        'Unknown field "age".'
+        'Unknown field "age".',
       );
     });
 
@@ -2252,7 +2288,7 @@ describe('getSearchValidation', () => {
           name: 'Barry',
           age: 50,
         },
-        'Unknown field "age".'
+        'Unknown field "age".',
       );
     });
 
@@ -2271,7 +2307,7 @@ describe('getSearchValidation', () => {
         },
         {
           scope: 'admin',
-        }
+        },
       );
     });
   });
@@ -2403,7 +2439,7 @@ describe('getSearchValidation', () => {
     });
   });
 
-  it('should be able to pass defaults as options', async () => {
+  it('should pass defaults as options', async () => {
     const User = createTestModel({
       name: 'String',
     });
@@ -2642,7 +2678,7 @@ describe('getValidationSchema', () => {
         },
         {
           stripUnknown: true,
-        }
+        },
       );
       await assertPass(schema, { id: 1, name: 'foo' }, { name: 'foo' });
       await assertPass(schema, { createdAt: 'date', name: 'foo' });
@@ -2664,7 +2700,7 @@ describe('getValidationSchema', () => {
         },
         {
           skipRequired: true,
-        }
+        },
       );
       await assertPass(schema, { name: 'foo' });
       await assertPass(schema, { count: 5 });
@@ -2686,7 +2722,7 @@ describe('getValidationSchema', () => {
         },
         {
           skipRequired: true,
-        }
+        },
       );
       await assertPass(schema, {
         users: [
@@ -2755,7 +2791,7 @@ describe('getValidationSchema', () => {
         },
         {
           allowSearch: true,
-        }
+        },
       );
       await assertPass(schema, { name: ['foo', 'bar'] });
     });
@@ -2912,7 +2948,7 @@ describe('getValidationSchema', () => {
           },
           {
             allowExpandedRefs: true,
-          }
+          },
         );
         await assertPass(schema, { image: '5fd396fac80fa73203bd9554' });
         await assertPass(schema, { image: { id: '5fd396fac80fa73203bd9554' } });
@@ -2934,7 +2970,7 @@ describe('getValidationSchema', () => {
           },
           {
             allowExpandedRefs: true,
-          }
+          },
         );
         await assertPass(schema, { categories: ['5fd396fac80fa73203bd9554'] });
         await assertPass(schema, {
@@ -2976,7 +3012,7 @@ describe('getValidationSchema', () => {
           },
           {
             allowExpandedRefs: true,
-          }
+          },
         );
         await assertPass(schema, {
           user: {
@@ -3043,7 +3079,7 @@ describe('getValidationSchema', () => {
           },
           {
             allowExpandedRefs: true,
-          }
+          },
         );
         await assertPass(schema, {
           users: [
@@ -3308,7 +3344,7 @@ describe('getValidationSchema', () => {
           appendSchema: {
             count: yd.number().required(),
           },
-        }
+        },
       );
       await assertFail(schema, {
         type: 'foo',
@@ -3335,7 +3371,7 @@ describe('getValidationSchema', () => {
           appendSchema: yd.object({
             count: yd.number(),
           }),
-        }
+        },
       );
       await assertPass(schema, {
         type: 'foo',
@@ -3372,7 +3408,7 @@ describe('tuples', () => {
             coordinates: [35, 140],
           },
         },
-      })
+      }),
     ).resolves.not.toThrow();
 
     await expect(
@@ -3383,7 +3419,7 @@ describe('tuples', () => {
             coordinates: [35],
           },
         },
-      })
+      }),
     ).rejects.toThrow();
 
     const schema = User.getUpdateValidation();
@@ -3435,7 +3471,7 @@ describe('named validators', () => {
         {
           zipcode: '153-0062',
         },
-        '"zipcode" must be a valid zipcode.'
+        '"zipcode" must be a valid zipcode.',
       );
     });
 
@@ -3459,14 +3495,14 @@ describe('named validators', () => {
         {
           postalCode: 'foo',
         },
-        '"postalCode" must be a valid postal code.'
+        '"postalCode" must be a valid postal code.',
       );
     });
   });
 });
 
 describe('addValidators', () => {
-  it('should be able to add a custom schema validator', async () => {
+  it('should add a custom schema validator', async () => {
     addValidators({
       dog: yd.allow('Golden Retriever', 'Australian Shepherd'),
     });
@@ -3480,13 +3516,13 @@ describe('addValidators', () => {
     await expect(
       User.create({
         dog: 'Australian Shepherd',
-      })
+      }),
     ).resolves.not.toThrow();
 
     await expect(
       User.create({
         dog: 'Husky',
-      })
+      }),
     ).rejects.toThrow();
 
     const schema = User.getCreateValidation();

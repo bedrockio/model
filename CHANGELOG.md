@@ -1,3 +1,7 @@
+## 0.9.1
+
+- Allowed deriving individual paths from a create schema.
+
 ## 0.9.0
 
 - Added keyword search decomposition.
