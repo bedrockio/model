@@ -8,6 +8,7 @@ import {
 } from '../src/validation';
 import { createTestModel } from '../src/testing';
 import { createSchema } from '../src/schema';
+import { UniqueConstraintError } from '../src/errors';
 
 async function assertPass(schema, obj, expected, options) {
   try {
@@ -19,7 +20,7 @@ async function assertPass(schema, obj, expected, options) {
     }
   } catch (error) {
     // eslint-disable-next-line
-    console.error(error);
+    console.error(JSON.stringify(error, null, 2));
     throw error;
   }
 }
@@ -433,7 +434,7 @@ describe('getCreateValidation', () => {
           password: 'fake password',
         },
         {},
-        'Field "password" requires write permissions.',
+        'Unknown field "password".',
       );
     });
 
@@ -619,7 +620,7 @@ describe('getCreateValidation', () => {
         {
           email: 'foo@bar.com',
         },
-        `Cannot create ${User.modelName}. Duplicate fields exist: email.`,
+        '"email" already exists.',
       );
 
       // Available again -> can create.
@@ -657,6 +658,193 @@ describe('getCreateValidation', () => {
       });
 
       await user.destroy();
+    });
+
+    it('should enforce soft uniqueness on a nested field', async () => {
+      const User = createTestModel({
+        profile: {
+          email: {
+            type: 'String',
+            unique: true,
+          },
+        },
+      });
+      const user = await User.create({
+        profile: {
+          email: 'foo@bar.com',
+        },
+      });
+      const schema = User.getCreateValidation();
+
+      // Does not exist -> can create.
+      await assertPass(schema, {
+        profile: {
+          email: 'foo@foo.com',
+        },
+      });
+
+      // Exists -> throw error.
+      await assertFailWithError(
+        schema,
+        {
+          profile: {
+            email: 'foo@bar.com',
+          },
+        },
+        '"profile.email" already exists.',
+      );
+
+      // Available again -> can create.
+      await user.delete();
+      await assertPass(schema, {
+        profile: {
+          email: 'foo@bar.com',
+        },
+      });
+    });
+
+    it('should enforce soft uniqueness on an array field', async () => {
+      const User = createTestModel({
+        businesses: [
+          {
+            email: {
+              type: 'String',
+              unique: true,
+            },
+          },
+        ],
+      });
+      const user = await User.create({
+        businesses: [
+          {
+            email: 'foo@bar.com',
+          },
+        ],
+      });
+      const schema = User.getCreateValidation();
+
+      // Does not exist -> can create.
+      await assertPass(schema, {
+        businesses: [
+          {
+            email: 'foo@foo.com',
+          },
+        ],
+      });
+
+      // Exists -> throw error.
+      await assertFailWithError(
+        schema,
+        {
+          businesses: [
+            {
+              email: 'foo@bar.com',
+            },
+          ],
+        },
+        '"businesses.email" already exists.',
+      );
+
+      // Available again -> can create.
+      await user.delete();
+      await assertPass(schema, {
+        businesses: [
+          {
+            email: 'foo@bar.com',
+          },
+        ],
+      });
+    });
+
+    it('should have one-off messages for User', async () => {
+      const User = createTestModel({
+        email: {
+          type: 'String',
+          unique: true,
+        },
+        phone: {
+          type: 'String',
+          unique: true,
+        },
+      });
+      User.modelName = 'User';
+      await User.create({
+        email: 'foo@bar.com',
+        phone: '+15551234567',
+      });
+      const schema = User.getCreateValidation();
+
+      await assertFailWithError(
+        schema,
+        {
+          email: 'foo@bar.com',
+        },
+        'A user with that email already exists.',
+      );
+
+      await assertFailWithError(
+        schema,
+        {
+          phone: '+15551234567',
+        },
+        'A user with that phone number already exists.',
+      );
+    });
+
+    it('should not have one-off messages for nested fields.', async () => {
+      const User = createTestModel({
+        business: {
+          email: {
+            type: 'String',
+            unique: true,
+          },
+        },
+      });
+      User.modelName = 'User';
+      await User.create({
+        business: {
+          email: 'foo@bar.com',
+        },
+      });
+      const schema = User.getCreateValidation();
+
+      await assertFailWithError(
+        schema,
+        {
+          business: {
+            email: 'foo@bar.com',
+          },
+        },
+        '"business.email" already exists.',
+      );
+    });
+
+    it('should expose details with custom error message', async () => {
+      const User = createTestModel({
+        email: {
+          type: 'String',
+          unique: true,
+        },
+      });
+      await User.create({
+        email: 'foo@bar.com',
+      });
+      const schema = User.getCreateValidation();
+
+      let error;
+
+      try {
+        await schema.validate({
+          email: 'foo@bar.com',
+        });
+      } catch (err) {
+        error = err.details[0].details[0];
+      }
+
+      expect(error).toBeInstanceOf(UniqueConstraintError);
+      expect(error.details.field).toBe('email');
+      expect(error.details.value).toBe('foo@bar.com');
+      expect(error.details.model).toBe(User);
     });
   });
 
@@ -858,6 +1046,56 @@ describe('getCreateValidation', () => {
     await assertFail(name, 'foo');
     await assertFail(name, '');
     await assertFail(name, null);
+  });
+
+  it('should make optional fields required', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const schema = User.getCreateValidation().require('name');
+
+    await assertPass(schema, { name: 'John Doe' });
+    await assertFail(schema, { name: '' });
+    await assertFail(schema, {});
+  });
+
+  it('should make deep optional fields required', async () => {
+    const User = createTestModel({
+      profile: {
+        name: 'String',
+      },
+    });
+    const schema = User.getCreateValidation().require('profile.name');
+
+    await assertPass(schema, { profile: { name: 'John Doe' } });
+    await assertFail(schema, { profile: { name: '' } });
+    await assertPass(schema, {});
+  });
+
+  it('should make intermediary objects required', async () => {
+    const User = createTestModel({
+      profile: {
+        name: 'String',
+      },
+    });
+    const schema = User.getCreateValidation().require('profile');
+
+    await assertPass(schema, { profile: { name: 'John Doe' } });
+    await assertPass(schema, { profile: {} });
+    await assertFail(schema, {});
+  });
+
+  it('should not have intermediary objects required by default', async () => {
+    const User = createTestModel({
+      profile: {
+        name: 'String',
+      },
+    });
+    const schema = User.getCreateValidation();
+
+    await assertPass(schema, { profile: { name: 'John Doe' } });
+    await assertPass(schema, { profile: {} });
+    await assertPass(schema, {});
   });
 });
 
@@ -1769,7 +2007,7 @@ describe('getUpdateValidation', () => {
         {
           email: 'foo@bar.com',
         },
-        `Cannot update ${User.modelName}. Duplicate fields exist: email.`,
+        '"email" already exists.',
       );
 
       // Available again -> can create.
@@ -1779,7 +2017,7 @@ describe('getUpdateValidation', () => {
       });
     });
 
-    it('should exclude self with id passed', async () => {
+    it('should exclude self on update', async () => {
       const User = createTestModel({
         email: {
           type: 'String',
@@ -1794,6 +2032,25 @@ describe('getUpdateValidation', () => {
       // Does not exist -> can create.
       await assertPass(schema, {
         id: user.id,
+        email: 'foo@bar.com',
+      });
+    });
+
+    it('should not exclude self if no id exists', async () => {
+      const User = createTestModel({
+        email: {
+          type: 'String',
+          unique: true,
+        },
+      });
+      await User.create({
+        email: 'foo@bar.com',
+      });
+      const schema = User.getUpdateValidation();
+
+      // Cannot exclude self as no id was passed,
+      // so unique constraint causes a failure.
+      await assertFail(schema, {
         email: 'foo@bar.com',
       });
     });

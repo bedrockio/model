@@ -13,3 +13,10 @@ export class ReferenceError extends Error {
     this.details = details;
   }
 }
+
+export class UniqueConstraintError extends Error {
+  constructor(message, details) {
+    super(message);
+    this.details = details;
+  }
+}

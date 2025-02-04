@@ -5,8 +5,8 @@ import { get, omit, lowerFirst } from 'lodash';
 
 import { hasAccess } from './access';
 import { searchValidation } from './search';
+import { assertUnique } from './soft-delete';
 import { PermissionsError, ImplementationError } from './errors';
-import { hasUniqueConstraints, assertUnique } from './soft-delete';
 import { isMongooseSchema, isSchemaTypedef } from './utils';
 import { INCLUDE_FIELD_SCHEMA } from './include';
 
@@ -38,7 +38,7 @@ const REFERENCE_SCHEMA = yd
       })
       .custom((obj) => {
         return obj.id;
-      })
+      }),
   )
   .message('Must be an id or object containing an "id" field.')
   .tag({
@@ -87,8 +87,6 @@ export function addValidators(schemas) {
 }
 
 export function applyValidation(schema, definition) {
-  const hasUnique = hasUniqueConstraints(schema);
-
   schema.static(
     'getCreateValidation',
     function getCreateValidation(options = {}) {
@@ -103,14 +101,8 @@ export function applyValidation(schema, definition) {
         allowDefaultTags: true,
         allowExpandedRefs: true,
         requireWriteAccess: true,
-        ...(hasUnique && {
-          assertUniqueOptions: {
-            schema,
-            operation: 'create',
-          },
-        }),
       });
-    }
+    },
   );
 
   schema.static(
@@ -129,14 +121,8 @@ export function applyValidation(schema, definition) {
         allowExpandedRefs: true,
         requireWriteAccess: true,
         updateAccess: definition.access?.update,
-        ...(hasUnique && {
-          assertUniqueOptions: {
-            schema,
-            operation: 'update',
-          },
-        }),
       });
-    }
+    },
   );
 
   schema.static(
@@ -160,7 +146,7 @@ export function applyValidation(schema, definition) {
           appendSchema,
         }),
       });
-    }
+    },
   );
 
   schema.static('getDeleteValidation', function getDeleteValidation() {
@@ -205,17 +191,10 @@ function getMongooseFields(schema, options) {
 
 // Exported for testing
 export function getValidationSchema(attributes, options = {}) {
-  const { appendSchema, assertUniqueOptions, allowInclude, updateAccess } =
-    options;
+  const { appendSchema, allowInclude, updateAccess } = options;
+
   let schema = getObjectSchema(attributes, options);
-  if (assertUniqueOptions) {
-    schema = schema.custom(async (obj, { root }) => {
-      await assertUnique(root, {
-        model: options.model,
-        ...assertUniqueOptions,
-      });
-    });
-  }
+
   if (appendSchema) {
     schema = schema.append(appendSchema);
   }
@@ -374,6 +353,18 @@ function getSchemaForTypedef(typedef, options = {}) {
     schema = validateAccess('write', schema, typedef.writeAccess, options);
   }
 
+  if (typedef.softUnique) {
+    schema = schema.custom(async (value, { path, originalRoot }) => {
+      const { id } = originalRoot;
+      await assertUnique({
+        ...options,
+        value,
+        path,
+        id,
+      });
+    });
+  }
+
   return schema;
 }
 
@@ -423,10 +414,10 @@ function getSearchSchema(schema, type) {
             'x-schema': 'NumberRange',
             'x-description':
               'An object representing numbers falling within a range.',
-          })
+          }),
       )
       .description(
-        'Allows searching by a value, array of values, or a numeric range.'
+        'Allows searching by a value, array of values, or a numeric range.',
       );
   } else if (type === 'Date') {
     return yd
@@ -468,7 +459,7 @@ function getSearchSchema(schema, type) {
             'x-schema': 'DateRange',
             'x-description':
               'An object representing dates falling within a range.',
-          })
+          }),
       )
       .description('Allows searching by a date, array of dates, or a range.');
   } else if (type === 'String' || type === 'ObjectId') {
@@ -543,7 +534,7 @@ function validateAccess(type, schema, allowed, options) {
           isAllowed = false;
         } else {
           throw new Error(
-            `Access validation "${error.name}" requires passing { document, authUser } to the validator.`
+            `Access validation "${error.name}" requires passing { document, authUser } to the validator.`,
           );
         }
       } else {
@@ -560,7 +551,9 @@ function validateAccess(type, schema, allowed, options) {
           // throw the error.
           return;
         }
-        message ||= `Field "${path.join('.')}" requires ${type} permissions.`;
+
+        // Default to not exposing the existence of this field.
+        message ||= `Unknown field "${path.join('.')}".`;
       }
       throw new PermissionsError(message);
     }

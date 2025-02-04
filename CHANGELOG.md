@@ -1,3 +1,8 @@
+## 0.10.0
+
+- Unique constraints now run sequentially and will not run on nested validations
+  unless their parent fields are passed.
+
 ## 0.9.1
 
 - Allowed deriving individual paths from a create schema.

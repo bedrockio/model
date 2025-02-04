@@ -9,9 +9,10 @@ Bedrock utilities for model creation.
 - [Schema Extensions](#schema-extensions)
   - [Attributes](#attributes)
   - [Scopes](#scopes)
-  - [Tuples](#tuples)
+  - [Unique Constraints](#unique-constraints)
   - [Array Extensions](#array-extensions)
   - [String Trimming](#string-trimming)
+  - [Tuples](#tuples)
 - [Modules](#modules)
   - [Soft Delete](#soft-delete)
   - [Validation](#validation)
@@ -214,8 +215,8 @@ type `Scope` helps make this possible:
     "readAccess": "none",
     "writeAccess": "none",
     "attributes": {
-      "firstName": "String",
-      "lastName": "String",
+      "token": "String",
+      "hashedPassword": "String",
     }
   }
 };
@@ -225,12 +226,12 @@ This syntax expands into the following:
 
 ```js
 {
-  "firstName": {
+  "token": {
     "type": "String",
     "readAccess": "none",
     "writeAccess": "none",
   },
-  "lastName": {
+  "hashedPassword": {
     "type": "String",
     "readAccess": "none",
     "writeAccess": "none",
@@ -437,9 +438,8 @@ an error:
 
 #### Unique Constraints
 
-Note that although monogoose allows a `unique` option on fields, this will add a
-unique index to the mongo collection itself which is incompatible with soft
-deletion.
+Although monogoose allows a `unique` option on fields, this will add a unique
+index to the mongo collection itself which is incompatible with soft deletion.
 
 This module will intercept `unique: true` to create a soft delete compatible
 validation which will:
@@ -462,7 +462,7 @@ validation which will:
 > unique field exists on any document **including the document being updated**.
 > This is an intentional constraint that allows `updateOne` better peformance by
 > not having to fetch the ids of the documents being updated in order to exclude
-> them. To avoid this call `Document.save` instead.
+> them. To avoid this call `Document#save` instead.
 >
 > Note also that calling `Model.updateMany` with a unique field passed will
 > always throw an error as the result would inherently be non-unique.
@@ -525,8 +525,8 @@ Named validations can be specified on the model:
 }
 ```
 
-Validator functions are derived from
-[yada](https://github.com/bedrockio/yada#methods). Note that:
+Validator functions are [yada](https://github.com/bedrockio/yada#methods)
+schemas. Note that:
 
 - `email` - Will additionally downcase any input.
 - `password` - Is not supported as it requires options to be passed and is not a
@@ -537,6 +537,19 @@ Validator functions are derived from
   `min` for numbers.
 - `max` - Defined instead directly on the field with `maxLength` for strings and
   `max` for numbers.
+
+Schemas may also be
+[merged together](https://github.com/bedrockio/yada#merging-fields) to produce
+new ones:
+
+```js
+import yd from '@bedrockio/yada';
+
+const signupSchema = yd.object({
+  ...User.getCreateSchema().export(),
+  additionalField: yd.string().required(),
+});
+```
 
 ### Search
 

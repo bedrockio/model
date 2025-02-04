@@ -1,12 +1,46 @@
-import mongoose from 'mongoose';
 import { isEqual } from 'lodash';
 
 import { wrapQuery } from './query';
+import { UniqueConstraintError } from './errors';
 
 export function applySoftDelete(schema) {
   applyQueries(schema);
   applyUniqueConstraints(schema);
   applyHookPatch(schema);
+}
+
+export async function assertUnique(options) {
+  let { id, model, path, value } = options;
+
+  if (!value) {
+    return;
+  }
+
+  const field = Array.isArray(path) ? path.join('.') : path;
+
+  const query = {
+    [field]: value,
+    _id: { $ne: id },
+  };
+
+  const exists = await model.exists(query);
+  if (exists) {
+    const message = getUniqueErrorMessage(model, field);
+    throw new UniqueConstraintError(message, {
+      ...options,
+      field,
+    });
+  }
+}
+
+function getUniqueErrorMessage(model, field) {
+  const { modelName } = model;
+  if (modelName === 'User' && !field.includes('.')) {
+    const name = field === 'phone' ? 'phone number' : field;
+    return `A user with that ${name} already exists.`;
+  } else {
+    return `"${field}" already exists.`;
+  }
 }
 
 // Soft Delete Querying
@@ -58,7 +92,7 @@ function applyQueries(schema) {
         deleted: false,
       },
       update,
-      ...omitCallback(rest)
+      ...omitCallback(rest),
     );
     return wrapQuery(query, async (promise) => {
       const res = await promise;
@@ -77,7 +111,7 @@ function applyQueries(schema) {
         deleted: false,
       },
       update,
-      ...omitCallback(rest)
+      ...omitCallback(rest),
     );
     return wrapQuery(query, async (promise) => {
       const res = await promise;
@@ -95,7 +129,7 @@ function applyQueries(schema) {
         deleted: false,
       },
       getDelete(),
-      ...omitCallback(rest)
+      ...omitCallback(rest),
     );
   });
 
@@ -106,7 +140,7 @@ function applyQueries(schema) {
         deleted: true,
       },
       getRestore(),
-      ...omitCallback(rest)
+      ...omitCallback(rest),
     );
     return wrapQuery(query, async (promise) => {
       const res = await promise;
@@ -124,7 +158,7 @@ function applyQueries(schema) {
         deleted: true,
       },
       getRestore(),
-      ...omitCallback(rest)
+      ...omitCallback(rest),
     );
     return wrapQuery(query, async (promise) => {
       const res = await promise;
@@ -139,7 +173,7 @@ function applyQueries(schema) {
     // Following Mongoose patterns here
     const query = new this.Query({}, {}, this, this.collection).deleteOne(
       conditions,
-      ...omitCallback(rest)
+      ...omitCallback(rest),
     );
     return wrapQuery(query, async (promise) => {
       const res = await promise;
@@ -154,7 +188,7 @@ function applyQueries(schema) {
     // Following Mongoose patterns here
     const query = new this.Query({}, {}, this, this.collection).deleteMany(
       conditions,
-      ...omitCallback(rest)
+      ...omitCallback(rest),
     );
     return wrapQuery(query, async (promise) => {
       const res = await promise;
@@ -205,7 +239,7 @@ function applyQueries(schema) {
         deleted: true,
       };
       return this.countDocuments(filter, ...omitCallback(rest));
-    }
+    },
   );
 
   schema.static('findWithDeleted', function findWithDeleted(filter, ...rest) {
@@ -224,7 +258,7 @@ function applyQueries(schema) {
         ...getWithDeletedQuery(),
       };
       return this.findOne(filter, ...omitCallback(rest));
-    }
+    },
   );
 
   schema.static(
@@ -235,7 +269,7 @@ function applyQueries(schema) {
         ...getWithDeletedQuery(),
       };
       return this.findOne(filter, ...omitCallback(rest));
-    }
+    },
   );
 
   schema.static(
@@ -246,7 +280,7 @@ function applyQueries(schema) {
         ...getWithDeletedQuery(),
       };
       return this.exists(filter, ...omitCallback(rest));
-    }
+    },
   );
 
   schema.static(
@@ -257,7 +291,7 @@ function applyQueries(schema) {
         ...getWithDeletedQuery(),
       };
       return this.countDocuments(filter, ...omitCallback(rest));
-    }
+    },
   );
 }
 
@@ -284,23 +318,27 @@ function getWithDeletedQuery() {
 // Unique Constraints
 
 function applyUniqueConstraints(schema) {
-  const hasUnique = hasUniqueConstraints(schema);
+  const uniquePaths = getUniqueConstraints(schema);
 
-  if (!hasUnique) {
+  if (!uniquePaths.length) {
     return;
   }
 
   schema.pre('save', async function () {
-    await assertUnique(this, {
-      operation: this.isNew ? 'create' : 'update',
-      model: this.constructor,
-      schema,
-    });
+    for (let path of uniquePaths) {
+      await assertUnique({
+        path,
+        id: this.id,
+        value: this.get(path),
+        model: this.constructor,
+      });
+    }
   });
 
   schema.pre(/^(update|replace)/, async function () {
     await assertUniqueForQuery(this, {
       schema,
+      uniquePaths,
     });
   });
 
@@ -311,71 +349,73 @@ function applyUniqueConstraints(schema) {
     // as the last argument, however as we are passing an async
     // function it appears to not stop the middleware if we
     // don't call it directly.
-    await assertUnique(obj, {
-      operation: 'create',
+
+    await runUniqueConstraints(obj, {
       model: this,
-      schema,
+      uniquePaths,
     });
   });
 }
 
-export async function assertUnique(obj, options) {
-  const { operation, model, schema } = options;
-  const id = getId(obj);
-  const objFields = resolveUnique(schema, obj);
-  if (Object.keys(objFields).length === 0) {
-    return;
+async function runUniqueConstraints(arg, options) {
+  const { uniquePaths, model } = options;
+  // Updates or inserts
+  const operations = Array.isArray(arg) ? arg : [arg];
+  for (let operation of operations) {
+    for (let path of uniquePaths) {
+      const value = operation[path];
+      if (value) {
+        await assertUnique({
+          path,
+          value,
+          model,
+        });
+      }
+    }
   }
-  const query = {
-    $or: getUniqueQueries(objFields),
-    ...(id && {
-      _id: { $ne: id },
-    }),
-  };
-  const found = await model.findOne(query, {}, { lean: true });
-  if (found) {
-    const { modelName } = model;
-    const foundFields = resolveUnique(schema, found);
-    const collisions = getCollisions(objFields, foundFields).join(', ');
-    throw new Error(
-      `Cannot ${operation} ${modelName}. Duplicate fields exist: ${collisions}.`
-    );
-  }
-}
-
-function getId(arg) {
-  const id = arg.id || arg._id;
-  return id ? String(id) : null;
 }
 
 // Asserts than an update or insert query will not
 // result in duplicate unique fields being present
 // within non-deleted documents.
 async function assertUniqueForQuery(query, options) {
-  let update = query.getUpdate();
+  const update = query.getUpdate();
   const operation = getOperationForQuery(update);
   // Note: No need to check unique constraints
   // if the operation is a delete.
   if (operation === 'restore' || operation === 'update') {
     const { model } = query;
     const filter = query.getFilter();
+
+    let updates;
     if (operation === 'restore') {
       // A restore operation is functionally identical to a new
       // insert so we need to fetch the deleted documents with
       // all fields available to check against.
       const docs = await model.findWithDeleted(filter, {}, { lean: true });
-      update = docs.map((doc) => {
+      updates = docs.map((doc) => {
         return {
           ...doc,
           ...update,
         };
       });
+    } else {
+      updates = [update];
     }
-    await assertUnique(update, {
-      ...options,
-      operation,
-      model,
-    });
+
+    const { uniquePaths } = options;
+    for (let update of updates) {
+      for (let path of uniquePaths) {
+        const value = update[path];
+        if (value) {
+          await assertUnique({
+            path,
+            value,
+            model,
+          });
+        }
+      }
+    }
   }
 }
 
@@ -389,70 +429,15 @@ function getOperationForQuery(update) {
   }
 }
 
-export function hasUniqueConstraints(schema) {
+function getUniqueConstraints(schema) {
   const paths = [...Object.keys(schema.paths), ...Object.keys(schema.subpaths)];
-  return paths.some((key) => {
+  return paths.filter((key) => {
     return isUniquePath(schema, key);
   });
 }
 
 function isUniquePath(schema, key) {
   return schema.path(key)?.options?.softUnique === true;
-}
-
-// Returns a flattened map of key -> [...values]
-// consisting of only paths defined as unique on the schema.
-function resolveUnique(schema, obj, map = {}, path = []) {
-  if (Array.isArray(obj)) {
-    for (let el of obj) {
-      resolveUnique(schema, el, map, path);
-    }
-  } else if (obj instanceof mongoose.Document) {
-    obj.schema.eachPath((key) => {
-      const val = obj.get(key);
-      resolveUnique(schema, val, map, [...path, key]);
-    });
-  } else if (obj && typeof obj === 'object') {
-    for (let [key, val] of Object.entries(obj)) {
-      resolveUnique(schema, val, map, [...path, key]);
-    }
-  } else if (obj) {
-    const key = path.join('.');
-    if (isUniquePath(schema, key)) {
-      map[key] ||= [];
-      map[key].push(obj);
-    }
-  }
-  return map;
-}
-
-// Argument is guaranteed to be flattened.
-function getUniqueQueries(obj) {
-  return Object.entries(obj).map(([key, val]) => {
-    if (val.length > 1) {
-      return { [key]: { $in: val } };
-    } else {
-      return { [key]: val[0] };
-    }
-  });
-}
-
-// Both arguments here are guaranteed to be flattened
-// maps of key -> [values] of unique fields only.
-function getCollisions(obj1, obj2) {
-  const collisions = [];
-  for (let [key, arr1] of Object.entries(obj1)) {
-    const arr2 = obj2[key];
-    if (arr2) {
-      const hasCollision = arr1.some((val) => {
-        return arr2.includes(val);
-      });
-      if (hasCollision) {
-        collisions.push(key);
-      }
-    }
-  }
-  return collisions;
 }
 
 // Hook Patch

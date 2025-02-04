@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
-import { createTestModel } from '../src/testing';
 import { createSchema } from '../src/schema';
+import { createTestModel } from '../src/testing';
 
 describe('soft delete', () => {
   describe('delete', () => {
@@ -230,7 +230,7 @@ describe('soft delete', () => {
 
       user = await User.findByIdDeleted(user.id);
       await expect(user.restore()).rejects.toThrow(
-        `${User.modelName} validation failed: email: Validation failed.`
+        `${User.modelName} validation failed: email: Validation failed.`,
       );
     });
   });
@@ -365,15 +365,13 @@ describe('soft delete', () => {
       await expect(
         User.create({
           email: 'foo@bar.com',
-        })
-      ).rejects.toThrow(
-        `Cannot create ${User.modelName}. Duplicate fields exist: email.`
-      );
+        }),
+      ).rejects.toThrow('"email" already exists.');
 
       await expect(
         User.create({
           email: 'foo2@bar.com',
-        })
+        }),
       ).resolves.not.toThrow();
     });
 
@@ -397,56 +395,48 @@ describe('soft delete', () => {
         User.create({
           name: 'Foo',
           email: 'foo@bar.com',
-        })
-      ).rejects.toThrow(
-        `Cannot create ${User.modelName}. Duplicate fields exist: name, email.`
-      );
+        }),
+      ).rejects.toThrow('"name" already exists.');
 
       await expect(
         User.create({
           name: 'Charlie',
           email: 'foo@bar.com',
-        })
-      ).rejects.toThrow(
-        `Cannot create ${User.modelName}. Duplicate fields exist: email.`
-      );
+        }),
+      ).rejects.toThrow('"email" already exists.');
 
       await expect(
         User.create({
           name: 'Foo',
           email: 'foo2@bar.com',
-        })
-      ).rejects.toThrow(
-        `Cannot create ${User.modelName}. Duplicate fields exist: name.`
-      );
+        }),
+      ).rejects.toThrow('"name" already exists.');
 
       // User 2 created. Has no name.
       await expect(
         User.create({
           email: 'foo2@bar.com',
-        })
+        }),
       ).resolves.not.toThrow();
 
       await expect(
         User.create({
           email: 'foo2@bar.com',
-        })
-      ).rejects.toThrow(
-        `Cannot create ${User.modelName}. Duplicate fields exist: email.`
-      );
+        }),
+      ).rejects.toThrow('"email" already exists.');
 
       // User 3 created. Allowed to have no name but different email.
       await expect(
         User.create({
           email: 'foo3@bar.com',
-        })
+        }),
       ).resolves.not.toThrow();
 
       await expect(
         User.create({
           name: 'Bar',
           email: 'bar@bar.com',
-        })
+        }),
       ).resolves.not.toThrow();
     });
 
@@ -470,17 +460,15 @@ describe('soft delete', () => {
           profile: {
             email: 'foo@bar.com',
           },
-        })
-      ).rejects.toThrow(
-        `Cannot create ${User.modelName}. Duplicate fields exist: profile.email.`
-      );
+        }),
+      ).rejects.toThrow('"profile.email" already exists.');
 
       await expect(
         User.create({
           profile: {
             email: 'foo2@bar.com',
           },
-        })
+        }),
       ).resolves.not.toThrow();
     });
 
@@ -510,10 +498,8 @@ describe('soft delete', () => {
               email: 'foo@bar.com',
             },
           ],
-        })
-      ).rejects.toThrow(
-        `Cannot create ${User.modelName}. Duplicate fields exist: profiles.email.`
-      );
+        }),
+      ).rejects.toThrow('"profiles.email" already exists.');
 
       await expect(
         User.create({
@@ -522,7 +508,7 @@ describe('soft delete', () => {
               email: 'foo2@bar.com',
             },
           ],
-        })
+        }),
       ).resolves.not.toThrow();
     });
 
@@ -541,17 +527,13 @@ describe('soft delete', () => {
       });
 
       user.email = 'bar@bar.com';
-      await expect(user.save()).rejects.toThrow(
-        `Cannot update ${User.modelName}. Duplicate fields exist: email.`
-      );
+      await expect(user.save()).rejects.toThrow('"email" already exists.');
 
       await expect(
         user.updateOne({
           email: 'bar@bar.com',
-        })
-      ).rejects.toThrow(
-        `Cannot update ${User.modelName}. Duplicate fields exist: email.`
-      );
+        }),
+      ).rejects.toThrow('"email" already exists.');
     });
 
     it('should exclude self on save', async () => {
@@ -591,7 +573,7 @@ describe('soft delete', () => {
       await expect(
         User.create({
           email: 'foo@bar.com',
-        })
+        }),
       ).resolves.not.toThrow();
     });
 
@@ -611,9 +593,7 @@ describe('soft delete', () => {
         email: 'foo@bar.com',
       });
 
-      await expect(user.restore()).rejects.toThrow(
-        `Cannot update ${User.modelName}. Duplicate fields exist: email.`
-      );
+      await expect(user.restore()).rejects.toThrow('"email" already exists.');
     });
 
     it('should error when using updateOne', async () => {
@@ -638,11 +618,9 @@ describe('soft delete', () => {
           },
           {
             email: 'user2@foo.com',
-          }
-        )
-      ).rejects.toThrow(
-        `Cannot update ${User.modelName}. Duplicate fields exist: email.`
-      );
+          },
+        ),
+      ).rejects.toThrow('"email" already exists.');
     });
 
     it('should not error when using updateOne on a non-unique field', async () => {
@@ -665,8 +643,8 @@ describe('soft delete', () => {
           },
           {
             name: 'Bar',
-          }
-        )
+          },
+        ),
       ).resolves.not.toThrow();
     });
 
@@ -690,11 +668,9 @@ describe('soft delete', () => {
           },
           {
             email: 'user@foo.com',
-          }
-        )
-      ).rejects.toThrow(
-        `Cannot update ${User.modelName}. Duplicate fields exist: email.`
-      );
+          },
+        ),
+      ).rejects.toThrow('"email" already exists.');
     });
 
     it('should error when using updateMany', async () => {
@@ -719,11 +695,9 @@ describe('soft delete', () => {
           },
           {
             email: 'user2@foo.com',
-          }
-        )
-      ).rejects.toThrow(
-        `Cannot update ${User.modelName}. Duplicate fields exist: email.`
-      );
+          },
+        ),
+      ).rejects.toThrow('"email" already exists.');
     });
 
     it('should error when using restoreOne', async () => {
@@ -745,10 +719,8 @@ describe('soft delete', () => {
       await expect(
         User.restoreOne({
           _id: user.id,
-        })
-      ).rejects.toThrow(
-        `Cannot restore ${User.modelName}. Duplicate fields exist: email.`
-      );
+        }),
+      ).rejects.toThrow('"email" already exists.');
     });
 
     it('should error when using restoreMany', async () => {
@@ -774,10 +746,8 @@ describe('soft delete', () => {
       await expect(
         User.restoreMany({
           _id: { $in: [user1.id, user2.id] },
-        })
-      ).rejects.toThrow(
-        `Cannot restore ${User.modelName}. Duplicate fields exist: email.`
-      );
+        }),
+      ).rejects.toThrow('"email" already exists.');
     });
 
     it('should error when using insertMany', async () => {
@@ -792,12 +762,11 @@ describe('soft delete', () => {
       });
 
       await expect(
-        User.insertMany({
-          email: 'user@foo.com',
-        })
-      ).rejects.toThrow(
-        `Cannot create ${User.modelName}. Duplicate fields exist: email.`
-      );
+        User.insertMany([
+          { email: 'usernew@foo.com' },
+          { email: 'user@foo.com' },
+        ]),
+      ).rejects.toThrow('"email" already exists.');
     });
 
     it('should error when using replaceOne', async () => {
@@ -818,11 +787,9 @@ describe('soft delete', () => {
           },
           {
             email: 'user@foo.com',
-          }
-        )
-      ).rejects.toThrow(
-        `Cannot update ${User.modelName}. Duplicate fields exist: email.`
-      );
+          },
+        ),
+      ).rejects.toThrow('"email" already exists.');
     });
 
     it('should work with access control', async () => {
@@ -845,15 +812,13 @@ describe('soft delete', () => {
       await expect(
         User.create({
           email: 'foo@bar.com',
-        })
-      ).rejects.toThrow(
-        `Cannot create ${User.modelName}. Duplicate fields exist: email.`
-      );
+        }),
+      ).rejects.toThrow('"email" already exists.');
 
       await expect(
         User.create({
           email: 'foo2@bar.com',
-        })
+        }),
       ).resolves.not.toThrow();
     });
   });
@@ -1336,7 +1301,7 @@ describe('soft delete', () => {
         it('should run countDocumentsDeleted hooks', async () => {
           const { User, calls } = setupHook(
             'countDocumentsDeleted',
-            mongoose.Query
+            mongoose.Query,
           );
 
           await User.countDocumentsDeleted({
@@ -1374,7 +1339,7 @@ describe('soft delete', () => {
         it('should run countDocumentsWithDeleted hooks', async () => {
           const { User, calls } = setupHook(
             'countDocumentsWithDeleted',
-            mongoose.Query
+            mongoose.Query,
           );
 
           await User.countDocumentsWithDeleted({
