@@ -955,11 +955,12 @@
   resolved "https://registry.yarnpkg.com/@bedrockio/prettier-config/-/prettier-config-1.0.2.tgz#89878381d3059b810f97514ee6b69f946a6d1654"
   integrity sha512-Ebcx/D9FcV6WEQH2gXA4SkN62fus/aVMW46MYFm1/y+S0GVYj+OCuBbRMM4F8YAq9ntJ+B/z9fLiOheNpEpRzA==
 
-"@bedrockio/yada@^1.3.0":
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/@bedrockio/yada/-/yada-1.3.0.tgz#7744e3e7203e1d7e6076c3a1f63272f0d14e8524"
-  integrity sha512-12ZI08hlblIhwruP57AeE68CSeuxa9OZ30aBo07UR47+ikxEetrD7oU3J7c87wcxWDx6vGKREYUbjSMU/SzGjg==
+"@bedrockio/yada@^1.4.1":
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/@bedrockio/yada/-/yada-1.4.1.tgz#6dc521b7ea37f719e9e4ece03c63c48f98c8b46e"
+  integrity sha512-6DYIPcezkUA2qMebNLV1e+7bG+E5kX+It7V9jKqTOzJjjMJXyk8SPKPU4fzzg7/4TFb7E+2Vce3occ8TTIYd8w==
   dependencies:
+    lodash "^4.17.21"
     validator "^13.9.0"
 
 "@eslint-community/eslint-utils@^4.2.0", "@eslint-community/eslint-utils@^4.4.0":
