@@ -9,22 +9,22 @@ describe('isEqual', () => {
       expect(
         isEqual(
           new mongoose.Types.ObjectId('662f11c8af6870637eab9f0f'),
-          new mongoose.Types.ObjectId('662f11c8af6870637eab9f0f')
-        )
+          new mongoose.Types.ObjectId('662f11c8af6870637eab9f0f'),
+        ),
       ).toBe(true);
 
       expect(
         isEqual(
           new mongoose.Types.ObjectId('662f11c8af6870637eab9f0d'),
-          new mongoose.Types.ObjectId('662f11c8af6870637eab9f0f')
-        )
+          new mongoose.Types.ObjectId('662f11c8af6870637eab9f0f'),
+        ),
       ).toBe(false);
 
       expect(
         isEqual(
           new mongoose.Types.ObjectId('662f11c8af6870637eab9f0f'),
-          new mongoose.Types.ObjectId('662f11c8af6870637eab9f0d')
-        )
+          new mongoose.Types.ObjectId('662f11c8af6870637eab9f0d'),
+        ),
       ).toBe(false);
     });
 
@@ -32,39 +32,39 @@ describe('isEqual', () => {
       expect(
         isEqual(
           new mongoose.Types.ObjectId('662f11c8af6870637eab9f0f'),
-          '662f11c8af6870637eab9f0f'
-        )
+          '662f11c8af6870637eab9f0f',
+        ),
       ).toBe(true);
       expect(
         isEqual(
           new mongoose.Types.ObjectId('662f11c8af6870637eab9f0d'),
-          '662f11c8af6870637eab9f0f'
-        )
+          '662f11c8af6870637eab9f0f',
+        ),
       ).toBe(false);
       expect(
         isEqual(
           new mongoose.Types.ObjectId('662f11c8af6870637eab9f0f'),
-          '662f11c8af6870637eab9f0d'
-        )
+          '662f11c8af6870637eab9f0d',
+        ),
       ).toBe(false);
 
       expect(
         isEqual(
           '662f11c8af6870637eab9f0f',
-          new mongoose.Types.ObjectId('662f11c8af6870637eab9f0f')
-        )
+          new mongoose.Types.ObjectId('662f11c8af6870637eab9f0f'),
+        ),
       ).toBe(true);
       expect(
         isEqual(
           '662f11c8af6870637eab9f0d',
-          new mongoose.Types.ObjectId('662f11c8af6870637eab9f0f')
-        )
+          new mongoose.Types.ObjectId('662f11c8af6870637eab9f0f'),
+        ),
       ).toBe(false);
       expect(
         isEqual(
           '662f11c8af6870637eab9f0f',
-          new mongoose.Types.ObjectId('662f11c8af6870637eab9f0d')
-        )
+          new mongoose.Types.ObjectId('662f11c8af6870637eab9f0d'),
+        ),
       ).toBe(false);
     });
   });
@@ -93,17 +93,17 @@ describe('isEqual', () => {
       });
 
       expect(isEqual(shop, new mongoose.Types.ObjectId(String(shop._id)))).toBe(
-        true
+        true,
       );
       expect(
-        isEqual(shop, new mongoose.Types.ObjectId('662f11c8af6870637eab9f0f'))
+        isEqual(shop, new mongoose.Types.ObjectId('662f11c8af6870637eab9f0f')),
       ).toBe(false);
 
       expect(isEqual(new mongoose.Types.ObjectId(String(shop._id)), shop)).toBe(
-        true
+        true,
       );
       expect(
-        isEqual(new mongoose.Types.ObjectId('662f11c8af6870637eab9f0f'), shop)
+        isEqual(new mongoose.Types.ObjectId('662f11c8af6870637eab9f0f'), shop),
       ).toBe(false);
     });
 

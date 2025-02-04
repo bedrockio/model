@@ -35,7 +35,7 @@ describe('slug', () => {
     });
 
     expect(await Post.findByIdOrSlugDeleted('welcome-to-the-jungle')).not.toBe(
-      null
+      null,
     );
   });
 
@@ -65,10 +65,10 @@ describe('slug', () => {
     });
 
     expect(
-      await Post.findByIdOrSlugWithDeleted('welcome-to-the-jungle')
+      await Post.findByIdOrSlugWithDeleted('welcome-to-the-jungle'),
     ).not.toBe(null);
     expect(
-      await Post.findByIdOrSlugWithDeleted('welcome-to-the-bayou')
+      await Post.findByIdOrSlugWithDeleted('welcome-to-the-bayou'),
     ).not.toBe(null);
   });
 

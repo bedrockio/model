@@ -13,7 +13,7 @@ export function applySlug(schema) {
       return find(this, str, args, {
         deleted: true,
       });
-    }
+    },
   );
 
   schema.static(
@@ -22,7 +22,7 @@ export function applySlug(schema) {
       return find(this, str, args, {
         deleted: { $in: [true, false] },
       });
-    }
+    },
   );
 }
 
@@ -42,6 +42,6 @@ function find(Model, str, args, deleted) {
       ...deleted,
       ...query,
     },
-    ...args
+    ...args,
   );
 }

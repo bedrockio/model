@@ -155,7 +155,7 @@ describe('serialization', () => {
       });
       expect(user.password).toBe('fake password');
       expect(user.toObject({ scopes: ['admin'] }).password).toBe(
-        'fake password'
+        'fake password',
       );
     });
 

@@ -147,7 +147,7 @@ async function errorOnForeignReferences(doc, options) {
           {
             [path]: doc.id,
           },
-          { _id: 1 }
+          { _id: 1 },
         )
         .lean();
 
@@ -226,7 +226,7 @@ function getModelReferences(model, targetName) {
         refs = model.schema.path(refPath).options.enum;
       } else {
         throw new Error(
-          `Cannot derive refs for ${model.modelName}#${schemaPath}.`
+          `Cannot derive refs for ${model.modelName}#${schemaPath}.`,
         );
       }
       if (refs.includes(targetName)) {

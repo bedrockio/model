@@ -21,7 +21,7 @@ const DESCRIPTION = 'Field to be selected or populated.';
 export const INCLUDE_FIELD_SCHEMA = yd.object({
   include: yd.allow(
     yd.string().description(DESCRIPTION),
-    yd.array(yd.string().description(DESCRIPTION))
+    yd.array(yd.string().description(DESCRIPTION)),
   ),
 });
 
@@ -58,7 +58,7 @@ export function applyInclude(schema) {
         await doc.include(include);
       }
       return doc;
-    }
+    },
   );
 
   // Synchronous method assigns the includes to locals.

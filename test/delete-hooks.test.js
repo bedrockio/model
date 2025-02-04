@@ -24,7 +24,7 @@ describe('delete hooks', () => {
                 },
               ],
             },
-          })
+          }),
         );
         const UserProfile = createTestModel(userProfileModelName, {
           name: 'String',
@@ -129,7 +129,7 @@ describe('delete hooks', () => {
                 },
               ],
             },
-          })
+          }),
         );
         const UserProfile = createTestModel(userProfileModelName, {
           name: 'String',
@@ -252,7 +252,7 @@ describe('delete hooks', () => {
                 },
               ],
             },
-          })
+          }),
         );
         const Shop = createTestModel(shopModelName, {
           name: 'String',
@@ -472,7 +472,7 @@ describe('delete hooks', () => {
                 },
               ],
             },
-          })
+          }),
         );
         const Shop = createTestModel(shopModelName, {
           name: 'String',
@@ -556,7 +556,7 @@ describe('delete hooks', () => {
                 },
               ],
             },
-          })
+          }),
         );
         const Shop = createTestModel(shopModelName, {
           name: 'String',
@@ -633,7 +633,7 @@ describe('delete hooks', () => {
                   },
                 ],
               },
-            })
+            }),
           );
           const Shop = createTestModel(shopModelName, {
             status: {
@@ -700,7 +700,7 @@ describe('delete hooks', () => {
                   },
                 ],
               },
-            })
+            }),
           );
 
           const Shop = createTestModel(shopModelName, {
@@ -753,7 +753,7 @@ describe('delete hooks', () => {
                   },
                 ],
               },
-            })
+            }),
           );
           const Shop = createTestModel(shopModelName, {
             name: 'String',
@@ -829,7 +829,7 @@ describe('delete hooks', () => {
           onDelete: {
             errorOnReferenced: true,
           },
-        })
+        }),
       );
 
       const Shop = createTestModel({
@@ -899,7 +899,7 @@ describe('delete hooks', () => {
               except: [auditEntryModelName],
             },
           },
-        })
+        }),
       );
 
       const Shop = createTestModel(shopModelName, {
@@ -954,7 +954,7 @@ describe('delete hooks', () => {
               only: [shopModelName],
             },
           },
-        })
+        }),
       );
 
       const Shop = createTestModel(shopModelName, {
@@ -1007,13 +1007,13 @@ describe('delete hooks', () => {
                 except: ['BadModelName'],
               },
             },
-          })
+          }),
         );
         const user = await User.create({
           name: 'Barry',
         });
         await expect(user.delete()).rejects.toThrow(
-          'Unknown model "BadModelName".'
+          'Unknown model "BadModelName".',
         );
       });
     });
@@ -1040,7 +1040,7 @@ describe('delete hooks', () => {
               },
             ],
           },
-        })
+        }),
       );
 
       const Shop = createTestModel(
@@ -1056,7 +1056,7 @@ describe('delete hooks', () => {
           onDelete: {
             errorOnReferenced: true,
           },
-        })
+        }),
       );
 
       const Product = createTestModel(productModelName, {
@@ -1129,7 +1129,7 @@ describe('delete hooks', () => {
                 },
               ],
             },
-          })
+          }),
         );
 
         const Shop = createTestModel(
@@ -1141,7 +1141,7 @@ describe('delete hooks', () => {
             onDelete: {
               errorOnReferenced: true,
             },
-          })
+          }),
         );
 
         const Product = createTestModel(productModelName, {
@@ -1202,7 +1202,7 @@ describe('delete hooks', () => {
               },
             ],
           },
-        })
+        }),
       );
 
       const Shop = createTestModel(
@@ -1215,7 +1215,7 @@ describe('delete hooks', () => {
               ref: userModelName,
             },
           },
-        })
+        }),
       );
 
       it('should not error if model is going to be cleaned', async () => {
@@ -1251,7 +1251,7 @@ describe('delete hooks', () => {
                 },
               ],
             },
-          })
+          }),
         );
 
         const Shop = createTestModel(
@@ -1272,7 +1272,7 @@ describe('delete hooks', () => {
                 },
               ],
             },
-          })
+          }),
         );
 
         const Product = createTestModel(productModelName, {
@@ -1326,7 +1326,7 @@ describe('delete hooks', () => {
                 },
               ],
             },
-          })
+          }),
         );
 
         const Shop = createTestModel(
@@ -1342,7 +1342,7 @@ describe('delete hooks', () => {
             onDelete: {
               errorOnReferenced: true,
             },
-          })
+          }),
         );
 
         const Product = createTestModel(productModelName, {
@@ -1399,7 +1399,7 @@ describe('delete hooks', () => {
                 },
               ],
             },
-          })
+          }),
         );
 
         const UserProfile = createTestModel(
@@ -1411,7 +1411,7 @@ describe('delete hooks', () => {
             onDelete: {
               errorOnReferenced: true,
             },
-          })
+          }),
         );
 
         const profile = await UserProfile.create({
@@ -1452,7 +1452,7 @@ describe('delete hooks', () => {
                 },
               ],
             },
-          })
+          }),
         );
 
         const UserProfile = createTestModel(
@@ -1466,7 +1466,7 @@ describe('delete hooks', () => {
                 except: [userModelName],
               },
             },
-          })
+          }),
         );
 
         const profile = await UserProfile.create({
@@ -1509,7 +1509,7 @@ describe('delete hooks', () => {
                 },
               ],
             },
-          })
+          }),
         );
 
         const Shop = createTestModel(
@@ -1522,7 +1522,7 @@ describe('delete hooks', () => {
                 ref: userModelName,
               },
             },
-          })
+          }),
         );
 
         const user = new User({
@@ -1561,7 +1561,7 @@ describe('delete hooks', () => {
             onDelete: {
               errorOnReferenced: true,
             },
-          })
+          }),
         );
 
         const Shop = createTestModel(
@@ -1574,7 +1574,7 @@ describe('delete hooks', () => {
                 ref: userModelName,
               },
             },
-          })
+          }),
         );
 
         const user = new User({
@@ -1620,7 +1620,7 @@ describe('delete hooks', () => {
                 },
               ],
             },
-          })
+          }),
         );
 
         const Shop = createTestModel(
@@ -1636,7 +1636,7 @@ describe('delete hooks', () => {
             onDelete: {
               errorOnReferenced: true,
             },
-          })
+          }),
         );
 
         const user = new User({
@@ -1679,7 +1679,7 @@ describe('delete hooks', () => {
               },
             ],
           },
-        })
+        }),
       );
       const Shop = createTestModel(shopModelName, {
         name: 'String',

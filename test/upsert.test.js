@@ -47,7 +47,7 @@ describe('findOrCreate', () => {
       {
         name: 'foo',
         email: 'foo@bar.com',
-      }
+      },
     );
     expect(user.name).toBe('foo');
     expect(user.email).toBe('foo@bar.com');
@@ -66,7 +66,7 @@ describe('findOrCreate', () => {
       {
         name: 'foo',
         email: 'foo2@bar.com',
-      }
+      },
     );
     expect(user1.id).toBe(user2.id);
     expect(user1.name).toBe('foo');

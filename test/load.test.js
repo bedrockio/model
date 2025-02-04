@@ -14,7 +14,7 @@ describe('loadModel', () => {
           },
         },
       },
-      'Box'
+      'Box',
     );
     expect(!!mongoose.models.Box).toBe(true);
     const box = new Box({ name: 'foo' });

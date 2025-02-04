@@ -224,7 +224,7 @@ describe('getParams', () => {
     it('should not perform select on a deep populated foreign array field', async () => {
       const params = getParams(
         Product.modelName,
-        'shop.customers.address.line1'
+        'shop.customers.address.line1',
       );
       expect(params).toEqual({
         select: [],
@@ -1037,7 +1037,7 @@ describe('getParams', () => {
     it('should exclude a deep populated foreign array field', async () => {
       const params = getParams(
         Product.modelName,
-        '-shop.customers.address.line1'
+        '-shop.customers.address.line1',
       );
       expect(params).toEqual({
         select: [],
