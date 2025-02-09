@@ -27,8 +27,9 @@ export async function assertUnique(options) {
   if (exists) {
     const message = getUniqueErrorMessage(model, field);
     throw new UniqueConstraintError(message, {
-      ...options,
+      model,
       field,
+      value,
     });
   }
 }

@@ -838,13 +838,31 @@ describe('getCreateValidation', () => {
           email: 'foo@bar.com',
         });
       } catch (err) {
-        error = err.details[0].details[0];
+        error = err;
       }
 
-      expect(error).toBeInstanceOf(UniqueConstraintError);
-      expect(error.details.field).toBe('email');
-      expect(error.details.value).toBe('foo@bar.com');
-      expect(error.details.model).toBe(User);
+      const data = JSON.parse(JSON.stringify(error));
+      expect(data).toEqual({
+        type: 'validation',
+        details: [
+          {
+            type: 'field',
+            details: [
+              {
+                type: 'unique',
+                message: '"email" already exists.',
+              },
+            ],
+            field: 'email',
+          },
+        ],
+      });
+
+      const uniqueError = error.details[0].details[0];
+      expect(uniqueError).toBeInstanceOf(UniqueConstraintError);
+      expect(uniqueError.details.field).toBe('email');
+      expect(uniqueError.details.value).toBe('foo@bar.com');
+      expect(uniqueError.details.model).toBe(User);
     });
   });
 

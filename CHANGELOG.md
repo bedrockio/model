@@ -1,3 +1,7 @@
+## 0.10.1
+
+- Fix to not expose details on unique constraint errors.
+
 ## 0.10.0
 
 - Unique constraints now run sequentially and will not run on nested validations

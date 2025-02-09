@@ -19,4 +19,11 @@ export class UniqueConstraintError extends Error {
     super(message);
     this.details = details;
   }
+
+  toJSON() {
+    return {
+      type: 'unique',
+      message: this.message,
+    };
+  }
 }
