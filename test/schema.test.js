@@ -1270,6 +1270,64 @@ describe('createSchema', () => {
     });
   });
 
+  describe('locations', () => {
+    it('should handle a GeoJSON schema', async () => {
+      const User = createTestModel({
+        geometry: {
+          type: {
+            type: 'String',
+            default: 'Point',
+          },
+          coordinates: ['Number', 'Number'],
+        },
+      });
+
+      let user;
+
+      user = await User.create({});
+      expect(user.geometry.toObject()).toEqual({
+        type: 'Point',
+        coordinates: [],
+      });
+
+      user = await User.create({
+        geometry: {
+          coordinates: [],
+        },
+      });
+      expect(user.geometry.toObject()).toEqual({
+        type: 'Point',
+        coordinates: [],
+      });
+
+      user = await User.create({
+        geometry: {
+          coordinates: [-105.0732721, 39.7417583],
+        },
+      });
+      expect(user.geometry.toObject()).toEqual({
+        type: 'Point',
+        coordinates: [-105.0732721, 39.7417583],
+      });
+
+      await expect(() => {
+        return User.create({
+          geometry: {
+            coordinates: [-105.0732721],
+          },
+        });
+      }).rejects.toThrow('geometry.coordinates: Validation failed.');
+
+      await expect(() => {
+        return User.create({
+          geometry: {
+            coordinates: [-105.0732721, 39.7417583, 15],
+          },
+        });
+      }).rejects.toThrow('geometry.coordinates: Validation failed.');
+    });
+  });
+
   describe('defaults', () => {
     it('should add timestamps by default', async () => {
       const User = createTestModel();
