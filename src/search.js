@@ -382,6 +382,8 @@ function normalizeQuery(query, schema, root = {}, rootPath = []) {
       root[path.join('.')] = { $in: value };
     } else if (isEmptyArrayQuery(schema, key, value)) {
       root[path.join('.')] = [];
+    } else if (isPartialDateQuery(schema, key, value)) {
+      root[path.join('.')] = getPartialDateQuery(value);
     } else {
       root[path.join('.')] = value;
     }
@@ -420,6 +422,19 @@ function isRangeQuery(schema, key, value) {
   );
 }
 
+function isPartialDateQuery(schema, key, value) {
+  if (!isDateField(schema, key) || typeof value !== 'string') {
+    return false;
+  }
+
+  const date = new Date(value);
+
+  if (isNaN(date.getTime()) || date.toISOString() === value) {
+    return false;
+  }
+  return true;
+}
+
 function mapOperatorQuery(obj) {
   const query = {};
   for (let [key, val] of Object.entries(obj)) {
@@ -438,6 +453,39 @@ function isMongoOperator(str) {
 
 function isInclude(str) {
   return str === 'include';
+}
+
+// Partial date queries
+
+function getPartialDateQuery(str) {
+  str = str.replace(/Z$/, '');
+
+  const [d, t] = str.split('T');
+
+  let parts = [...split(d, '-'), ...split(t, /[:.]/)];
+
+  parts = parts.map((str, i) => {
+    const num = Number(str);
+
+    // Months to 0 index
+    return i === 1 ? num - 1 : num;
+  });
+
+  const sParts = [...parts];
+  const eParts = [...parts];
+
+  eParts[eParts.length - 1] += 1;
+
+  return {
+    // @ts-ignore
+    $gte: new Date(Date.UTC(...sParts)),
+    // @ts-ignore
+    $lt: new Date(Date.UTC(...eParts)),
+  };
+}
+
+function split(str, sep) {
+  return str ? str.split(sep) : [];
 }
 
 // Regex queries

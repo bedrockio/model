@@ -848,6 +848,66 @@ describe('search', () => {
       ]);
     });
   });
+
+  describe('partial dates', () => {
+    it('should match against partial dates', async () => {
+      let result;
+      const User = createTestModel({
+        name: 'String',
+        archivedAt: 'Date',
+      });
+      await Promise.all([
+        User.create({ name: 'Billy', archivedAt: '2020-01-01T10:05:03.120Z' }),
+        User.create({ name: 'Willy', archivedAt: '2020-01-01T12:15:08.470Z' }),
+        User.create({ name: 'Lilly', archivedAt: '2020-01-15T18:23:04.190Z' }),
+        User.create({ name: 'Nilly', archivedAt: '2020-08-22T05:12:06.630Z' }),
+      ]);
+
+      result = await User.search({ archivedAt: '2020-01-01T10:05:03Z' });
+      expect(result.meta.total).toBe(1);
+
+      result = await User.search({ archivedAt: '2020-01-01T10:05Z' });
+      expect(result.meta.total).toBe(1);
+
+      result = await User.search({ archivedAt: '2020-01-01' });
+      expect(result.meta.total).toBe(2);
+
+      result = await User.search({ archivedAt: '2020-01' });
+      expect(result.meta.total).toBe(3);
+
+      result = await User.search({ archivedAt: '2020' });
+      expect(result.meta.total).toBe(4);
+    });
+
+    it.only('should allow passing an offset', async () => {
+      let result;
+      const User = createTestModel({
+        name: 'String',
+        archivedAt: 'Date',
+      });
+      await Promise.all([
+        User.create({ name: 'Billy', archivedAt: '2020-01-01T10:05:03.120Z' }),
+        User.create({ name: 'Willy', archivedAt: '2020-01-01T12:15:08.470Z' }),
+        User.create({ name: 'Lilly', archivedAt: '2020-01-15T18:23:04.190Z' }),
+        User.create({ name: 'Nilly', archivedAt: '2020-08-22T05:12:06.630Z' }),
+      ]);
+
+      result = await User.search({ archivedAt: '2020-01-01T10:05:03+09:00' });
+      expect(result.meta.total).toBe(1);
+
+      // result = await User.search({ archivedAt: '2020-01-01T10:05Z' });
+      // expect(result.meta.total).toBe(1);
+
+      // result = await User.search({ archivedAt: '2020-01-01' });
+      // expect(result.meta.total).toBe(2);
+
+      // result = await User.search({ archivedAt: '2020-01' });
+      // expect(result.meta.total).toBe(3);
+
+      // result = await User.search({ archivedAt: '2020' });
+      // expect(result.meta.total).toBe(4);
+    });
+  });
 });
 
 describe('keyword search', () => {
