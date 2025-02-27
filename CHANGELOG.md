@@ -1,3 +1,7 @@
+## 0.11.0
+
+- Added clone module.
+
 ## 0.10.1
 
 - Fix to not expose details on unique constraint errors.

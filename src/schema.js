@@ -6,6 +6,7 @@ import { isSchemaTypedef } from './utils';
 import { serializeOptions } from './serialization';
 import { applySlug } from './slug';
 import { applyCache } from './cache';
+import { applyClone } from './clone';
 import { applySearch } from './search';
 import { applyAssign } from './assign';
 import { applyUpsert } from './upsert';
@@ -60,6 +61,7 @@ export function createSchema(definition, options = {}) {
   applyDeleteHooks(schema, definition);
   applySearch(schema, definition);
   applyCache(schema, definition);
+  applyClone(schema);
   applyDisallowed(schema);
   applyInclude(schema);
   applyHydrate(schema);

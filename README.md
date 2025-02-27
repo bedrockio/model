@@ -23,6 +23,7 @@ Bedrock utilities for model creation.
   - [Access Control](#access-control)
   - [Assign](#assign)
   - [Upsert](#upsert)
+  - [Clone](#clone)
   - [Slugs](#slugs)
 - [Testing](#testing)
 - [Troubleshooting](#troubleshooting)
@@ -1666,6 +1667,16 @@ if (!shop) {
   });
 }
 ```
+
+### Clone
+
+Adds a single `clone` method on documents. This is an async method mostly for
+testing that will immediately create a copy of the document. It makes up for
+some of the shortcomings of the Mongoose `$clone` method:
+
+- A new `id` will be generated.
+- Populated and self-referencing documents are handled.
+- Unique fields will be augmented to not collide.
 
 ### Slugs
 
