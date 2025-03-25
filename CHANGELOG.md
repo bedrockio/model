@@ -1,6 +1,7 @@
 ## 0.11.1
 
 - Changed default sort field in search to `_id`.
+- Some verson bumps.
 
 ## 0.11.0
 
