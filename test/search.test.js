@@ -480,7 +480,7 @@ describe('search', () => {
           order: 'asc',
         },
       });
-    }).toThrow('Unknown sort field "undefined".');
+    }).toThrow('Sort property "name" is not allowed. Use "field" instead.');
   });
 
   it('should not error on null sort field', async () => {
@@ -694,6 +694,75 @@ describe('search', () => {
         tags: null,
       });
       expect(users.data.length).toBe(1);
+    });
+  });
+
+  describe('defaults', () => {
+    it('should default to insert order', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+
+      await User.create({ name: 'Billy', createdAt: '2025-03-25' });
+      await User.create({ name: 'Willy', createdAt: '2025-03-26' });
+      const { data } = await User.search();
+
+      expect(data).toMatchObject([
+        {
+          name: 'Billy',
+        },
+        {
+          name: 'Willy',
+        },
+      ]);
+    });
+
+    it('should allow reverse insert order without specifying field', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+
+      await User.create({ name: 'Billy', createdAt: '2025-03-25' });
+      await User.create({ name: 'Willy', createdAt: '2025-03-26' });
+      const { data } = await User.search({
+        sort: {
+          order: 'desc',
+        },
+      });
+
+      expect(data).toMatchObject([
+        {
+          name: 'Willy',
+        },
+        {
+          name: 'Billy',
+        },
+      ]);
+    });
+
+    it('should still allow $natural sort order', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+
+      await User.create({ name: 'Billy', createdAt: '2025-03-25' });
+      await User.create({ name: 'Willy', createdAt: '2025-03-26' });
+
+      const { data } = await User.search({
+        sort: {
+          field: '$natural',
+          order: 'asc',
+        },
+      });
+
+      expect(data).toMatchObject([
+        {
+          name: 'Billy',
+        },
+        {
+          name: 'Willy',
+        },
+      ]);
     });
   });
 });

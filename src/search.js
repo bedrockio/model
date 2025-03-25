@@ -27,11 +27,7 @@ export function applySearch(schema, definition) {
   const { search: config = {} } = definition;
 
   schema.static('search', function search(body = {}) {
-    const options = {
-      ...SEARCH_DEFAULTS,
-      ...config.query,
-      ...body,
-    };
+    const options = mergeOptions(SEARCH_DEFAULTS, config.query, body);
 
     const { ids, keyword, skip = 0, limit, sort, ...rest } = options;
 
@@ -133,8 +129,13 @@ function resolveSort(sort, schema) {
   } else if (!Array.isArray(sort)) {
     sort = [sort];
   }
-  for (let { field } of sort) {
-    if (!field || !schema.path(field)) {
+  for (let { name, field } of sort) {
+    if (name) {
+      throw new Error(
+        'Sort property "name" is not allowed. Use "field" instead.',
+      );
+    }
+    if (!field.startsWith('$') && !schema.path(field)) {
       throw new Error(`Unknown sort field "${field}".`);
     }
   }
@@ -410,4 +411,26 @@ function isForeignField(schema, path) {
     return false;
   }
   return !!resolveRefPath(schema, path);
+}
+
+// Merge options together. Do not perform deep merge
+// however the sort options do need to also be merged.
+function mergeOptions(...sources) {
+  let result = {};
+  for (let source of sources) {
+    result = {
+      ...result,
+      ...source,
+      sort: mergeSort(result.sort, source?.sort),
+    };
+  }
+
+  return result;
+}
+
+function mergeSort(sort1, sort2) {
+  if (Array.isArray(sort2)) {
+    return sort2;
+  }
+  return { ...sort1, ...sort2 };
 }

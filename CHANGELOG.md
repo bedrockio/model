@@ -1,3 +1,7 @@
+## 0.11.1
+
+- Changed default sort field in search to `_id`.
+
 ## 0.11.0
 
 - Added clone module.

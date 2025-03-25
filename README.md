@@ -755,6 +755,32 @@ The [validation](#validation) generated for search using `getSearchValidation`
 is inherently looser and allows more fields to be passed to allow complex
 searches compatible with the above.
 
+#### Default Sort Order
+
+When using `search` the default sort order is:
+
+```json
+{
+  "field": "_id",
+  "order": "asc"
+}
+```
+
+The justification for this as the default is:
+
+- Ascending sort order matches the behavior of `find` methods.
+- For the majority of cases `_id` behaves identically to `createdAt` with one
+  major difference: for very large collections queries can become signifcantly
+  slow without an index on the `createdAt` field. Using `_id` prefers the
+  default (and heavily optimized) `_id` index instead. For cases where
+  `createdAt` is semantically distinct, simply pass it as the sort field
+  instead.
+- Mongo collections use `$natural` sort by default which follows disk order. For
+  small collections this is **generally** the same as insert order, however
+  documents may appear out of order for a number of different reasons which is
+  not acceptable for search operations. When maximum efficiency is needed (logs,
+  event streams, etc), `$natural` can still be passed.
+
 ### Cache
 
 The cache module allows a simple way to cache foreign fields on a document and

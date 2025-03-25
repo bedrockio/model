@@ -2496,8 +2496,8 @@ describe('getSearchValidation', () => {
       limit: 50,
       skip: 0,
       sort: {
-        field: 'createdAt',
-        order: 'desc',
+        field: '_id',
+        order: 'asc',
       },
     });
   });
