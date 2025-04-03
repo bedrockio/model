@@ -538,6 +538,8 @@ function runHook(query, fn, check, next, args) {
     const ret = fn.apply(query, args);
     if (ret instanceof Promise) {
       ret.finally(next);
+    } else {
+      next();
     }
   } else {
     next();

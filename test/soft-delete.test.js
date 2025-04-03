@@ -1351,6 +1351,30 @@ describe('soft delete', () => {
         });
       });
 
+      describe('deleteMany', () => {
+        it('should not hang on a non-async hook that does not call next', async () => {
+          const schema = createSchema({
+            name: 'String',
+          });
+
+          let calls = 0;
+
+          schema.pre('deleteMany', function () {
+            calls += 1;
+          });
+
+          schema.post('deleteMany', function () {
+            calls += 1;
+          });
+
+          const User = createTestModel(schema);
+
+          await User.deleteMany({});
+
+          expect(calls).toBe(2);
+        });
+      });
+
       describe('other', () => {
         it('should work with non-async hooks', async () => {
           const calls = { pre: 0, post: 0 };

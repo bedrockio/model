@@ -1,3 +1,8 @@
+## 0.11.2
+
+- Fixed issue with non-async hooks hanging.
+- Further verson bumps.
+
 ## 0.11.1
 
 - Changed default sort field in search to `_id`.
