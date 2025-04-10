@@ -1,3 +1,7 @@
+## 0.11.3
+
+- Added warning when id field not passed for unique check.
+
 ## 0.11.2
 
 - Fixed issue with non-async hooks hanging.

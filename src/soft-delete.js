@@ -1,5 +1,7 @@
 import { isEqual } from 'lodash';
 
+import warn from './warn';
+
 import { wrapQuery } from './query';
 import { UniqueConstraintError } from './errors';
 
@@ -24,8 +26,9 @@ export async function assertUnique(options) {
   };
 
   const exists = await model.exists(query);
+
   if (exists) {
-    const message = getUniqueErrorMessage(model, field);
+    const message = getUniqueErrorMessage(field, options);
     throw new UniqueConstraintError(message, {
       model,
       field,
@@ -34,12 +37,16 @@ export async function assertUnique(options) {
   }
 }
 
-function getUniqueErrorMessage(model, field) {
+function getUniqueErrorMessage(field, options) {
+  const { id, model } = options;
   const { modelName } = model;
   if (modelName === 'User' && !field.includes('.')) {
     const name = field === 'phone' ? 'phone number' : field;
     return `A user with that ${name} already exists.`;
   } else {
+    if (!id) {
+      warn('Note "id" field was not passed to exclude self for unique check.');
+    }
     return `"${field}" already exists.`;
   }
 }
