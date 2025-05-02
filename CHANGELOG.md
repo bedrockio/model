@@ -1,3 +1,7 @@
+## 0.12.0
+
+- Handle aggregate pipelines in search.
+
 ## 0.11.3
 
 - Added warning when id field not passed for unique check.

@@ -379,38 +379,6 @@ describe('search', () => {
     }).rejects.toThrow();
   });
 
-  it('should allow override of search defaults', async () => {
-    const schema = createSchema({
-      attributes: {
-        name: {
-          type: 'String',
-          required: true,
-        },
-      },
-      search: {
-        query: {
-          limit: 2,
-          sort: {
-            field: 'name',
-            order: 'asc',
-          },
-        },
-      },
-    });
-    const User = createTestModel(schema);
-    await Promise.all([
-      User.create({ name: 'Welly' }),
-      User.create({ name: 'Willy' }),
-      User.create({ name: 'Chilly' }),
-      User.create({ name: 'Smelly' }),
-      User.create({ name: 'Billy' }),
-    ]);
-    const { data, meta } = await User.search();
-    expect(data).toMatchObject([{ name: 'Billy' }, { name: 'Chilly' }]);
-    expect(data.length).toBe(2);
-    expect(meta.total).toBe(5);
-  });
-
   it('should allow sorting on multiple fields', async () => {
     const User = createTestModel({
       name: 'String',
@@ -1058,6 +1026,109 @@ describe('keyword search', () => {
 
       // Falling back to non-decomposed query
       await assertMatch('Maart', user2);
+    });
+  });
+});
+
+describe('aggregations', () => {
+  it('should support search with aggregation pipeline', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    await Promise.all([
+      User.create({ name: 'Billy' }),
+      User.create({ name: 'Willy' }),
+    ]);
+    const { data, meta } = await User.search([
+      {
+        $match: {
+          name: 'Billy',
+        },
+      },
+    ]);
+
+    expect(data).toMatchObject([
+      {
+        name: 'Billy',
+      },
+    ]);
+
+    expect(meta).toEqual({
+      total: 1,
+      skip: 0,
+      limit: 50,
+    });
+  });
+
+  it('should support standard search params', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    await Promise.all([
+      User.create({ name: 'Billy' }),
+      User.create({ name: 'Willy' }),
+      User.create({ name: 'Sally' }),
+      User.create({ name: 'Milly' }),
+      User.create({ name: 'Molly' }),
+      User.create({ name: 'Polly' }),
+      User.create({ name: 'Holly' }),
+      User.create({ name: 'Kelly' }),
+      User.create({ name: 'Nelly' }),
+      User.create({ name: 'Shelly' }),
+      User.create({ name: 'Dolly' }),
+    ]);
+    const { data, meta } = await User.search(
+      [
+        {
+          $match: {
+            name: /lly$/,
+          },
+        },
+      ],
+      {
+        skip: 3,
+        limit: 3,
+        sort: {
+          field: 'name',
+          order: 'desc',
+        },
+      },
+    );
+
+    expect(data).toMatchObject([
+      { name: 'Polly' },
+      { name: 'Nelly' },
+      { name: 'Molly' },
+    ]);
+
+    expect(meta).toEqual({
+      total: 11,
+      skip: 3,
+      limit: 3,
+    });
+  });
+
+  it('should not error when no results', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    await Promise.all([
+      User.create({ name: 'Billy' }),
+      User.create({ name: 'Willy' }),
+    ]);
+    const { data, meta } = await User.search([
+      {
+        $match: {
+          name: 'Zilly',
+        },
+      },
+    ]);
+
+    expect(data).toMatchObject([]);
+    expect(meta).toEqual({
+      total: 0,
+      skip: 0,
+      limit: 50,
     });
   });
 });

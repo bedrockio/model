@@ -26,51 +26,12 @@ export function applySearch(schema, definition) {
 
   const { search: config = {} } = definition;
 
-  schema.static('search', function search(body = {}) {
-    const options = mergeOptions(SEARCH_DEFAULTS, config.query, body);
-
-    const { ids, keyword, skip = 0, limit, sort, ...rest } = options;
-
-    let query = normalizeQuery(rest, schema.obj);
-
-    if (ids?.length) {
-      query = {
-        ...query,
-        _id: { $in: ids },
-      };
+  schema.static('search', function search(...args) {
+    if (Array.isArray(args[0])) {
+      return searchPipeline(this, args[0], args[1]);
+    } else {
+      return searchQuery(this, args[0], config);
     }
-
-    if (keyword) {
-      const keywordQuery = buildKeywordQuery(schema, keyword, config);
-      query = mergeQuery(query, keywordQuery);
-    }
-
-    if (debug) {
-      logger.info(
-        `Search query for ${this.modelName}:\n`,
-        JSON.stringify(query, null, 2),
-      );
-    }
-
-    const mQuery = this.find(query)
-      .sort(resolveSort(sort, schema))
-      .skip(skip)
-      .limit(limit);
-
-    return wrapQuery(mQuery, async (promise) => {
-      const [data, total] = await Promise.all([
-        promise,
-        this.countDocuments(query),
-      ]);
-      return {
-        data,
-        meta: {
-          total,
-          skip,
-          limit,
-        },
-      };
-    });
   });
 }
 
@@ -101,6 +62,105 @@ export function searchValidation(options = {}) {
   });
 }
 
+function searchQuery(Model, options, config) {
+  const { schema } = Model;
+
+  options = mergeOptions(SEARCH_DEFAULTS, options);
+  let { ids, keyword, skip, limit, sort, ...rest } = options;
+
+  sort = resolveSort(sort, schema);
+
+  let query = normalizeQuery(rest, schema.obj);
+
+  if (ids?.length) {
+    query = mergeQuery(query, {
+      _id: { $in: ids },
+    });
+  }
+
+  if (keyword) {
+    const keywordQuery = buildKeywordQuery(schema, keyword, config);
+    query = mergeQuery(query, keywordQuery);
+  }
+
+  if (debug) {
+    logger.info(
+      `Search query for ${Model.modelName}:\n`,
+      JSON.stringify(query, null, 2),
+    );
+  }
+
+  const mQuery = Model.find(query).sort(sort).skip(skip).limit(limit);
+
+  return wrapQuery(mQuery, async (promise) => {
+    const [data, total] = await Promise.all([
+      promise,
+      Model.countDocuments(query),
+    ]);
+    return {
+      data,
+      meta: {
+        total,
+        skip,
+        limit,
+      },
+    };
+  });
+}
+
+function searchPipeline(Model, pipeline, options) {
+  const { schema } = Model;
+  options = mergeOptions(SEARCH_DEFAULTS, options);
+
+  let { skip, limit, sort } = options;
+  sort = resolveSort(sort, schema);
+
+  if (debug) {
+    logger.info(
+      `Search pipeline for ${Model.modelName}:\n`,
+      JSON.stringify(pipeline, null, 2),
+    );
+  }
+
+  const aggregate = Model.aggregate([
+    ...pipeline,
+    {
+      $facet: {
+        data: [
+          {
+            $sort: sort,
+          },
+          {
+            $skip: skip,
+          },
+          {
+            $limit: limit,
+          },
+        ],
+        meta: [
+          {
+            $count: 'total',
+          },
+        ],
+      },
+    },
+  ]);
+
+  return wrapQuery(aggregate, async (promise) => {
+    const result = await promise;
+    const data = result[0].data;
+    const total = result[0].meta[0]?.total ?? 0;
+    return {
+      data,
+      meta: {
+        skip,
+        limit,
+        total,
+      },
+    };
+  });
+}
+
 function getSortSchema(sort) {
   const schema = yd
     .object({
@@ -125,11 +185,16 @@ function validateDefinition(definition) {
 
 function resolveSort(sort, schema) {
   if (!sort) {
-    sort = [];
-  } else if (!Array.isArray(sort)) {
+    return { _id: 1 };
+  }
+
+  const result = {};
+
+  if (!Array.isArray(sort)) {
     sort = [sort];
   }
-  for (let { name, field } of sort) {
+
+  for (let { name, field, order } of sort) {
     if (name) {
       throw new Error(
         'Sort property "name" is not allowed. Use "field" instead.',
@@ -138,10 +203,10 @@ function resolveSort(sort, schema) {
     if (!field.startsWith('$') && !schema.path(field)) {
       throw new Error(`Unknown sort field "${field}".`);
     }
+
+    result[field] = order === 'desc' ? -1 : 1;
   }
-  return sort.map(({ field, order }) => {
-    return [field, order === 'desc' ? -1 : 1];
-  });
+  return result;
 }
 
 // Keyword queries
