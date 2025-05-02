@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import { normalizeAttributes } from '../src/schema';
 import { createTestModel } from '../src/testing';
 
+const { Decimal128 } = mongoose.Types;
+
 describe('normalizeAttributes', () => {
   it('should accept a correctly formatted definition', async () => {
     const attributes = {
@@ -414,6 +416,43 @@ describe('createSchema', () => {
         type: 'String',
         trim: true,
       });
+    });
+  });
+
+  describe('special', () => {
+    it('should handle Decimal128', async () => {
+      const Product = createTestModel({
+        price: 'Decimal128',
+      });
+      const product = new Product({
+        price: '29.99',
+      });
+
+      expect(product.price).toEqual(Decimal128.fromString('29.99'));
+    });
+
+    it('should handle BigInt', async () => {
+      const Product = createTestModel({
+        views: 'BigInt',
+      });
+      const product = new Product({
+        views: 10,
+      });
+
+      expect(product.views).toEqual(10n);
+    });
+
+    it('should handle Buffer', async () => {
+      const Product = createTestModel({
+        data: 'Buffer',
+      });
+
+      const product = new Product({
+        data: 'data',
+      });
+
+      expect(Buffer.isBuffer(product.data)).toBe(true);
+      expect(product.data.toString()).toEqual('data');
     });
   });
 
