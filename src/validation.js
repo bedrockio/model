@@ -19,7 +19,7 @@ const DATE_TAGS = {
 export const OBJECT_ID_SCHEMA = yd
   .string()
   .mongo()
-  .message('Must be an id.')
+  .message('Must be a valid object id.')
   .tag({
     'x-schema': 'ObjectId',
     'x-description':

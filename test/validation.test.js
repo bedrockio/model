@@ -1004,19 +1004,14 @@ describe('getCreateValidation', () => {
                 {
                   details: [
                     {
-                      details: [
-                        {
-                          format: 'mongo-object-id',
-                          message: 'Must be a valid ObjectId.',
-                          type: 'format',
-                        },
-                      ],
-                      field: 'id',
-                      message: 'Must be an id.',
-                      type: 'field',
+                      format: 'mongo-object-id',
+                      message: 'Must be a valid ObjectId.',
+                      type: 'format',
                     },
                   ],
-                  type: 'validation',
+                  field: 'id',
+                  message: 'Must be a valid object id.',
+                  type: 'field',
                 },
               ],
               type: 'allowed',
@@ -1582,7 +1577,7 @@ describe('getUpdateValidation', () => {
           id: 'bad-id',
         },
       },
-      '"shop" must be an id or object containing an "id" field.',
+      '"shop.id" must be a valid object id.',
     );
   });
 
