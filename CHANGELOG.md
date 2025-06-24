@@ -1,3 +1,7 @@
+## 0.12.1
+
+- Allow range-based search on string fields.
+
 ## 0.12.0
 
 - Handle aggregate pipelines in search.

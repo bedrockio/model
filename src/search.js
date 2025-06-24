@@ -8,6 +8,7 @@ import {
   isArrayField,
   isDateField,
   isNumberField,
+  isStringField,
   resolveRefPath,
 } from './utils';
 
@@ -407,11 +408,16 @@ function isEmptyArrayQuery(schema, key, value) {
 }
 
 function isRangeQuery(schema, key, value) {
-  // Range queries only allowed on Date and Number fields.
-  if (!isDateField(schema, key) && !isNumberField(schema, key)) {
+  if (!isPlainObject(value)) {
     return false;
   }
-  return typeof value === 'object' && !!value;
+
+  // Range queries allowed on Date, Number, and String fields.
+  return (
+    isDateField(schema, key) ||
+    isNumberField(schema, key) ||
+    isStringField(schema, key)
+  );
 }
 
 function mapOperatorQuery(obj) {
