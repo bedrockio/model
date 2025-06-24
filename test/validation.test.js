@@ -2384,6 +2384,7 @@ describe('getSearchValidation', () => {
     const User = createTestModel({
       age: 'Number',
       date: 'Date',
+      name: 'String',
     });
     const schema = User.getSearchValidation();
     expect(yd.isSchema(schema)).toBe(true);
@@ -2392,6 +2393,9 @@ describe('getSearchValidation', () => {
     });
     await assertPass(schema, {
       date: { gte: '2020-01-01' },
+    });
+    await assertPass(schema, {
+      name: { gte: 'Frank' },
     });
     await assertPass(schema, {});
   });
@@ -2646,6 +2650,23 @@ describe('getSearchValidation', () => {
                 type: 'array',
                 items: {
                   type: 'string',
+                },
+              },
+              {
+                type: 'object',
+                properties: {
+                  gt: {
+                    type: 'string',
+                  },
+                  gte: {
+                    type: 'string',
+                  },
+                  lt: {
+                    type: 'string',
+                  },
+                  lte: {
+                    type: 'string',
+                  },
                 },
               },
             ],

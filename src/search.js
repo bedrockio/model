@@ -13,7 +13,7 @@ import {
 } from './utils';
 
 import { SEARCH_DEFAULTS } from './const';
-import { OBJECT_ID_SCHEMA } from './validation';
+import { OBJECT_ID_SCHEMA } from './validation-schemas';
 import { debug } from './env';
 import { mergeQuery, wrapQuery } from './query';
 

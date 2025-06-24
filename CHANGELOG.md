@@ -1,3 +1,7 @@
+## 0.12.2
+
+- Updated validators for string ranges.
+
 ## 0.12.1
 
 - Allow range-based search on string fields.

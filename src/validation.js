@@ -9,45 +9,14 @@ import { assertUnique } from './soft-delete';
 import { PermissionsError, ImplementationError } from './errors';
 import { isMongooseSchema, isSchemaTypedef } from './utils';
 import { INCLUDE_FIELD_SCHEMA } from './include';
-
-const DATE_TAGS = {
-  'x-schema': 'DateTime',
-  'x-description':
-    'A `string` in [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) format.',
-};
-
-export const OBJECT_ID_SCHEMA = yd
-  .string()
-  .mongo()
-  .message('Must be a valid object id.')
-  .tag({
-    'x-schema': 'ObjectId',
-    'x-description':
-      'A 24 character hexadecimal string representing a Mongo [ObjectId](https://bit.ly/3YPtGlU).',
-  });
-
-const REFERENCE_SCHEMA = yd
-  .allow(
-    OBJECT_ID_SCHEMA,
-    yd
-      .object({
-        id: OBJECT_ID_SCHEMA.required(),
-      })
-      .options({
-        stripUnknown: true,
-      })
-      .custom((obj) => {
-        return obj.id;
-      }),
-  )
-  .message('Must be an id or object containing an "id" field.')
-  .tag({
-    'x-schema': 'Reference',
-    'x-description': `
-A 24 character hexadecimal string representing a Mongo [ObjectId](https://bit.ly/3YPtGlU).
-An object with an \`id\` field may also be passed, which will be converted into a string.
-    `.trim(),
-  });
+import {
+  DATE_SCHEMA,
+  REFERENCE_SCHEMA,
+  OBJECT_ID_SCHEMA,
+  NUMBER_RANGE_SCHEMA,
+  STRING_RANGE_SCHEMA,
+  DATE_RANGE_SCHEMA,
+} from './validation-schemas';
 
 const NAMED_SCHEMAS = {
   // Email is special as we are assuming that in
@@ -377,7 +346,7 @@ function getSchemaForType(type, options) {
     case 'Boolean':
       return yd.boolean();
     case 'Date':
-      return yd.date().iso().tag(DATE_TAGS);
+      return DATE_SCHEMA;
     case 'Object':
       return yd.object();
     case 'Array':
@@ -396,73 +365,23 @@ function getSchemaForType(type, options) {
 }
 
 function getSearchSchema(schema, type) {
-  if (type === 'Number') {
+  if (type === 'String') {
     return yd
-      .allow(
-        schema,
-        yd.array(schema),
-        yd
-          .object({
-            lt: yd.number().description('Select values less than.'),
-            gt: yd.number().description('Select values greater than.'),
-            lte: yd.number().description('Select values less than or equal.'),
-            gte: yd
-              .number()
-              .description('Select values greater than or equal.'),
-          })
-          .tag({
-            'x-schema': 'NumberRange',
-            'x-description':
-              'An object representing numbers falling within a range.',
-          }),
-      )
+      .allow(schema, yd.array(schema), STRING_RANGE_SCHEMA)
       .description(
-        'Allows searching by a value, array of values, or a numeric range.',
+        'Allows searching by a string, array of strings, or a range.',
+      );
+  } else if (type === 'Number') {
+    return yd
+      .allow(schema, yd.array(schema), NUMBER_RANGE_SCHEMA)
+      .description(
+        'Allows searching by a value, array of values, or a  range.',
       );
   } else if (type === 'Date') {
     return yd
-      .allow(
-        schema,
-        yd.array(schema),
-        yd
-          .object({
-            lt: yd
-              .date()
-              .iso()
-              .tag({
-                ...DATE_TAGS,
-                description: 'Select dates occurring before.',
-              }),
-            gt: yd
-              .date()
-              .iso()
-              .tag({
-                ...DATE_TAGS,
-                description: 'Select dates occurring after.',
-              }),
-            lte: yd
-              .date()
-              .iso()
-              .tag({
-                ...DATE_TAGS,
-                description: 'Select dates occurring on or before.',
-              }),
-            gte: yd
-              .date()
-              .iso()
-              .tag({
-                ...DATE_TAGS,
-                description: 'Select dates occurring on or after.',
-              }),
-          })
-          .tag({
-            'x-schema': 'DateRange',
-            'x-description':
-              'An object representing dates falling within a range.',
-          }),
-      )
+      .allow(schema, yd.array(schema), DATE_RANGE_SCHEMA)
       .description('Allows searching by a date, array of dates, or a range.');
-  } else if (type === 'String' || type === 'ObjectId') {
+  } else if (type === 'ObjectId') {
     return yd.allow(schema, yd.array(schema));
   } else {
     return schema;
