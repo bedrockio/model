@@ -668,6 +668,54 @@ describe('search', () => {
       result = await User.search({ dob: { lt: '2025-06-29' } });
       expect(result.data).toMatchObject([]);
     });
+
+    it('should not perform a range-based query for a partial date', async () => {
+      // This test is mostly a note that "partial date queries" as
+      // a feature were considered but disregarded due to ambiguity
+      // with time zones. For example the query:
+      //
+      // User.search({ dob: '2025-06-30' })
+      //
+      // could be expanded into:
+      //
+      // {
+      //   $gte: ISODate('2025-06-30T00:00:00.000Z'),
+      //   $lte: ISODate('2025-06-30T23:59:59.999Z'),
+      // }
+      //
+      // however this would be of limited value as the expanded range
+      // would be in UTC time. Also considered was providing an offset
+      // in ISO-8601 format, for example `{dob: '2025-06-30+09:00' }`.
+      // This also would be obtuse and inefficient as it would require
+      // both knowing the offset (which is not the same thing as an
+      // IANA designation) and being able to construct the format.
+      //
+      // Given this complexity, it is simpler to construct the range
+      // object leaning on date libraries for help. For example:
+      //
+      // import { DateTime, Interval } from '@bedrockio/chrono';
+      //
+      // const dt = new DateTime('2025-06-30T00:00:00.000Z', {
+      //   timeZone: 'America/New_York',
+      // });
+      //
+      // const day = Interval.getDay(dt);
+      //
+      // User.search({
+      //   dob: day.toQuery()
+      // })
+
+      const User = createTestModel({
+        dob: 'Date',
+      });
+      await Promise.all([
+        User.create({ dob: new Date('2025-06-30T01:00:00.000Z') }),
+        User.create({ dob: new Date('2025-07-01T01:00:00.000Z') }),
+      ]);
+
+      const result = await User.search({ dob: '2025-06-30' });
+      expect(result.data).toMatchObject([]);
+    });
   });
 
   describe('null', () => {
