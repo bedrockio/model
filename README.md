@@ -597,9 +597,9 @@ advanced features:
 
 will be flattened to:
 
-```
+```json
 {
-  'profile.age': 20
+  "profile.age": 20
 }
 ```
 
@@ -609,7 +609,7 @@ Passing an array to `search` will perform a query using `$in`, which matches on
 the intersection of any elements. For example,
 
 ```json
-tags: ["one", "two"]
+"tags": ["one", "two"]
 ```
 
 is effectively saying "match any documents whose `tags` array contains any of
@@ -652,9 +652,9 @@ match.
 Additionally, date and number fields allow range queries in the form:
 
 ```json
-age: {
-  gt: 1
-  lt: 2
+"age": {
+  "gt": 1,
+  "lt": 2
 }
 ```
 
