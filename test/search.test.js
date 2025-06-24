@@ -601,6 +601,73 @@ describe('search', () => {
       expect(result.data).toMatchObject([{ name: 'Billy' }, { name: 'Willy' }]);
       expect(result.meta.total).toBe(2);
     });
+
+    it('should allow string range search', async () => {
+      let result;
+      const User = createTestModel({
+        name: 'String',
+      });
+      await Promise.all([
+        User.create({ name: 'Billy' }),
+        User.create({ name: 'Willy' }),
+      ]);
+
+      result = await User.search({ name: { gte: 'Billy' } });
+      expect(result.data).toMatchObject([
+        {
+          name: 'Billy',
+        },
+        {
+          name: 'Willy',
+        },
+      ]);
+
+      result = await User.search({ name: { gt: 'Billy' } });
+      expect(result.data).toMatchObject([
+        {
+          name: 'Willy',
+        },
+      ]);
+    });
+
+    it('should perform a range search on a date-only field', async () => {
+      let result;
+      const User = createTestModel({
+        dob: 'String',
+      });
+      await Promise.all([
+        User.create({ dob: '2025-06-29' }),
+        User.create({ dob: '2025-06-30' }),
+        User.create({ dob: '2025-07-01' }),
+      ]);
+
+      result = await User.search({ dob: { gte: '2025-06-30' } });
+      expect(result.data).toMatchObject([
+        {
+          dob: '2025-06-30',
+        },
+        {
+          dob: '2025-07-01',
+        },
+      ]);
+
+      result = await User.search({ dob: { lt: '2025-06-30' } });
+      expect(result.data).toMatchObject([
+        {
+          dob: '2025-06-29',
+        },
+      ]);
+
+      result = await User.search({ dob: { lte: '2025-06-29' } });
+      expect(result.data).toMatchObject([
+        {
+          dob: '2025-06-29',
+        },
+      ]);
+
+      result = await User.search({ dob: { lt: '2025-06-29' } });
+      expect(result.data).toMatchObject([]);
+    });
   });
 
   describe('null', () => {
@@ -946,7 +1013,7 @@ describe('keyword search', () => {
     expect(meta.total).toBe(2);
   });
 
-  it('should be able to search on subdocument fields', async () => {
+  it('should search on subdocument fields', async () => {
     const schema = createSchema({
       attributes: {
         address: {
@@ -988,7 +1055,7 @@ describe('keyword search', () => {
   });
 
   describe('decomposition', () => {
-    it('should be able to decompose a structured name', async () => {
+    it('should decompose a structured name', async () => {
       const schema = createSchema({
         attributes: {
           firstName: 'String',

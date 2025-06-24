@@ -38,6 +38,10 @@ export function isNumberField(obj, path) {
   return isType(obj, path, 'Number');
 }
 
+export function isStringField(obj, path) {
+  return isType(obj, path, 'String');
+}
+
 export function isArrayField(obj, path) {
   const field = getField(obj, path);
   return Array.isArray(field?.type);
