@@ -233,6 +233,7 @@ function setNodePath(node, options) {
   }
 
   const schema = mongoose.models[modelName]?.schema;
+
   if (!schema) {
     throw new Error(`Could not derive schema for ${modelName}.`);
   }
@@ -318,6 +319,12 @@ function setNodePath(node, options) {
             exclusive,
           });
           halt = true;
+        } else if (field.refPath) {
+          // Note that dynamic references with refPath cannot "see"
+          // into a field for which they don't know the type yet (ie.
+          // before the query executes), therefore by definition
+          // dynamic references can only be populated one layer deep.
+          node[key] ||= {};
         } else if (isSchemaTypedef(field)) {
           node[key] = LEAF_NODE;
         }

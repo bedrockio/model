@@ -1050,6 +1050,10 @@ await Product.findById(id).include('shop.user.^name').
 }
 ```
 
+> [!WARNING] Fields that are dynamically referenced using `refPath` are unable
+> to resolve the schemas beforehand (ie. before query execution), therefore they
+> can only be populated at the top level.
+
 #### Excluded Fields
 
 Fields can be excluded rather than included using `-`:

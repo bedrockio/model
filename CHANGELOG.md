@@ -1,3 +1,7 @@
+## 0.12.3
+
+- Support for `include` with top level dynamic references.
+
 ## 0.12.2
 
 - Updated validators for string ranges.

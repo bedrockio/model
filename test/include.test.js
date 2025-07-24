@@ -2056,6 +2056,93 @@ describe('validation integration', () => {
   });
 });
 
+describe('dynamic references', () => {
+  const Like = createTestModel({
+    target: {
+      type: 'ObjectId',
+      refPath: 'targetType',
+    },
+    targetType: {
+      type: 'String',
+      enum: [Shop.modelName, Product.modelName],
+    },
+  });
+
+  it('should run include on query', async () => {
+    const shop = await Shop.create({
+      name: 'foo',
+    });
+
+    await Like.create({
+      target: shop.id,
+      targetType: Shop.modelName,
+    });
+
+    const like = await Like.findOne({
+      target: shop.id,
+    }).include('target');
+
+    expect(like.target.name).toBe('foo');
+  });
+
+  it('should run include on document', async () => {
+    const shop = await Shop.create({
+      name: 'foo',
+    });
+
+    const like = await Like.create({
+      target: shop.id,
+      targetType: Shop.modelName,
+    });
+
+    await like.include('target');
+
+    expect(like.target.name).toBe('foo');
+  });
+
+  it('createWithInclude', async () => {
+    const shop = await Shop.create({
+      name: 'foo',
+    });
+
+    await Like.create({
+      target: shop.id,
+      targetType: Shop.modelName,
+    });
+
+    const like = await Like.createWithInclude({
+      target: shop.id,
+      targetType: Shop.modelName,
+      include: ['target'],
+    });
+
+    expect(like.target.name).toBe('foo');
+  });
+
+  it('assignWithInclude', async () => {
+    const shop = await Shop.create({
+      name: 'foo',
+    });
+
+    await Like.create({
+      target: shop.id,
+      targetType: Shop.modelName,
+    });
+
+    const like = new Like();
+
+    like.assignWithInclude({
+      target: shop.id,
+      targetType: Shop.modelName,
+      include: 'target',
+    });
+
+    await like.save();
+
+    expect(like.target.name).toBe('foo');
+  });
+});
+
 describe('other', () => {
   it('should not populate a deleted document', async () => {
     const user = await User.create({
