@@ -3,6 +3,7 @@
 - Removed support for passing schemas into `getCreateValidation` etc. now that
   other methods available on yada exist. Instead allow more flexibility in
   schema options.
+- Allow appending export schema as an option.
 
 ## 0.12.3
 

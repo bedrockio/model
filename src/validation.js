@@ -4,7 +4,7 @@ import yd from '@bedrockio/yada';
 import { get, omit, lowerFirst } from 'lodash';
 
 import { hasAccess } from './access';
-import { searchValidation } from './search';
+import { searchValidation, exportValidation } from './search';
 import { assertUnique } from './soft-delete';
 import { PermissionsError, ImplementationError } from './errors';
 import { isMongooseSchema, isSchemaTypedef } from './utils';
@@ -89,8 +89,9 @@ export function applyValidation(schema, definition) {
   schema.static(
     'getSearchValidation',
     function getSearchValidation(options = {}) {
-      const { defaults, ...rest } = options;
-      return getSchemaFromMongoose(schema, {
+      const { allowExport, defaults, formats, ...rest } = options;
+
+      let validation = getSchemaFromMongoose(schema, {
         model: this,
         allowNull: true,
         stripEmpty: true,
@@ -101,12 +102,26 @@ export function applyValidation(schema, definition) {
         expandDotSyntax: true,
         unwindArrayFields: true,
         requireReadAccess: true,
-        appendSchema: searchValidation({
+        ...rest,
+      });
+
+      validation = validation.append(
+        searchValidation({
           defaults,
           definition,
         }),
-        ...rest,
-      });
+      );
+
+      if (allowExport) {
+        validation = validation.append(
+          exportValidation({
+            formats,
+            defaults,
+          }),
+        );
+      }
+
+      return validation;
     },
   );
 
@@ -152,13 +167,10 @@ function getMongooseFields(schema, options) {
 
 // Exported for testing
 export function getValidationSchema(attributes, options = {}) {
-  const { appendSchema, allowInclude, updateAccess } = options;
+  const { allowInclude, updateAccess } = options;
 
   let schema = getObjectSchema(attributes, options);
 
-  if (appendSchema) {
-    schema = schema.append(appendSchema);
-  }
   if (allowInclude) {
     schema = schema.append(INCLUDE_FIELD_SCHEMA);
   }

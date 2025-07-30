@@ -63,6 +63,21 @@ export function searchValidation(options = {}) {
   });
 }
 
+export function exportValidation(options = {}) {
+  const { defaults, formats = ['csv'] } = options;
+  const { filename = 'export.csv' } = defaults || {};
+  return {
+    filename: yd
+      .string()
+      .default(filename)
+      .description('Filename when search is exported.'),
+    format: yd
+      .string()
+      .allow('json', ...formats)
+      .default('json'),
+  };
+}
+
 function searchQuery(Model, options, config) {
   const { schema } = Model;
 

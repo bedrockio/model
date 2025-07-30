@@ -2604,6 +2604,75 @@ describe('getSearchValidation', () => {
     });
   });
 
+  describe('exports', () => {
+    it('should append export validations', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      const schema = User.getSearchValidation({
+        allowExport: true,
+      });
+
+      await assertPass(schema, {
+        format: 'csv',
+        filename: 'users.csv',
+      });
+
+      await assertFail(schema, {
+        format: 'xml',
+      });
+    });
+
+    it('should allow custom formats', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+
+      const schema = User.getSearchValidation({
+        allowExport: true,
+        formats: ['csv', 'pdf'],
+      });
+
+      await assertPass(schema, {
+        format: 'pdf',
+      });
+
+      await assertFail(schema, {
+        format: 'xml',
+      });
+    });
+
+    it('should allow default filename', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      const schema = User.getSearchValidation({
+        allowExport: true,
+        defaults: {
+          limit: 10,
+          sort: {
+            field: 'createdAt',
+            order: 'asc',
+          },
+          filename: 'foo.csv',
+        },
+      });
+
+      const result = await schema.validate({});
+
+      expect(result).toEqual({
+        limit: 10,
+        skip: 0,
+        format: 'json',
+        sort: {
+          field: 'createdAt',
+          order: 'asc',
+        },
+        filename: 'foo.csv',
+      });
+    });
+  });
+
   describe('write access', () => {
     it('should not enforce write access', async () => {
       const User = createTestModel({
@@ -3722,58 +3791,6 @@ describe('getValidationSchema', () => {
         },
       });
       await assertFail(schema, {});
-    });
-  });
-
-  describe('appendSchema', () => {
-    it('should append plain objects as schemas', async () => {
-      const schema = getValidationSchema(
-        {
-          type: {
-            type: 'String',
-            required: true,
-          },
-        },
-        {
-          appendSchema: {
-            count: yd.number().required(),
-          },
-        },
-      );
-      await assertFail(schema, {
-        type: 'foo',
-      });
-      await assertPass(schema, {
-        type: 'foo',
-        count: 10,
-      });
-    });
-
-    it('should merge schemas', async () => {
-      const schema = getValidationSchema(
-        {
-          type: {
-            type: 'String',
-            required: true,
-          },
-          count: {
-            type: 'Number',
-            required: true,
-          },
-        },
-        {
-          appendSchema: yd.object({
-            count: yd.number(),
-          }),
-        },
-      );
-      await assertPass(schema, {
-        type: 'foo',
-      });
-      await assertPass(schema, {
-        type: 'foo',
-        count: 10,
-      });
     });
   });
 });
