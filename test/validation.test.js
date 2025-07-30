@@ -2604,6 +2604,25 @@ describe('getSearchValidation', () => {
     });
   });
 
+  it('should not enforce unique constraint', async () => {
+    const User = createTestModel({
+      email: {
+        type: 'String',
+        unique: true,
+      },
+    });
+
+    await User.create({
+      email: 'foo@bar.com',
+    });
+
+    const schema = User.getSearchValidation();
+
+    await assertPass(schema, {
+      email: 'foo@bar.com',
+    });
+  });
+
   describe('exports', () => {
     it('should append export validations', async () => {
       const User = createTestModel({

@@ -60,6 +60,7 @@ export function applyValidation(schema, definition) {
     return getSchemaFromMongoose(schema, {
       model: this,
       stripEmpty: true,
+      applyUnique: true,
       stripDeleted: true,
       allowInclude: false,
       stripTimestamps: true,
@@ -74,6 +75,7 @@ export function applyValidation(schema, definition) {
     return getSchemaFromMongoose(schema, {
       model: this,
       allowNull: true,
+      applyUnique: true,
       skipRequired: true,
       stripUnknown: true,
       stripDeleted: true,
@@ -326,7 +328,7 @@ function getSchemaForTypedef(typedef, options = {}) {
     schema = validateAccess('write', schema, typedef.writeAccess, options);
   }
 
-  if (typedef.softUnique) {
+  if (typedef.softUnique && options.applyUnique) {
     schema = schema.custom(async (value, { path, originalRoot }) => {
       const { id } = originalRoot;
       await assertUnique({

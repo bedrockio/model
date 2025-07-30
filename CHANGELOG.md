@@ -1,3 +1,7 @@
+## 0.13.1
+
+- Do not enforce unique constraints in search validation.
+
 ## 0.13.0
 
 - Removed support for passing schemas into `getCreateValidation` etc. now that
