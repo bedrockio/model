@@ -81,26 +81,6 @@ describe('getCreateValidation', () => {
     });
   });
 
-  it('should append schemas', async () => {
-    const User = createTestModel({
-      name: {
-        type: 'String',
-        required: true,
-      },
-    });
-    const schema = User.getCreateValidation({
-      count: yd.number().required(),
-    });
-    expect(yd.isSchema(schema)).toBe(true);
-    await assertFail(schema, {
-      name: 'foo',
-    });
-    await assertPass(schema, {
-      name: 'foo',
-      count: 10,
-    });
-  });
-
   it('should handle location schema', async () => {
     const User = createTestModel({
       location: {
@@ -293,6 +273,49 @@ describe('getCreateValidation', () => {
       name: '',
     });
     expect(result).toEqual({});
+  });
+
+  describe('modification', () => {
+    it('should append schemas with append', async () => {
+      const User = createTestModel({
+        name: {
+          type: 'String',
+          required: true,
+        },
+      });
+      const schema = User.getCreateValidation().append({
+        count: yd.number().required(),
+      });
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertFail(schema, {
+        name: 'foo',
+      });
+      await assertPass(schema, {
+        name: 'foo',
+        count: 10,
+      });
+    });
+
+    it('should append schemas with export', async () => {
+      const User = createTestModel({
+        name: {
+          type: 'String',
+          required: true,
+        },
+      });
+
+      const schema = yd.object({
+        ...User.getCreateValidation().export(),
+        count: yd.number().required(),
+      });
+      await assertFail(schema, {
+        name: 'foo',
+      });
+      await assertPass(schema, {
+        name: 'foo',
+        count: 10,
+      });
+    });
   });
 
   describe('write access', () => {
@@ -592,6 +615,23 @@ describe('getCreateValidation', () => {
       await assertFail(schema, {
         name: 'Barry',
         apiKey: 'foo',
+      });
+    });
+
+    it('should be able to skip access checks', async () => {
+      const User = createTestModel({
+        name: {
+          type: 'String',
+          writeAccess: 'none',
+        },
+      });
+
+      const schema = User.getCreateValidation({
+        requireWriteAccess: false,
+      });
+
+      await assertPass(schema, {
+        name: 'Barry',
       });
     });
   });
@@ -1581,6 +1621,48 @@ describe('getUpdateValidation', () => {
     );
   });
 
+  describe('modification', () => {
+    it('should append schemas with append', async () => {
+      const User = createTestModel({
+        name: {
+          type: 'String',
+          required: true,
+        },
+      });
+      const schema = User.getUpdateValidation().append({
+        count: yd.number().required(),
+      });
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertFail(schema, {
+        name: 'foo',
+      });
+      await assertPass(schema, {
+        name: 'foo',
+        count: 10,
+      });
+    });
+
+    it('should append schemas with export', async () => {
+      const User = createTestModel({
+        name: {
+          type: 'String',
+          required: true,
+        },
+      });
+
+      const schema = yd.object({
+        ...User.getUpdateValidation().export(),
+        count: yd.number().required(),
+      });
+      await assertFail(schema, {
+        name: 'foo',
+      });
+      await assertPass(schema, {
+        name: 'foo',
+        count: 10,
+      });
+    });
+  });
   describe('write access', () => {
     it('should strip field on attempt to update with no write scopes', async () => {
       const User = createTestModel({
@@ -1993,6 +2075,27 @@ describe('getUpdateValidation', () => {
         },
         'You do not have permissions to update this document.',
       );
+    });
+
+    it('should be able to skip access checks', async () => {
+      const User = createTestModel({
+        name: {
+          type: 'String',
+          writeAccess: 'none',
+        },
+      });
+
+      const schema = User.getUpdateValidation({
+        requireWriteAccess: false,
+      });
+
+      const result = await schema.validate({
+        name: 'Barry',
+      });
+
+      expect(result).toEqual({
+        name: 'Barry',
+      });
     });
   });
 
@@ -2760,24 +2863,11 @@ describe('getSearchValidation', () => {
       name: 'String',
     });
     const schema = User.getSearchValidation({
-      includeDeleted: true,
+      stripDeleted: false,
     });
     await assertPass(schema, {
       deleted: true,
       deletedAt: '2020-01-01T00:00:00Z',
-    });
-  });
-
-  it('should still be able to pass an append schema', async () => {
-    const User = createTestModel({
-      name: 'String',
-    });
-    const schema = User.getSearchValidation({
-      age: yd.number(),
-    });
-    await assertPass(schema, {
-      name: 'foo',
-      age: 25,
     });
   });
 
@@ -2803,6 +2893,19 @@ describe('getSearchValidation', () => {
     expect(yd.isSchema(schema)).toBe(true);
     await assertFail(schema, {
       name: null,
+    });
+  });
+
+  it('should append schema', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+    const schema = User.getSearchValidation().append({
+      age: yd.number(),
+    });
+    await assertPass(schema, {
+      name: 'foo',
+      age: 25,
     });
   });
 });

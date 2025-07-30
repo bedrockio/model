@@ -1,3 +1,9 @@
+## 0.13.0
+
+- Removed support for passing schemas into `getCreateValidation` etc. now that
+  other methods available on yada exist. Instead allow more flexibility in
+  schema options.
+
 ## 0.12.3
 
 - Support for `include` with top level dynamic references.

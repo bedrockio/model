@@ -456,8 +456,9 @@ validation which will:
   - `Model.restoreMany`
   - `Model.insertMany`
   - `Model.replaceOne`
-- Append the same validation to `Model.getCreateSchema` and
-  `Model.getUpdateSchema` to allow this constraint to trickle down to the API.
+- Append the same validation to `Model.getCreateValidation` and
+  `Model.getUpdateValidation` to allow this constraint to trickle down to the
+  API.
 
 > [!WARNING] Note that calling `Model.updateOne` will throw an error when a
 > unique field exists on any document **including the document being updated**.
@@ -480,7 +481,7 @@ const router = new Router();
 router.post(
   '/',
   validateBody(
-    User.getCreateValidation({
+    User.getCreateValidation().append({
       password: yd.string().password().required(),
     }),
   ),
@@ -547,7 +548,7 @@ new ones:
 import yd from '@bedrockio/yada';
 
 const signupSchema = yd.object({
-  ...User.getCreateSchema().export(),
+  ...User.getCreateValidation().export(),
   additionalField: yd.string().required(),
 });
 ```
@@ -1290,7 +1291,7 @@ against scopes in the generated validations or when serializing:
 
 ```js
 // In validation middleware:
-const schema = User.getCreateSchema();
+const schema = User.getCreateValidation();
 await schema.validate(ctx.request.body, {
   scopes: authUser.getScopes(),
   // Also accepted:

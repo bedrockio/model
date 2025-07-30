@@ -56,48 +56,40 @@ export function addValidators(schemas) {
 }
 
 export function applyValidation(schema, definition) {
-  schema.static(
-    'getCreateValidation',
-    function getCreateValidation(options = {}) {
-      const { allowInclude, ...appendSchema } = options;
-      return getSchemaFromMongoose(schema, {
-        model: this,
-        appendSchema,
-        allowInclude,
-        stripEmpty: true,
-        stripDeleted: true,
-        stripTimestamps: true,
-        allowDefaultTags: true,
-        allowExpandedRefs: true,
-        requireWriteAccess: true,
-      });
-    },
-  );
+  schema.static('getCreateValidation', function getCreateValidation(options) {
+    return getSchemaFromMongoose(schema, {
+      model: this,
+      stripEmpty: true,
+      stripDeleted: true,
+      allowInclude: false,
+      stripTimestamps: true,
+      allowDefaultTags: true,
+      allowExpandedRefs: true,
+      requireWriteAccess: true,
+      ...options,
+    });
+  });
 
-  schema.static(
-    'getUpdateValidation',
-    function getUpdateValidation(options = {}) {
-      const { allowInclude, ...appendSchema } = options;
-      return getSchemaFromMongoose(schema, {
-        model: this,
-        appendSchema,
-        allowInclude,
-        allowNull: true,
-        skipRequired: true,
-        stripUnknown: true,
-        stripDeleted: true,
-        stripTimestamps: true,
-        allowExpandedRefs: true,
-        requireWriteAccess: true,
-        updateAccess: definition.access?.update,
-      });
-    },
-  );
+  schema.static('getUpdateValidation', function getUpdateValidation(options) {
+    return getSchemaFromMongoose(schema, {
+      model: this,
+      allowNull: true,
+      skipRequired: true,
+      stripUnknown: true,
+      stripDeleted: true,
+      allowInclude: false,
+      stripTimestamps: true,
+      allowExpandedRefs: true,
+      requireWriteAccess: true,
+      updateAccess: definition.access?.update,
+      ...options,
+    });
+  });
 
   schema.static(
     'getSearchValidation',
     function getSearchValidation(options = {}) {
-      const { defaults, includeDeleted, ...appendSchema } = options;
+      const { defaults, ...rest } = options;
       return getSchemaFromMongoose(schema, {
         model: this,
         allowNull: true,
@@ -105,15 +97,15 @@ export function applyValidation(schema, definition) {
         allowSearch: true,
         skipRequired: true,
         allowInclude: true,
+        stripDeleted: true,
         expandDotSyntax: true,
         unwindArrayFields: true,
         requireReadAccess: true,
-        stripDeleted: !includeDeleted,
         appendSchema: searchValidation({
           defaults,
           definition,
-          appendSchema,
         }),
+        ...rest,
       });
     },
   );
