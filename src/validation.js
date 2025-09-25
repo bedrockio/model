@@ -26,6 +26,11 @@ const NAMED_SCHEMAS = {
   // "mongo" is notably excluded here for this reason.
   objectId: OBJECT_ID_SCHEMA,
 
+  // Normal date validations must contain a time. The
+  // "calendar" validation is a special case to validate
+  // string fields in ISO-8601 format without a time.
+  calendar: yd.string().calendar(),
+
   ascii: yd.string().ascii(),
   base64: yd.string().base64(),
   btc: yd.string().btc(),
@@ -101,7 +106,6 @@ export function applyValidation(schema, definition) {
         skipRequired: true,
         allowInclude: true,
         stripDeleted: true,
-        expandDotSyntax: true,
         unwindArrayFields: true,
         requireReadAccess: true,
         ...rest,
@@ -195,7 +199,7 @@ function getObjectSchema(arg, options) {
   } else if (Array.isArray(arg)) {
     return getArraySchema(arg, options);
   } else if (typeof arg === 'object') {
-    const { stripUnknown, stripEmpty, expandDotSyntax } = options;
+    const { stripUnknown, stripEmpty } = options;
     const map = {};
     for (let [key, field] of Object.entries(arg)) {
       if (!isExcludedField(field, options)) {
@@ -214,12 +218,6 @@ function getObjectSchema(arg, options) {
     if (stripEmpty) {
       schema = schema.options({
         stripEmpty: true,
-      });
-    }
-
-    if (expandDotSyntax) {
-      schema = schema.options({
-        expandDotSyntax: true,
       });
     }
 

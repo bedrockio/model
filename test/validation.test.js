@@ -169,6 +169,27 @@ describe('getCreateValidation', () => {
     });
   });
 
+  it('should validate a calendar date as a string', async () => {
+    const User = createTestModel({
+      dob: {
+        type: 'String',
+        validate: 'calendar',
+      },
+    });
+    const schema = User.getCreateValidation();
+    await assertPass(schema, {
+      dob: '2025-08-25',
+    });
+
+    await assertFailWithError(
+      schema,
+      {
+        dob: '08/25/1979',
+      },
+      '"dob" must be an ISO-8601 calendar date.',
+    );
+  });
+
   it('should apply a custom validator', async () => {
     const User = createTestModel({
       name: {
@@ -906,7 +927,7 @@ describe('getCreateValidation', () => {
     });
   });
 
-  describe('OpenAPI', () => {
+  describe('serialization', () => {
     it('should correctly describe its schema', async () => {
       const User = createTestModel({
         name: {
@@ -928,12 +949,11 @@ describe('getCreateValidation', () => {
         },
       });
       const schema = User.getCreateValidation();
-      expect(schema.toOpenApi()).toMatchObject({
+      expect(schema.toJSON()).toMatchObject({
         type: 'object',
         properties: {
           name: {
             type: 'string',
-            required: true,
           },
           status: {
             type: 'string',
@@ -965,15 +985,14 @@ describe('getCreateValidation', () => {
                 properties: {
                   id: {
                     type: 'string',
-                    required: true,
                     format: 'mongo-object-id',
                   },
                 },
               },
             ],
-            required: true,
           },
         },
+        required: ['name', 'shop'],
       });
     });
 
@@ -984,7 +1003,7 @@ describe('getCreateValidation', () => {
       const schema = User.getCreateValidation({
         allowInclude: true,
       });
-      expect(schema.toOpenApi()).toMatchObject({
+      expect(schema.toJSON()).toMatchObject({
         type: 'object',
         properties: {
           include: {
@@ -2172,7 +2191,7 @@ describe('getUpdateValidation', () => {
     });
   });
 
-  describe('OpenAPI', () => {
+  describe('serialization', () => {
     it('should correctly describe its schema', async () => {
       const User = createTestModel({
         name: {
@@ -2186,7 +2205,7 @@ describe('getUpdateValidation', () => {
         },
       });
       const schema = User.getUpdateValidation();
-      expect(schema.toOpenApi()).toMatchObject({
+      expect(schema.toJSON()).toMatchObject({
         type: 'object',
         properties: {
           name: {
@@ -2203,7 +2222,6 @@ describe('getUpdateValidation', () => {
                 properties: {
                   id: {
                     type: 'string',
-                    required: true,
                     format: 'mongo-object-id',
                   },
                 },
@@ -2211,6 +2229,7 @@ describe('getUpdateValidation', () => {
             ],
           },
         },
+        required: [],
       });
     });
   });
@@ -2815,7 +2834,7 @@ describe('getSearchValidation', () => {
     });
   });
 
-  describe('OpenAPI', () => {
+  describe('serialization', () => {
     it('should correctly describe its schema', async () => {
       const User = createTestModel({
         name: 'String',
@@ -2827,8 +2846,8 @@ describe('getSearchValidation', () => {
         ],
       });
       const schema = User.getSearchValidation();
-      const openApi = schema.toOpenApi();
-      expect(openApi).toMatchObject({
+      const json = schema.toJSON();
+      expect(json).toMatchObject({
         type: 'object',
         properties: {
           name: {
@@ -2863,8 +2882,9 @@ describe('getSearchValidation', () => {
             ],
           },
         },
+        required: [],
       });
-      expect(openApi.properties.tokens).toBeUndefined();
+      expect(json.properties.tokens).toBeUndefined();
     });
   });
 
@@ -3014,7 +3034,7 @@ describe('getBaseSchema', () => {
     await assertFail(schema, {});
   });
 
-  describe('OpenAPI', () => {
+  describe('serialization', () => {
     it('should correctly describe its schema', async () => {
       const User = createTestModel({
         name: {
@@ -3028,16 +3048,14 @@ describe('getBaseSchema', () => {
         },
       });
       const schema = User.getBaseSchema();
-      expect(schema.toOpenApi()).toMatchObject({
+      expect(schema.toJSON()).toMatchObject({
         type: 'object',
         properties: {
           name: {
             type: 'string',
-            required: true,
           },
           shop: {
             type: 'string',
-            required: true,
           },
           createdAt: {
             type: 'string',
@@ -3048,6 +3066,7 @@ describe('getBaseSchema', () => {
             format: 'date-time',
           },
         },
+        required: ['name', 'shop'],
       });
     });
 
@@ -3056,7 +3075,7 @@ describe('getBaseSchema', () => {
         any: 'Mixed',
       });
       const schema = User.getBaseSchema();
-      expect(schema.toOpenApi()).toMatchObject({
+      expect(schema.toJSON()).toMatchObject({
         type: 'object',
         properties: {
           any: {
@@ -3078,7 +3097,7 @@ describe('getBaseSchema', () => {
         },
       });
       const schema = User.getBaseSchema();
-      expect(schema.toOpenApi().properties.age).toBeUndefined();
+      expect(schema.toJSON().properties.age).toBeUndefined();
     });
 
     it('should not fail on fields with conditional read access', async () => {
@@ -3093,7 +3112,7 @@ describe('getBaseSchema', () => {
         },
       });
       const schema = User.getBaseSchema();
-      expect(schema.toOpenApi().properties.age).toEqual({
+      expect(schema.toJSON().properties.age).toEqual({
         type: 'number',
       });
     });

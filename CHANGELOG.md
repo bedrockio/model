@@ -1,3 +1,10 @@
+## 0.13.2
+
+- Bumped yada version.
+- Removed `expandDotSyntax` as default.
+- Added `calendar` named validation.
+- Updated OpenApi tests to match stricter JSON schema.
+
 ## 0.13.1
 
 - Do not enforce unique constraints in search validation.
