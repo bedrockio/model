@@ -25,7 +25,7 @@ function unsetReferenceFields(fields, schema = {}) {
       fields[key] = undefined;
     } else if (value instanceof mongoose.Document) {
       fields[key] = value;
-    } else if (value && typeof value === 'object') {
+    } else if (hasEnumerableFields(value)) {
       unsetReferenceFields(value, getField(schema, key));
     }
   }
@@ -37,11 +37,25 @@ function unsetReferenceFields(fields, schema = {}) {
 function flattenObject(obj, root = {}, rootPath = []) {
   for (let [key, val] of Object.entries(obj)) {
     const path = [...rootPath, key];
-    if (isPlainObject(val)) {
+    if (hasEnumerableFields(val)) {
       flattenObject(val, root, path);
     } else {
       root[path.join('.')] = val;
     }
   }
   return root;
+}
+
+// Only plain objects and arrays with fields should
+// be enumerated to allow setting of their inner fields.
+// Note that mongoose documents etc should NOT be enumerated
+// over as their value should be set directly for the field.
+// Additionally if an array is empty it should not have its
+// fields enumerated but instead directly set the empty array
+// for the field.
+function hasEnumerableFields(arg) {
+  if (isPlainObject(arg) || Array.isArray(arg)) {
+    return Object.keys(arg).length > 0;
+  }
+  return false;
 }

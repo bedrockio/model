@@ -299,4 +299,46 @@ describe('assign', () => {
     user = await User.findById(user.id);
     expect(user.name).toBeUndefined();
   });
+
+  it('should unset nested array fields', async () => {
+    const User = createTestModel({
+      profiles: [
+        {
+          name: 'String',
+          gender: {
+            type: 'String',
+            enum: ['male', 'female', 'other'],
+          },
+        },
+      ],
+    });
+
+    let user = await User.create({
+      profiles: [
+        {
+          name: 'Frank',
+          gender: 'male',
+        },
+      ],
+    });
+
+    user.assign({
+      profiles: [
+        {
+          name: 'Dennis',
+          gender: '',
+        },
+      ],
+    });
+    await user.save();
+
+    user = await User.findById(user.id);
+    expect(user.profiles.toObject()).toEqual([
+      {
+        id: user.profiles[0].id,
+        _id: user.profiles[0]._id,
+        name: 'Dennis',
+      },
+    ]);
+  });
 });

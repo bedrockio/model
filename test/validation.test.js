@@ -1415,6 +1415,30 @@ describe('getUpdateValidation', () => {
         phone: '',
       });
     });
+
+    it('should allow an empty string to unset a nested enum field', async () => {
+      const User = createTestModel({
+        profiles: [
+          {
+            name: 'String',
+            gender: {
+              type: 'String',
+              enum: ['male', 'female', 'other'],
+            },
+          },
+        ],
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertPass(schema, {
+        profiles: [
+          {
+            name: 'Frank',
+            gender: '',
+          },
+        ],
+      });
+    });
   });
 
   it('should not enforce a schema on unstructured objects', async () => {

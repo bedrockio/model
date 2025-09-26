@@ -30,7 +30,7 @@
     "lodash": "^4.17.21"
   },
   "peerDependencies": {
-    "@bedrockio/yada": "^1.6.0",
+    "@bedrockio/yada": "^1.6.1",
     "mongoose": "^8.13.1"
   },
   "devDependencies": {
@@ -39,7 +39,7 @@
     "@babel/preset-env": "^7.26.0",
     "@bedrockio/eslint-plugin": "^1.1.7",
     "@bedrockio/prettier-config": "^1.0.2",
-    "@bedrockio/yada": "^1.6.0",
+    "@bedrockio/yada": "^1.6.1",
     "@shelf/jest-mongodb": "^5.1.0",
     "eslint": "^9.19.0",
     "jest": "^29.7.0",
