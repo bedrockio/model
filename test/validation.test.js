@@ -1,14 +1,15 @@
 import yd from '@bedrockio/yada';
 import { lowerFirst } from 'lodash';
 
-import {
-  getValidationSchema,
-  getNamedValidator,
-  addValidators,
-} from '../src/validation';
-import { createTestModel } from '../src/testing';
-import { createSchema } from '../src/schema';
 import { UniqueConstraintError } from '../src/errors';
+import { createSchema } from '../src/schema';
+import { createTestModel } from '../src/testing';
+
+import {
+  addValidators,
+  getNamedValidator,
+  getValidationSchema,
+} from '../src/validation';
 
 async function assertPass(schema, obj, expected, options) {
   try {

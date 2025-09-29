@@ -1,5 +1,5 @@
+import { get, groupBy, once } from 'lodash';
 import mongoose from 'mongoose';
-import { get, once, groupBy } from 'lodash';
 
 import { resolveRefPath } from './utils';
 

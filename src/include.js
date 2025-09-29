@@ -1,9 +1,9 @@
-import mongoose from 'mongoose';
-import { escapeRegExp } from 'lodash';
 import yd from '@bedrockio/yada';
+import { escapeRegExp } from 'lodash';
+import mongoose from 'mongoose';
 
-import { getInnerField, isSchemaTypedef } from './utils';
 import { POPULATE_MAX_DEPTH } from './const';
+import { getInnerField, isSchemaTypedef } from './utils';
 
 // @ts-ignore
 // Overloading mongoose Query prototype to

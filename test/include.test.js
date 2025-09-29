@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 
-import { getParams, getDocumentParams } from '../src/include';
+import { getDocumentParams, getParams } from '../src/include';
 import { createSchema } from '../src/schema';
 import { createTestModel, getTestModelName } from '../src/testing';
 

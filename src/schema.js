@@ -1,20 +1,19 @@
+import { camelCase, capitalize, isPlainObject, pick } from 'lodash';
 import mongoose from 'mongoose';
-import { pick, isPlainObject, capitalize, camelCase } from 'lodash';
 
-import { isSchemaTypedef } from './utils';
-
-import { serializeOptions } from './serialization';
-import { applySlug } from './slug';
+import { applyAssign } from './assign';
 import { applyCache } from './cache';
 import { applyClone } from './clone';
-import { applySearch } from './search';
-import { applyAssign } from './assign';
-import { applyUpsert } from './upsert';
-import { applyHydrate } from './hydrate';
-import { applyInclude } from './include';
-import { applySoftDelete } from './soft-delete';
 import { applyDeleteHooks } from './delete-hooks';
 import { applyDisallowed } from './disallowed';
+import { applyHydrate } from './hydrate';
+import { applyInclude } from './include';
+import { applySearch } from './search';
+import { serializeOptions } from './serialization';
+import { applySlug } from './slug';
+import { applySoftDelete } from './soft-delete';
+import { applyUpsert } from './upsert';
+import { isSchemaTypedef } from './utils';
 
 import {
   applyValidation,

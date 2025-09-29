@@ -1,7 +1,11 @@
-import yd from '@bedrockio/yada';
 import logger from '@bedrockio/logger';
+import yd from '@bedrockio/yada';
+import { escapeRegExp, isEmpty, isPlainObject, memoize, pick } from 'lodash';
 import mongoose from 'mongoose';
-import { pick, isEmpty, memoize, escapeRegExp, isPlainObject } from 'lodash';
+
+import { SEARCH_DEFAULTS } from './const';
+import { debug } from './env';
+import { mergeQuery, wrapQuery } from './query';
 
 import {
   getField,
@@ -12,11 +16,7 @@ import {
   resolveRefPath,
 } from './utils';
 
-import { SEARCH_DEFAULTS } from './const';
 import { OBJECT_ID_SCHEMA } from './validation-schemas';
-import { debug } from './env';
-import { mergeQuery, wrapQuery } from './query';
-
 import warn from './warn';
 
 const { ObjectId } = mongoose.Types;

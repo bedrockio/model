@@ -1,9 +1,8 @@
 import { isEqual } from 'lodash';
 
-import warn from './warn';
-
-import { wrapQuery } from './query';
 import { UniqueConstraintError } from './errors';
+import { wrapQuery } from './query';
+import warn from './warn';
 
 export function applySoftDelete(schema) {
   applyQueries(schema);

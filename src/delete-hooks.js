@@ -1,5 +1,5 @@
-import mongoose from 'mongoose';
 import { groupBy } from 'lodash';
+import mongoose from 'mongoose';
 
 import { ReferenceError } from './errors';
 import { getInnerField } from './utils';

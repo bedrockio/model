@@ -1,5 +1,5 @@
-import { createTestModel } from '../src/testing';
 import { createSchema } from '../src/schema';
+import { createTestModel } from '../src/testing';
 
 const schema = createSchema({
   attributes: {

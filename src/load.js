@@ -1,8 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 
-import mongoose from 'mongoose';
 import { startCase } from 'lodash';
+import mongoose from 'mongoose';
 
 import { createSchema } from './schema';
 

@@ -1,5 +1,5 @@
-import { getTestModelName, createTestModel } from '../src/testing';
 import { createSchema } from '../src/schema';
+import { createTestModel, getTestModelName } from '../src/testing';
 
 describe('delete hooks', () => {
   describe('clean references', () => {
