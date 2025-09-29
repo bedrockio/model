@@ -1,3 +1,8 @@
+## 0.14.0
+
+- More clearly defined assign behavior on nested fields.
+- Version bumps.
+
 ## 0.13.3
 
 - Bumped yada version.
