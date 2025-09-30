@@ -1440,6 +1440,31 @@ describe('getUpdateValidation', () => {
         ],
       });
     });
+
+    it('should allow null or empty string to unset by flat syntax', async () => {
+      const User = createTestModel({
+        profile: {
+          name: 'String',
+          age: 'Number',
+        },
+      });
+      const schema = User.getUpdateValidation();
+
+      await assertPass(schema, {
+        'profile.name': null,
+      });
+      await assertPass(schema, {
+        'profile.name': '',
+      });
+
+      const result = await schema.validate({
+        'profile.name': null,
+      });
+
+      expect(result).toEqual({
+        'profile.name': null,
+      });
+    });
   });
 
   it('should not enforce a schema on unstructured objects', async () => {
@@ -2615,7 +2640,7 @@ describe('getSearchValidation', () => {
     });
   });
 
-  it('should expand dot syntax', async () => {
+  it('should allow flat syntax', async () => {
     const User = createTestModel({
       profile: {
         name: 'String',

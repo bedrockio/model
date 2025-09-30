@@ -84,6 +84,7 @@ export function applyValidation(schema, definition) {
       skipRequired: true,
       stripUnknown: true,
       stripDeleted: true,
+      allowFlatKeys: true,
       allowInclude: false,
       stripTimestamps: true,
       allowExpandedRefs: true,
@@ -106,6 +107,7 @@ export function applyValidation(schema, definition) {
         skipRequired: true,
         allowInclude: true,
         stripDeleted: true,
+        allowFlatKeys: true,
         unwindArrayFields: true,
         requireReadAccess: true,
         ...rest,
@@ -199,7 +201,7 @@ function getObjectSchema(arg, options) {
   } else if (Array.isArray(arg)) {
     return getArraySchema(arg, options);
   } else if (typeof arg === 'object') {
-    const { stripUnknown, stripEmpty } = options;
+    const { stripUnknown, stripEmpty, allowFlatKeys } = options;
     const map = {};
     for (let [key, field] of Object.entries(arg)) {
       if (!isExcludedField(field, options)) {
@@ -218,6 +220,12 @@ function getObjectSchema(arg, options) {
     if (stripEmpty) {
       schema = schema.options({
         stripEmpty: true,
+      });
+    }
+
+    if (allowFlatKeys) {
+      schema = schema.options({
+        allowFlatKeys: true,
       });
     }
 

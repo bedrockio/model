@@ -1,6 +1,9 @@
 ## 0.14.0
 
 - More clearly defined assign behavior on nested fields.
+- Flat syntax will be equivalent to PATCH behavior.
+- Nested syntax will be equivalent to PUT behavior.
+- Both types are consistent across objects and arrays.
 - Version bumps.
 
 ## 0.13.3
