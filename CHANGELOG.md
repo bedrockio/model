@@ -1,3 +1,7 @@
+## 0.14.2
+
+- Loosened peer deps.
+
 ## 0.14.1
 
 - Ensure includes are allowed on `getUpdateValidattion`.

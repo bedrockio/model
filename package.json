@@ -30,8 +30,8 @@
     "lodash": "^4.17.21"
   },
   "peerDependencies": {
-    "@bedrockio/yada": "^1.8.0",
-    "mongoose": "^8.18.2"
+    "@bedrockio/yada": "1.x",
+    "mongoose": "8.x"
   },
   "devDependencies": {
     "@babel/cli": "^7.26.4",
