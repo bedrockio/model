@@ -961,7 +961,7 @@ describe('getCreateValidation', () => {
             default: 'active',
           },
           profileImage: {
-            oneOf: [
+            anyOf: [
               {
                 type: 'string',
               },
@@ -976,7 +976,7 @@ describe('getCreateValidation', () => {
             ],
           },
           shop: {
-            oneOf: [
+            anyOf: [
               {
                 type: 'string',
                 format: 'mongo-object-id',
@@ -1008,7 +1008,7 @@ describe('getCreateValidation', () => {
         type: 'object',
         properties: {
           include: {
-            oneOf: [
+            anyOf: [
               {
                 type: 'string',
               },
@@ -2262,7 +2262,7 @@ describe('getUpdateValidation', () => {
             type: 'string',
           },
           shop: {
-            oneOf: [
+            anyOf: [
               {
                 type: 'string',
                 format: 'mongo-object-id',
@@ -2901,7 +2901,7 @@ describe('getSearchValidation', () => {
         type: 'object',
         properties: {
           name: {
-            oneOf: [
+            anyOf: [
               {
                 type: 'string',
                 nullable: true,
