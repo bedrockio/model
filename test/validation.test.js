@@ -1246,6 +1246,31 @@ describe('getUpdateValidation', () => {
     });
   });
 
+  it('should allow includes', async () => {
+    const User = createTestModel({
+      shop: {
+        type: 'ObjectId',
+        ref: 'Shop',
+      },
+    });
+    const schema = User.getUpdateValidation();
+    await assertPass(schema, {
+      include: 'user',
+    });
+
+    await assertPass(schema, {
+      include: ['user'],
+    });
+
+    const result = await schema.validate({
+      include: 'user',
+    });
+
+    expect(result).toEqual({
+      include: 'user',
+    });
+  });
+
   describe('unsetting', () => {
     it('should allow null or empty to unset optional string fields', async () => {
       const User = createTestModel({

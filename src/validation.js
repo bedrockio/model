@@ -85,7 +85,7 @@ export function applyValidation(schema, definition) {
       stripUnknown: true,
       stripDeleted: true,
       allowFlatKeys: true,
-      allowInclude: false,
+      allowInclude: true,
       stripTimestamps: true,
       allowExpandedRefs: true,
       requireWriteAccess: true,
