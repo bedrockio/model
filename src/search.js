@@ -86,7 +86,7 @@ function searchQuery(Model, options, config) {
 
   sort = resolveSort(sort, schema);
 
-  let query = normalizeQuery(rest, schema.obj);
+  let query = normalizeQuery(rest, schema);
 
   if (ids?.length) {
     query = mergeQuery(query, {
@@ -266,7 +266,7 @@ function buildKeywordQuery(schema, keyword, config) {
 
   const queries = [
     ...getDecomposedQueries(keyword, config),
-    ...getFieldQueries(keyword, config),
+    ...getFieldQueries(schema, keyword, config),
   ];
 
   // Note: Mongo will error on empty $or/$and array.
@@ -342,7 +342,7 @@ const compileDecomposer = memoize((template) => {
   };
 });
 
-function getFieldQueries(keyword, config) {
+function getFieldQueries(schema, keyword, config) {
   const { fields } = config;
 
   if (!fields) {
@@ -350,12 +350,26 @@ function getFieldQueries(keyword, config) {
   }
 
   const queries = fields.map((field) => {
-    return {
-      [field]: {
-        $regex: keyword,
-        $options: 'i',
-      },
-    };
+    if (isNumberField(schema, field)) {
+      return {
+        $expr: {
+          $regexMatch: {
+            input: {
+              $toString: `$${field}`,
+            },
+            regex: keyword,
+            options: 'i',
+          },
+        },
+      };
+    } else {
+      return {
+        [field]: {
+          $regex: keyword,
+          $options: 'i',
+        },
+      };
+    }
   });
 
   if (ObjectId.isValid(keyword)) {

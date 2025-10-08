@@ -1,3 +1,7 @@
+## 0.14.3
+
+- Allow keyword search on number fields.
+
 ## 0.14.2
 
 - Loosened peer deps.

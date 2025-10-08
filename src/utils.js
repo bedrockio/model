@@ -79,6 +79,10 @@ export function isSchemaTypedef(arg) {
 // "inventory" field. It must traverse into arrays and other mongoose
 // schemas along the way except for the final field.
 export function getField(obj, path) {
+  if (obj instanceof mongoose.Schema) {
+    // Unwrap mongoose schema if passed.
+    obj = obj.obj;
+  }
   let field = obj;
   if (typeof path === 'string') {
     path = path.split('.');

@@ -1143,6 +1143,25 @@ describe('keyword search', () => {
       await assertMatch('Maart', user2);
     });
   });
+
+  it('should perform keyword search on a number field', async () => {
+    const schema = createSchema({
+      attributes: {
+        code: 'Number',
+      },
+      search: {
+        fields: ['code'],
+      },
+    });
+    const User = createTestModel(schema);
+    await Promise.all([
+      User.create({ code: 100 }),
+      User.create({ code: null }),
+    ]);
+    const { data, meta } = await User.search({ keyword: '100' });
+    expect(data).toMatchObject([{ code: 100 }]);
+    expect(meta.total).toBe(1);
+  });
 });
 
 describe('aggregations', () => {
