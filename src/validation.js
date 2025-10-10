@@ -1,6 +1,5 @@
 import yd from '@bedrockio/yada';
 import { get, lowerFirst, omit } from 'lodash';
-import mongoose from 'mongoose';
 
 import { hasAccess } from './access';
 import { ImplementationError, PermissionsError } from './errors';
@@ -62,7 +61,7 @@ export function addValidators(schemas) {
 
 export function applyValidation(schema, definition) {
   schema.static('getCreateValidation', function getCreateValidation(options) {
-    return getSchemaFromMongoose(schema, {
+    return getSchemaForMongoose(schema, {
       model: this,
       stripEmpty: true,
       applyUnique: true,
@@ -77,7 +76,7 @@ export function applyValidation(schema, definition) {
   });
 
   schema.static('getUpdateValidation', function getUpdateValidation(options) {
-    return getSchemaFromMongoose(schema, {
+    return getSchemaForMongoose(schema, {
       model: this,
       allowNull: true,
       applyUnique: true,
@@ -99,7 +98,7 @@ export function applyValidation(schema, definition) {
     function getSearchValidation(options = {}) {
       const { allowExport, defaults, formats, ...rest } = options;
 
-      let validation = getSchemaFromMongoose(schema, {
+      let validation = getSchemaForMongoose(schema, {
         model: this,
         allowNull: true,
         stripEmpty: true,
@@ -146,7 +145,7 @@ export function applyValidation(schema, definition) {
   });
 
   schema.static('getBaseSchema', function getBaseSchema() {
-    return getSchemaFromMongoose(schema, {
+    return getSchemaForMongoose(schema, {
       model: this,
       stripDeleted: true,
       requireReadAccess: true,
@@ -156,7 +155,7 @@ export function applyValidation(schema, definition) {
 
 // Yada schemas
 
-function getSchemaFromMongoose(schema, options = {}) {
+function getSchemaForMongoose(schema, options = {}) {
   const fields = getMongooseFields(schema, options);
   return getValidationSchema(fields, options);
 }
@@ -196,7 +195,7 @@ export function getValidationSchema(attributes, options = {}) {
 function getObjectSchema(arg, options) {
   if (isSchemaTypedef(arg)) {
     return getSchemaForTypedef(arg, options);
-  } else if (arg instanceof mongoose.Schema) {
+  } else if (isMongooseSchema(arg)) {
     return getObjectSchema(arg.obj, options);
   } else if (Array.isArray(arg)) {
     return getArraySchema(arg, options);
@@ -261,7 +260,7 @@ function getSchemaForTypedef(typedef, options = {}) {
   let schema;
 
   if (isMongooseSchema(type)) {
-    schema = getSchemaFromMongoose(type, options);
+    schema = getObjectSchema(type, options);
   } else if (Array.isArray(type)) {
     schema = getArraySchema(type, options);
   } else if (typeof type === 'object') {

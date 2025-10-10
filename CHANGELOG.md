@@ -1,3 +1,7 @@
+## 0.14.4
+
+- Fixed bug with nested includes in update validation.
+
 ## 0.14.3
 
 - Allow keyword search on number fields.

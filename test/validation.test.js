@@ -2307,6 +2307,56 @@ describe('getUpdateValidation', () => {
         required: [],
       });
     });
+
+    it('should not have nested includes', async () => {
+      const User = createTestModel({
+        $client: {
+          type: 'Scope',
+          attributes: {
+            profile: {
+              name: {
+                type: 'String',
+              },
+            },
+          },
+        },
+      });
+      const schema = User.getUpdateValidation();
+
+      const json = schema.toJSON();
+
+      expect(json).toMatchObject({
+        type: 'object',
+        properties: {
+          profile: {
+            type: 'object',
+            properties: {
+              name: {
+                type: 'string',
+              },
+            },
+            required: [],
+            additionalProperties: true,
+          },
+          include: {
+            anyOf: [
+              {
+                type: 'string',
+              },
+              {
+                type: 'array',
+                items: {
+                  type: 'string',
+                },
+              },
+            ],
+          },
+        },
+        required: [],
+        additionalProperties: true,
+      });
+      expect(json.properties.profile.properties.include).toBeUndefined();
+    });
   });
 });
 
