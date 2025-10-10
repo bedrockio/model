@@ -1,3 +1,9 @@
+## 0.15.0
+
+- Tagged outer includes schema.
+- `allowInclude` -> `allowIncludes`.
+- Inclues not allowed on `getUpdateValidation` by default (revert of `0.14.1`).
+
 ## 0.14.4
 
 - Fixed bug with nested includes in update validation.

@@ -3,10 +3,10 @@ import { get, lowerFirst, omit } from 'lodash';
 
 import { hasAccess } from './access';
 import { ImplementationError, PermissionsError } from './errors';
-import { INCLUDE_FIELD_SCHEMA } from './include';
 import { exportValidation, searchValidation } from './search';
 import { assertUnique } from './soft-delete';
 import { isMongooseSchema, isSchemaTypedef } from './utils';
+import { INCLUDE_FIELD_SCHEMA } from './validation-schemas';
 
 import {
   DATE_RANGE_SCHEMA,
@@ -66,7 +66,7 @@ export function applyValidation(schema, definition) {
       stripEmpty: true,
       applyUnique: true,
       stripDeleted: true,
-      allowInclude: false,
+      allowIncludes: false,
       stripTimestamps: true,
       allowDefaultTags: true,
       allowExpandedRefs: true,
@@ -84,7 +84,7 @@ export function applyValidation(schema, definition) {
       stripUnknown: true,
       stripDeleted: true,
       allowFlatKeys: true,
-      allowInclude: true,
+      allowIncludes: false,
       stripTimestamps: true,
       allowExpandedRefs: true,
       requireWriteAccess: true,
@@ -104,9 +104,9 @@ export function applyValidation(schema, definition) {
         stripEmpty: true,
         allowSearch: true,
         skipRequired: true,
-        allowInclude: true,
         stripDeleted: true,
         allowFlatKeys: true,
+        allowIncludes: true,
         unwindArrayFields: true,
         requireReadAccess: true,
         ...rest,
@@ -174,11 +174,11 @@ function getMongooseFields(schema, options) {
 
 // Exported for testing
 export function getValidationSchema(attributes, options = {}) {
-  const { allowInclude, updateAccess } = options;
+  const { allowIncludes, updateAccess } = options;
 
   let schema = getObjectSchema(attributes, options);
 
-  if (allowInclude) {
+  if (allowIncludes) {
     schema = schema.append(INCLUDE_FIELD_SCHEMA);
   }
 

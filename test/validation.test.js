@@ -1002,7 +1002,7 @@ describe('getCreateValidation', () => {
         name: 'String',
       });
       const schema = User.getCreateValidation({
-        allowInclude: true,
+        allowIncludes: true,
       });
       expect(schema.toJSON()).toMatchObject({
         type: 'object',
@@ -1019,6 +1019,7 @@ describe('getCreateValidation', () => {
                 },
               },
             ],
+            'x-schema': 'Includes',
           },
         },
       });
@@ -1246,252 +1247,6 @@ describe('getUpdateValidation', () => {
     });
   });
 
-  it('should allow includes', async () => {
-    const User = createTestModel({
-      shop: {
-        type: 'ObjectId',
-        ref: 'Shop',
-      },
-    });
-    const schema = User.getUpdateValidation();
-    await assertPass(schema, {
-      include: 'user',
-    });
-
-    await assertPass(schema, {
-      include: ['user'],
-    });
-
-    const result = await schema.validate({
-      include: 'user',
-    });
-
-    expect(result).toEqual({
-      include: 'user',
-    });
-  });
-
-  describe('unsetting', () => {
-    it('should allow null or empty to unset optional string fields', async () => {
-      const User = createTestModel({
-        name: 'String',
-      });
-      const schema = User.getUpdateValidation();
-      expect(yd.isSchema(schema)).toBe(true);
-      await assertPass(schema, {
-        name: null,
-      });
-      await assertPass(schema, {
-        name: '',
-      });
-    });
-
-    it('should allow null to unset optional number fields', async () => {
-      const User = createTestModel({
-        count: {
-          type: 'Number',
-        },
-      });
-      const schema = User.getUpdateValidation();
-      expect(yd.isSchema(schema)).toBe(true);
-      await assertPass(schema, {
-        count: null,
-      });
-      await assertFail(schema, {
-        count: '',
-      });
-    });
-
-    it('should allow null or empty on nested primitive fields', async () => {
-      const User = createTestModel({
-        nested: {
-          name: 'String',
-          count: 'Number',
-        },
-      });
-      const schema = User.getUpdateValidation();
-      expect(yd.isSchema(schema)).toBe(true);
-      await assertPass(schema, {
-        nested: {
-          name: '',
-          count: null,
-        },
-      });
-      await assertPass(schema, {
-        nested: {
-          name: null,
-          count: null,
-        },
-      });
-      await assertPass(schema, {
-        nested: {
-          name: '',
-          count: null,
-        },
-      });
-    });
-
-    it('should not allow null or empty to unset required number fields', async () => {
-      const User = createTestModel({
-        count: {
-          type: 'Number',
-          required: true,
-        },
-      });
-      const schema = User.getUpdateValidation();
-      expect(yd.isSchema(schema)).toBe(true);
-      await assertFail(schema, {
-        count: null,
-      });
-      await assertFail(schema, {
-        count: '',
-      });
-    });
-
-    it('should not allow null or empty to unset required string fields', async () => {
-      const User = createTestModel({
-        name: {
-          type: 'String',
-          required: true,
-        },
-      });
-      const schema = User.getUpdateValidation();
-      expect(yd.isSchema(schema)).toBe(true);
-      await assertFail(schema, {
-        name: null,
-      });
-      await assertFail(schema, {
-        name: '',
-      });
-    });
-
-    it('should allow null or empty to unset optional reference fields', async () => {
-      const User = createTestModel({
-        shop: {
-          type: 'ObjectId',
-          ref: 'Shop',
-        },
-      });
-      const schema = User.getUpdateValidation();
-      expect(yd.isSchema(schema)).toBe(true);
-      await assertPass(schema, {
-        shop: null,
-      });
-      await assertPass(schema, {
-        shop: '',
-      });
-    });
-
-    it('should not allow null or empty to unset required reference fields', async () => {
-      const User = createTestModel({
-        shop: {
-          type: 'ObjectId',
-          ref: 'Shop',
-          required: true,
-        },
-      });
-      const schema = User.getUpdateValidation();
-      expect(yd.isSchema(schema)).toBe(true);
-      await assertFail(schema, {
-        shop: null,
-      });
-      await assertFail(schema, {
-        shop: '',
-      });
-    });
-
-    it('should not allow null or empty on array fields', async () => {
-      const User = createTestModel({
-        tags: ['String'],
-      });
-      const schema = User.getUpdateValidation();
-      expect(yd.isSchema(schema)).toBe(true);
-      await assertFail(schema, {
-        tags: null,
-      });
-      await assertFail(schema, {
-        tags: '',
-      });
-    });
-
-    it('should not allow null or empty on boolean fields', async () => {
-      const User = createTestModel({
-        active: 'Boolean',
-      });
-      const schema = User.getUpdateValidation();
-      expect(yd.isSchema(schema)).toBe(true);
-      await assertFail(schema, {
-        active: null,
-      });
-      await assertFail(schema, {
-        active: '',
-      });
-    });
-
-    it('should allow unsetting a field with a format validation', async () => {
-      const User = createTestModel({
-        phone: {
-          type: 'String',
-          validate: 'phone',
-        },
-      });
-      const schema = User.getUpdateValidation();
-      expect(yd.isSchema(schema)).toBe(true);
-      await assertPass(schema, {
-        phone: '',
-      });
-    });
-
-    it('should allow an empty string to unset a nested enum field', async () => {
-      const User = createTestModel({
-        profiles: [
-          {
-            name: 'String',
-            gender: {
-              type: 'String',
-              enum: ['male', 'female', 'other'],
-            },
-          },
-        ],
-      });
-      const schema = User.getUpdateValidation();
-      expect(yd.isSchema(schema)).toBe(true);
-      await assertPass(schema, {
-        profiles: [
-          {
-            name: 'Frank',
-            gender: '',
-          },
-        ],
-      });
-    });
-
-    it('should allow null or empty string to unset by flat syntax', async () => {
-      const User = createTestModel({
-        profile: {
-          name: 'String',
-          age: 'Number',
-        },
-      });
-      const schema = User.getUpdateValidation();
-
-      await assertPass(schema, {
-        'profile.name': null,
-      });
-      await assertPass(schema, {
-        'profile.name': '',
-      });
-
-      const result = await schema.validate({
-        'profile.name': null,
-      });
-
-      expect(result).toEqual({
-        'profile.name': null,
-      });
-    });
-  });
-
   it('should not enforce a schema on unstructured objects', async () => {
     const User = createTestModel({
       profile: {
@@ -1715,6 +1470,323 @@ describe('getUpdateValidation', () => {
     );
   });
 
+  it('should strip includes by default', async () => {
+    const User = createTestModel({
+      shop: {
+        type: 'ObjectId',
+        ref: 'Shop',
+      },
+    });
+    const schema = User.getUpdateValidation();
+
+    const result = await schema.validate({
+      include: 'user',
+    });
+
+    expect(result).toEqual({});
+  });
+
+  it('should optionally allow includes', async () => {
+    const User = createTestModel({
+      shop: {
+        type: 'ObjectId',
+        ref: 'Shop',
+      },
+    });
+    const schema = User.getUpdateValidation({
+      allowIncludes: true,
+    });
+    await assertPass(schema, {
+      include: 'user',
+    });
+
+    await assertPass(schema, {
+      include: ['user'],
+    });
+
+    const result = await schema.validate({
+      include: 'user',
+    });
+
+    expect(result).toEqual({
+      include: 'user',
+    });
+  });
+
+  it('should not have nested includes', async () => {
+    const User = createTestModel({
+      $client: {
+        type: 'Scope',
+        attributes: {
+          profile: {
+            name: {
+              type: 'String',
+            },
+          },
+        },
+      },
+    });
+
+    const schema = User.getUpdateValidation({
+      allowIncludes: true,
+    });
+
+    const json = schema.toJSON();
+
+    expect(json).toMatchObject({
+      type: 'object',
+      properties: {
+        profile: {
+          type: 'object',
+          properties: {
+            name: {
+              type: 'string',
+            },
+          },
+          required: [],
+          additionalProperties: true,
+        },
+        include: {
+          anyOf: [
+            {
+              type: 'string',
+            },
+            {
+              type: 'array',
+              items: {
+                type: 'string',
+              },
+            },
+          ],
+        },
+      },
+      required: [],
+      additionalProperties: true,
+    });
+    expect(json.properties.profile.properties.include).toBeUndefined();
+  });
+
+  describe('unsetting', () => {
+    it('should allow null or empty to unset optional string fields', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertPass(schema, {
+        name: null,
+      });
+      await assertPass(schema, {
+        name: '',
+      });
+    });
+
+    it('should allow null to unset optional number fields', async () => {
+      const User = createTestModel({
+        count: {
+          type: 'Number',
+        },
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertPass(schema, {
+        count: null,
+      });
+      await assertFail(schema, {
+        count: '',
+      });
+    });
+
+    it('should allow null or empty on nested primitive fields', async () => {
+      const User = createTestModel({
+        nested: {
+          name: 'String',
+          count: 'Number',
+        },
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertPass(schema, {
+        nested: {
+          name: '',
+          count: null,
+        },
+      });
+      await assertPass(schema, {
+        nested: {
+          name: null,
+          count: null,
+        },
+      });
+      await assertPass(schema, {
+        nested: {
+          name: '',
+          count: null,
+        },
+      });
+    });
+
+    it('should not allow null or empty to unset required number fields', async () => {
+      const User = createTestModel({
+        count: {
+          type: 'Number',
+          required: true,
+        },
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertFail(schema, {
+        count: null,
+      });
+      await assertFail(schema, {
+        count: '',
+      });
+    });
+
+    it('should not allow null or empty to unset required string fields', async () => {
+      const User = createTestModel({
+        name: {
+          type: 'String',
+          required: true,
+        },
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertFail(schema, {
+        name: null,
+      });
+      await assertFail(schema, {
+        name: '',
+      });
+    });
+
+    it('should allow null or empty to unset optional reference fields', async () => {
+      const User = createTestModel({
+        shop: {
+          type: 'ObjectId',
+          ref: 'Shop',
+        },
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertPass(schema, {
+        shop: null,
+      });
+      await assertPass(schema, {
+        shop: '',
+      });
+    });
+
+    it('should not allow null or empty to unset required reference fields', async () => {
+      const User = createTestModel({
+        shop: {
+          type: 'ObjectId',
+          ref: 'Shop',
+          required: true,
+        },
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertFail(schema, {
+        shop: null,
+      });
+      await assertFail(schema, {
+        shop: '',
+      });
+    });
+
+    it('should not allow null or empty on array fields', async () => {
+      const User = createTestModel({
+        tags: ['String'],
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertFail(schema, {
+        tags: null,
+      });
+      await assertFail(schema, {
+        tags: '',
+      });
+    });
+
+    it('should not allow null or empty on boolean fields', async () => {
+      const User = createTestModel({
+        active: 'Boolean',
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertFail(schema, {
+        active: null,
+      });
+      await assertFail(schema, {
+        active: '',
+      });
+    });
+
+    it('should allow unsetting a field with a format validation', async () => {
+      const User = createTestModel({
+        phone: {
+          type: 'String',
+          validate: 'phone',
+        },
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertPass(schema, {
+        phone: '',
+      });
+    });
+
+    it('should allow an empty string to unset a nested enum field', async () => {
+      const User = createTestModel({
+        profiles: [
+          {
+            name: 'String',
+            gender: {
+              type: 'String',
+              enum: ['male', 'female', 'other'],
+            },
+          },
+        ],
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertPass(schema, {
+        profiles: [
+          {
+            name: 'Frank',
+            gender: '',
+          },
+        ],
+      });
+    });
+
+    it('should allow null or empty string to unset by flat syntax', async () => {
+      const User = createTestModel({
+        profile: {
+          name: 'String',
+          age: 'Number',
+        },
+      });
+      const schema = User.getUpdateValidation();
+
+      await assertPass(schema, {
+        'profile.name': null,
+      });
+      await assertPass(schema, {
+        'profile.name': '',
+      });
+
+      const result = await schema.validate({
+        'profile.name': null,
+      });
+
+      expect(result).toEqual({
+        'profile.name': null,
+      });
+    });
+  });
+
   describe('modification', () => {
     it('should append schemas with append', async () => {
       const User = createTestModel({
@@ -1757,6 +1829,7 @@ describe('getUpdateValidation', () => {
       });
     });
   });
+
   describe('write access', () => {
     it('should strip field on attempt to update with no write scopes', async () => {
       const User = createTestModel({
@@ -2306,56 +2379,6 @@ describe('getUpdateValidation', () => {
         },
         required: [],
       });
-    });
-
-    it('should not have nested includes', async () => {
-      const User = createTestModel({
-        $client: {
-          type: 'Scope',
-          attributes: {
-            profile: {
-              name: {
-                type: 'String',
-              },
-            },
-          },
-        },
-      });
-      const schema = User.getUpdateValidation();
-
-      const json = schema.toJSON();
-
-      expect(json).toMatchObject({
-        type: 'object',
-        properties: {
-          profile: {
-            type: 'object',
-            properties: {
-              name: {
-                type: 'string',
-              },
-            },
-            required: [],
-            additionalProperties: true,
-          },
-          include: {
-            anyOf: [
-              {
-                type: 'string',
-              },
-              {
-                type: 'array',
-                items: {
-                  type: 'string',
-                },
-              },
-            ],
-          },
-        },
-        required: [],
-        additionalProperties: true,
-      });
-      expect(json.properties.profile.properties.include).toBeUndefined();
     });
   });
 });

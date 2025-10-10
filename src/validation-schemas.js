@@ -100,3 +100,11 @@ A 24 character hexadecimal string representing a Mongo [ObjectId](https://bit.ly
 An object with an \`id\` field may also be passed, which will be converted into a string.
     `.trim(),
   });
+
+export const INCLUDE_FIELD_SCHEMA = yd.object({
+  include: yd.allow(yd.string(), yd.array(yd.string())).tag({
+    'x-schema': 'Includes',
+    'x-description':
+      'A `string` or `array` of fields to be selected or populated using [includes syntax](http://bit.ly/4q2viXl).',
+  }),
+});

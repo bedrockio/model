@@ -1953,7 +1953,7 @@ describe('validation integration', () => {
 
     it('should optionally allow include', async () => {
       const schema = Shop.getCreateValidation({
-        allowInclude: true,
+        allowIncludes: true,
       });
       const result = await schema.validate({
         name: 'foo',
@@ -1967,7 +1967,7 @@ describe('validation integration', () => {
 
     it('should allow include as array', async () => {
       const schema = Shop.getCreateValidation({
-        allowInclude: true,
+        allowIncludes: true,
       });
       const result = await schema.validate({
         name: 'foo',
@@ -1994,7 +1994,7 @@ describe('validation integration', () => {
 
     it('should optionally allow includes', async () => {
       const schema = Shop.getUpdateValidation({
-        allowInclude: true,
+        allowIncludes: true,
       });
       const result = await schema.validate({
         name: 'foo',
