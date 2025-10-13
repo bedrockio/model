@@ -931,6 +931,20 @@ caller does not need to know whether the path contains subdocuments or foreign
 references. As Bedrock has knowledge of the schemas, it is able to build the
 appropriate call to `populate` for you.
 
+#### Include Syntax
+
+| Example           | Type      | Populated | Description                                          |
+| ----------------- | --------- | --------- | ---------------------------------------------------- |
+| `shop`            | Inclusive | shop      | Populates top level document.                        |
+| `shop.user`       | Inclusive | shop/user | Populates two levels deep.                           |
+| `^name`           | Exclusive |           | Selects only `name`.                                 |
+| `^shop.name`      | Exclusive | shop      | Selects only `shop.name`.                            |
+| `^shop.user.name` | Exclusive | shop/user | Selects only `shop.user.name`.                       |
+| `shop.^user.name` | Exclusive | shop/user | Selects root fields and `shop.user.name`.            |
+| `shop.user.^name` | Exclusive | shop/user | Selects root and `shop` fields and `shop.user.name`. |
+| `*Name`           | Wildcard  |           | Matches any root field ending with `Name`.           |
+| `**Name`          | Wildcard  |           | Matches any root or nested field ending with `Name`. |
+
 #### Exclusive Fields
 
 By default, arguments to `include` are for population. However often field
