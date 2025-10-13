@@ -105,6 +105,6 @@ export const INCLUDE_FIELD_SCHEMA = yd.object({
   include: yd.allow(yd.string(), yd.array(yd.string())).tag({
     'x-schema': 'Includes',
     'x-description':
-      'A `string` or `array` of fields to be selected or populated using [includes syntax](http://bit.ly/4q2viXl).',
+      'A `string` or `array` of fields to be selected or populated using [includes syntax](https://bit.ly/4mZwSq4).',
   }),
 });
