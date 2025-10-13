@@ -1,3 +1,7 @@
+## 0.16.0
+
+- Added `upsert` method.
+
 ## 0.15.0
 
 - Tagged outer includes schema.

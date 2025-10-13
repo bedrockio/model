@@ -1664,35 +1664,18 @@ string, both of which would be stored in the database if naively assigned with
 
 ### Upsert
 
-This module adds a single `findOrCreate` convenience method that is easy to
-understand and avoids some of the gotchas that come with upserting documents in
-Mongoose:
+This module adds two similar methods:
+
+- `upsert`
+- `findOrCreate`
+
+The `upsert` method is used when documents must always be overwritten with the
+latest data.
 
 ```js
-const shop = await Shop.findOrCreate({
-  name: 'My Shop',
-});
-
-// This is equivalent to running:
-let shop = await Shop.findOne({
-  name: 'My Shop',
-});
-
-if (!shop) {
-  shop = await Shop.create({
-    name: 'My Shop',
-  });
-}
-```
-
-In most cases not all of the fields should be queried on to determine if an
-existing document exists. In this case two arguments should be passed the first
-of which is the query:
-
-```js
-const shop = await Shop.findOrCreate(
+const shop = await Shop.upsert(
   {
-    slug: 'my-shop',
+    name: 'My Shop',
   },
   {
     name: 'My Shop',
@@ -1700,15 +1683,71 @@ const shop = await Shop.findOrCreate(
   },
 );
 
-// This is equivalent to running:
+// This is equivalent to:
+
 let shop = await Shop.findOne({
-  slug: 'my-shop',
+  name: 'My Shop',
+});
+
+if (shop) {
+  shop.assign({
+    name: 'My Shop',
+    slug: 'my-shop',
+  });
+  await shop.save();
+} else {
+  shop = await Shop.create({
+    name: 'My Shop',
+    slug: 'my-shop',
+  });
+}
+```
+
+The `findOrCreate` method does just whan the name implies and will return the
+document it finds without modifying it.
+
+```js
+const shop = await Shop.findOrCreate(
+  {
+    name: 'My Shop',
+  },
+  {
+    name: 'My Shop',
+    slug: 'my-shop',
+  },
+);
+
+// This is equivalent to:
+
+let shop = await Shop.findOne({
+  name: 'My Shop',
 });
 
 if (!shop) {
   shop = await Shop.create({
     name: 'My Shop',
     slug: 'my-shop',
+  });
+}
+```
+
+Note that a single argument can also be passed as a shortcut to both the query
+and the update for simple cases:
+
+```js
+const shop = await Shop.findOrCreate({
+  name: 'My Shop',
+});
+
+// This is equivalent to:
+
+let shop = await Shop.findOne({
+  name: 'My Shop',
+});
+
+if (!shop) {
+  shop = await Shop.create({
+    name: 'My Shop',
   });
 }
 ```
