@@ -1101,13 +1101,13 @@
   resolved "https://registry.yarnpkg.com/@bedrockio/prettier-config/-/prettier-config-1.1.1.tgz#804cb96913e8dab50a237feaabdcd0e1715e34a7"
   integrity sha512-sL8BvR7z3X2z18AyfwgPqBTPPmS3iveJZe65JZk5YbN0s6Akba6W2F4JAygRVx6yueYRKErvpO0pcVMdtfYBSw==
 
-"@bedrockio/yada@^1.8.0":
-  version "1.8.0"
-  resolved "https://registry.yarnpkg.com/@bedrockio/yada/-/yada-1.8.0.tgz#08c664515f1ab942b0dfb34283662e69b6530301"
-  integrity sha512-vQncqMGFV3cv9Ai+0W0djTd2LZZXIbsVeN2ENeJCo1z+kWnjLo76FHv9dyAscY+ngKZtfKWh+9aURQW2fJkfTg==
+"@bedrockio/yada@^1.9.0":
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/@bedrockio/yada/-/yada-1.9.0.tgz#f0d07a2f618d2e8c718c9a659b3ed7ea73f82f83"
+  integrity sha512-xa7mTAZWGE9S60fKoOBhk6B69XTTuMfwKAqTrq8FOL8GhVXyG+H+m5SFz0ZssmAZtesfA0J4mN4q8LqBQF18xA==
   dependencies:
     lodash "^4.17.21"
-    validator "^13.9.0"
+    validator "^13.15.20"
 
 "@emnapi/core@^1.4.3":
   version "1.5.0"
@@ -7023,10 +7023,10 @@ validate-npm-package-name@^5.0.0:
   resolved "https://registry.yarnpkg.com/validate-npm-package-name/-/validate-npm-package-name-5.0.1.tgz#a316573e9b49f3ccd90dbb6eb52b3f06c6d604e8"
   integrity sha512-OljLrQ9SQdOUqTaQxqL5dEfZWrXExyyWsozYlAWFawPVNuD83igl7uJD2RTkNMbniIYgt8l81eCJGIdQF7avLQ==
 
-validator@^13.9.0:
-  version "13.12.0"
-  resolved "https://registry.yarnpkg.com/validator/-/validator-13.12.0.tgz#7d78e76ba85504da3fee4fd1922b385914d4b35f"
-  integrity sha512-c1Q0mCiPlgdTVVVIJIrBuxNicYE+t/7oKeI9MWLj3fh/uq2Pxh/3eeWbVZ4OcGW1TUf53At0njHw5SMdA3tmMg==
+validator@^13.15.20:
+  version "13.15.20"
+  resolved "https://registry.yarnpkg.com/validator/-/validator-13.15.20.tgz#054e9238109538a1bf46ae3e1290845a64fa2186"
+  integrity sha512-KxPOq3V2LmfQPP4eqf3Mq/zrT0Dqp2Vmx2Bn285LwVahLc+CsxOM0crBHczm8ijlcjZ0Q5Xd6LW3z3odTPnlrw==
 
 vfile-message@^4.0.0:
   version "4.0.2"

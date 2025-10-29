@@ -1,3 +1,7 @@
+## 0.17.0
+
+- Added `time` validation.
+
 ## 0.16.0
 
 - Added `upsert` method.

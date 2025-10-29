@@ -191,6 +191,27 @@ describe('getCreateValidation', () => {
     );
   });
 
+  it('should validate a time as a string', async () => {
+    const User = createTestModel({
+      time: {
+        type: 'String',
+        validate: 'time',
+      },
+    });
+    const schema = User.getCreateValidation();
+    await assertPass(schema, {
+      time: '23:59',
+    });
+
+    await assertFailWithError(
+      schema,
+      {
+        time: '3:59',
+      },
+      '"time" must be an ISO-8601 time.',
+    );
+  });
+
   it('should apply a custom validator', async () => {
     const User = createTestModel({
       name: {

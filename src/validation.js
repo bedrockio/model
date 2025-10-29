@@ -30,6 +30,9 @@ const NAMED_SCHEMAS = {
   // string fields in ISO-8601 format without a time.
   calendar: yd.string().calendar(),
 
+  // Validates generic ISO-8601 time.
+  time: yd.string().time(),
+
   ascii: yd.string().ascii(),
   base64: yd.string().base64(),
   btc: yd.string().btc(),
@@ -44,15 +47,16 @@ const NAMED_SCHEMAS = {
   locale: yd.string().locale(),
   md5: yd.string().md5(),
   phone: yd.string().phone(),
-  'phone:US': yd.string().phone('US'),
-  'phone:NANP': yd.string().phone('NANP'),
   postalCode: yd.string().postalCode(),
-  zipcode: yd.string().zipcode(),
   sha1: yd.string().sha1(),
   slug: yd.string().slug(),
   swift: yd.string().swift(),
   url: yd.string().url(),
   uuid: yd.string().uuid(),
+  zipcode: yd.string().zipcode(),
+
+  'phone:NANP': yd.string().phone('NANP'),
+  'phone:US': yd.string().phone('US'),
 };
 
 export function addValidators(schemas) {
