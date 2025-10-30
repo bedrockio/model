@@ -23,6 +23,7 @@ Bedrock utilities for model creation.
   - [Access Control](#access-control)
   - [Assign](#assign)
   - [Upsert](#upsert)
+  - [Reload](#reload)
   - [Clone](#clone)
   - [Slugs](#slugs)
 - [Testing](#testing)
@@ -1750,6 +1751,32 @@ if (!shop) {
     name: 'My Shop',
   });
 }
+```
+
+### Reload
+
+Adds a single `reload` method that reloads a document in place. This is useful
+for testing purposes, etc:
+
+```js
+const shop = await Shop.create({
+  name: 'My Shop',
+});
+
+await Shop.updateOne(
+  {
+    _id: shop._id,
+  },
+  {
+    $set: {
+      name: 'My New Shop',
+    },
+  },
+);
+
+await shop.reload();
+
+shop.name; // Now "My New Shop"
 ```
 
 ### Clone

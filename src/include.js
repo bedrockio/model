@@ -2,6 +2,7 @@ import { escapeRegExp } from 'lodash';
 import mongoose from 'mongoose';
 
 import { POPULATE_MAX_DEPTH } from './const';
+import { getSchemaPaths } from './utils';
 import { getInnerField, isSchemaTypedef } from './utils';
 
 // @ts-ignore
@@ -361,19 +362,5 @@ function resolvePaths(schema, str) {
   }
   return paths.map((path) => {
     return [path, schema.pathType(path)];
-  });
-}
-
-function getSchemaPaths(schema) {
-  return Object.entries(schema.paths || {}).flatMap(([key, schema]) => {
-    if (key.startsWith('_')) {
-      return [];
-    } else if (schema.schema) {
-      return getSchemaPaths(schema.schema).map((path) => {
-        return [key, path].join('.');
-      });
-    } else {
-      return [key];
-    }
   });
 }

@@ -139,3 +139,17 @@ function resolveInnerField(field) {
   }
   return field;
 }
+
+export function getSchemaPaths(schema) {
+  return Object.entries(schema.paths || {}).flatMap(([key, schema]) => {
+    if (key.startsWith('_')) {
+      return [];
+    } else if (schema.schema) {
+      return getSchemaPaths(schema.schema).map((path) => {
+        return [key, path].join('.');
+      });
+    } else {
+      return [key];
+    }
+  });
+}

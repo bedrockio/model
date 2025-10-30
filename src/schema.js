@@ -8,6 +8,7 @@ import { applyDeleteHooks } from './delete-hooks';
 import { applyDisallowed } from './disallowed';
 import { applyHydrate } from './hydrate';
 import { applyInclude } from './include';
+import { applyReload } from './reload';
 import { applySearch } from './search';
 import { serializeOptions } from './serialization';
 import { applySlug } from './slug';
@@ -61,6 +62,7 @@ export function createSchema(definition, options = {}) {
   applySearch(schema, definition);
   applyCache(schema, definition);
   applyClone(schema);
+  applyReload(schema);
   applyDisallowed(schema);
   applyInclude(schema);
   applyHydrate(schema);

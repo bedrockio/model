@@ -1,3 +1,7 @@
+## 0.18.0
+
+- Added `reload`.
+
 ## 0.17.0
 
 - Added `time` validation.
