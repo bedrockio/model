@@ -1,98 +1,9 @@
 import { Types } from 'mongoose';
 
+import { Comment, Product, Shop, User } from './mocks';
 import { getDocumentParams, getParams } from '../src/include';
 import { createSchema } from '../src/schema';
-import { createTestModel, getTestModelName } from '../src/testing';
-
-const userModelName = getTestModelName();
-const productModelName = getTestModelName();
-
-const Shop = createTestModel({
-  name: 'String',
-  email: 'String',
-  tags: ['String'],
-  user: {
-    ref: userModelName,
-    type: 'ObjectId',
-  },
-  customers: [
-    {
-      ref: userModelName,
-      type: 'ObjectId',
-    },
-  ],
-  inventory: {
-    type: 'Array',
-    attributes: {
-      quantity: 'Number',
-      product: {
-        ref: productModelName,
-        type: 'ObjectId',
-      },
-    },
-  },
-  deep: {
-    type: 'Object',
-    attributes: {
-      user: {
-        ref: userModelName,
-        type: 'ObjectId',
-      },
-    },
-  },
-});
-
-const Product = createTestModel(productModelName, {
-  name: 'String',
-  email: 'String',
-  tags: ['String'],
-  shop: {
-    ref: Shop.modelName,
-    type: 'ObjectId',
-  },
-});
-
-const User = createTestModel(userModelName, {
-  name: 'String',
-  email: 'String',
-  tags: ['String'],
-  address: {
-    line1: 'String',
-    line2: 'String',
-  },
-  likedProducts: [
-    {
-      ref: Product.modelName,
-      type: 'ObjectId',
-    },
-  ],
-  self: {
-    ref: userModelName,
-    type: 'ObjectId',
-  },
-});
-
-const Comment = createTestModel({
-  body: 'String',
-  product: {
-    ref: Product.modelName,
-    type: 'ObjectId',
-  },
-});
-
-Product.schema.virtual('comments', {
-  ref: Comment.modelName,
-  localField: '_id',
-  foreignField: 'product',
-  justOne: false,
-});
-
-afterEach(async () => {
-  await User.deleteMany({});
-  await Shop.deleteMany({});
-  await Product.deleteMany({});
-  await Comment.deleteMany({});
-});
+import { createTestModel } from '../src/testing';
 
 describe('getParams', () => {
   describe('inclusive', () => {
@@ -862,17 +773,33 @@ describe('getParams', () => {
           select: [
             'name',
             'email',
-            'tags',
+            'image',
             'address.line1',
             'address.line2',
+            'profile.url',
+            'friends',
             'likedProducts',
+            'tags',
+            'roles.role',
+            'roles.scope',
             'self',
+            'hidden',
             'createdAt',
             'updatedAt',
             'deletedAt',
             'deleted',
           ],
           populate: [
+            {
+              path: 'image',
+              select: [],
+              populate: [],
+            },
+            {
+              path: 'friends',
+              select: [],
+              populate: [],
+            },
             {
               path: 'likedProducts',
               select: [],
@@ -1194,11 +1121,17 @@ describe('getParams', () => {
           select: [
             '-name',
             '-email',
-            '-tags',
+            '-image',
             '-address.line1',
             '-address.line2',
+            '-profile.url',
+            '-friends',
             '-likedProducts',
+            '-tags',
+            '-roles.role',
+            '-roles.scope',
             '-self',
+            '-hidden',
             '-createdAt',
             '-updatedAt',
             '-deletedAt',
@@ -1558,6 +1491,78 @@ describe('instance methods', () => {
 
       expect(shop.user.name).toBe('Jack');
     });
+
+    it('should populate a virtual', async () => {
+      const product = await Product.create({
+        name: 'Product',
+      });
+
+      await Comment.create({
+        body: 'Comment 1',
+        product,
+      });
+
+      await Comment.create({
+        body: 'Comment 2',
+        product,
+      });
+
+      await product.include('comments');
+
+      expect(product.comments).toMatchObject([
+        {
+          body: 'Comment 1',
+        },
+        {
+          body: 'Comment 2',
+        },
+      ]);
+    });
+
+    it('should populate a nested virtual', async () => {
+      const product = await Product.create({
+        name: 'Product',
+      });
+
+      const shop = await Shop.create({
+        name: 'Shop',
+        inventory: [
+          {
+            product,
+            quantity: 100,
+          },
+        ],
+      });
+
+      await Comment.create({
+        body: 'Comment 1',
+        product,
+      });
+
+      await Comment.create({
+        body: 'Comment 2',
+        product,
+      });
+
+      await shop.include('inventory.product.comments');
+
+      expect(shop.inventory).toMatchObject([
+        {
+          quantity: 100,
+          product: {
+            name: 'Product',
+            comments: [
+              {
+                body: 'Comment 1',
+              },
+              {
+                body: 'Comment 2',
+              },
+            ],
+          },
+        },
+      ]);
+    });
   });
 });
 
@@ -1577,7 +1582,7 @@ describe('static methods', () => {
 
     it('should perform complex populate after insert', async () => {
       const user = await User.create({
-        name: 'Bob',
+        name: 'Frank Reynolds',
       });
       const shop = await Shop.create({
         name: 'Shop',
@@ -1600,8 +1605,11 @@ describe('static methods', () => {
           inventory: [],
           user: {
             id: user.id,
-            name: 'Bob',
+            name: 'Frank Reynolds',
+            firstName: 'Frank',
+            friends: [],
             tags: [],
+            roles: [],
             likedProducts: [],
             createdAt: user.createdAt.toISOString(),
             updatedAt: user.updatedAt.toISOString(),
@@ -1614,7 +1622,7 @@ describe('static methods', () => {
 
     it('should virtually project fields on a created document', async () => {
       const user = await User.create({
-        name: 'Bob',
+        name: 'Frank Reynolds',
         email: 'bob@bar.com',
       });
       const shop = await Shop.createWithInclude({
@@ -1629,9 +1637,12 @@ describe('static methods', () => {
         name: 'foo',
         user: {
           id: user.id,
-          name: 'Bob',
+          name: 'Frank Reynolds',
+          firstName: 'Frank',
           email: 'bob@bar.com',
           tags: [],
+          roles: [],
+          friends: [],
           likedProducts: [],
           createdAt: user.createdAt.toISOString(),
           updatedAt: user.updatedAt.toISOString(),
@@ -1641,7 +1652,7 @@ describe('static methods', () => {
 
     it('should exclude fields', async () => {
       const user = await User.createWithInclude({
-        name: 'Bob',
+        name: 'Frank Reynolds',
         email: 'foo@bar.com',
         tags: ['a', 'b', 'c'],
         include: ['-name', '-tags'],
@@ -1650,6 +1661,9 @@ describe('static methods', () => {
       expect(params).toEqual({
         id: user.id,
         email: 'foo@bar.com',
+        firstName: 'Frank',
+        roles: [],
+        friends: [],
         likedProducts: [],
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
@@ -1681,7 +1695,7 @@ describe('static methods', () => {
 
     it('should exclude a deep field', async () => {
       const user = await User.create({
-        name: 'Bob',
+        name: 'Frank Reynolds',
         email: 'foo@bar.com',
         address: {
           line1: 'line1',
@@ -1700,6 +1714,8 @@ describe('static methods', () => {
         user: {
           id: user.id,
           tags: [],
+          roles: [],
+          friends: [],
           email: 'foo@bar.com',
           address: {
             line2: 'line2',
@@ -1750,7 +1766,7 @@ describe('static methods', () => {
 
     it('should virtually project fields on an updated document', async () => {
       const user = await User.create({
-        name: 'Bob',
+        name: 'Frank Reynolds',
         email: 'bob@bar.com',
       });
 
@@ -1772,9 +1788,12 @@ describe('static methods', () => {
         name: 'Jack',
         user: {
           id: user.id,
-          name: 'Bob',
+          name: 'Frank Reynolds',
+          firstName: 'Frank',
           email: 'bob@bar.com',
           tags: [],
+          roles: [],
+          friends: [],
           likedProducts: [],
           createdAt: user.createdAt.toISOString(),
           updatedAt: user.updatedAt.toISOString(),
@@ -1862,7 +1881,7 @@ describe('search integration', () => {
 
   it('should allow exclusion in search', async () => {
     const user = await User.create({
-      name: 'Bob',
+      name: 'Frank Reynolds',
       email: 'bob@bob.com',
     });
     const shop = await Shop.create({
@@ -1880,7 +1899,8 @@ describe('search integration', () => {
       id: shop.id,
       user: {
         id: user.id,
-        name: 'Bob',
+        name: 'Frank Reynolds',
+        firstName: 'Frank',
       },
     });
   });
@@ -2146,6 +2166,7 @@ describe('dynamic references', () => {
 describe('other', () => {
   it('should not populate a deleted document', async () => {
     const user = await User.create({
+      name: 'Frank Reynolds',
       password: 'fake password',
     });
     let shop = await Shop.create({

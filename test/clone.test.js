@@ -1,30 +1,4 @@
-import { createTestModel } from '../src/testing';
-
-const User = createTestModel({
-  name: 'String',
-  email: {
-    type: 'String',
-    unique: true,
-  },
-  image: {
-    type: 'ObjectId',
-    ref: 'Upload',
-  },
-  roles: [
-    {
-      role: 'String',
-      scope: 'String',
-      scopeRef: 'String',
-    },
-  ],
-});
-
-const Upload = createTestModel({
-  owner: {
-    type: 'ObjectId',
-    ref: User.modelName,
-  },
-});
+import { Upload, User } from './mocks';
 
 describe('clone', () => {
   it('should not fail on a unique field', async () => {

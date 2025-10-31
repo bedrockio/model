@@ -146,18 +146,23 @@ export function getDocumentParams(doc, arg, options = {}) {
 
   if (!options.force) {
     params.populate = params.populate.filter((p) => {
-      return !isDocumentPopulated(doc, p);
+      return !isPopulated(doc, p);
     });
   }
 
   return params;
 }
 
-function isDocumentPopulated(doc, params) {
-  if (doc.populated(params.path)) {
-    const sub = doc.get(params.path);
+function isPopulated(arg, params) {
+  if (Array.isArray(arg)) {
+    return arg.every((el) => {
+      return isPopulated(el, params);
+    });
+  }
+  if (arg.populated(params.path)) {
+    const sub = arg.get(params.path);
     return params.populate.every((p) => {
-      return isDocumentPopulated(sub, p);
+      return isPopulated(sub, p);
     });
   } else {
     return false;

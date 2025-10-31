@@ -1,3 +1,9 @@
+## 0.18.1
+
+- Added `export` for dumping documents and to support reload.
+- Fix for `include` not working on nested virtuals.
+- Fixes for `reload`.
+
 ## 0.18.0
 
 - Added `reload`.

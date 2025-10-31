@@ -1,47 +1,4 @@
-import mongoose from 'mongoose';
-
-import { createSchema } from '../src/schema';
-import { createTestModel } from '../src/testing';
-
-const schema = createSchema({
-  attributes: {
-    name: {
-      type: 'String',
-      required: true,
-    },
-    email: {
-      type: 'String',
-      unique: true,
-    },
-    image: {
-      type: 'ObjectId',
-      ref: 'Upload',
-    },
-    roles: [
-      {
-        role: 'String',
-        scope: 'String',
-      },
-    ],
-  },
-});
-
-schema.virtual('firstName').get(function () {
-  return this.name.split(' ')[0];
-});
-
-const User = createTestModel(schema);
-
-const Upload = createTestModel({
-  owner: {
-    type: 'ObjectId',
-    ref: User.modelName,
-  },
-});
-
-afterEach(async () => {
-  await User.deleteMany({});
-});
+import { Comment, Product, Shop, Upload, User } from './mocks';
 
 describe('reload', () => {
   it('should reload basic field', async () => {
@@ -102,7 +59,7 @@ describe('reload', () => {
       email: 'foo@bar.com',
     });
 
-    await expect(user.reload()).rejects.toThrow('Document deleted');
+    await expect(user.reload()).rejects.toThrow('Document does not exist');
   });
 
   it('should be identical to a fresh document', async () => {
@@ -215,5 +172,186 @@ describe('reload', () => {
     await user.reload();
 
     expect(user.validateSync()).toBe(null);
+  });
+
+  it('should reload fields that were not present initially', async () => {
+    const user = await User.create({
+      name: 'Frank Reynolds',
+      email: 'frank@test.com',
+    });
+
+    expect(user.image).toBeUndefined();
+
+    const upload = await Upload.create({});
+    await User.updateOne(
+      {
+        _id: user._id,
+      },
+      {
+        $set: { image: upload._id },
+      },
+    );
+
+    await user.reload();
+
+    expect(user.image).toEqual(upload._id);
+  });
+
+  it('should work with fields that have no read access', async () => {
+    const user = await User.create({
+      name: 'Frank Reynolds',
+      profile: {
+        url: 'test url',
+      },
+    });
+
+    await User.updateOne(
+      {
+        _id: user._id,
+      },
+      {
+        $set: {
+          name: 'Dennis Reynolds',
+          hidden: 'hidden',
+          'profile.url': 'new url',
+        },
+      },
+    );
+
+    await user.reload();
+
+    expect(user.name).toBe('Dennis Reynolds');
+    expect(user.hidden).toBe('hidden');
+    expect(user.profile.url).toBe('new url');
+  });
+
+  it('should unset fields that were removed', async () => {
+    const user = await User.create({
+      name: 'Frank Reynolds',
+      email: 'frank@test.com',
+    });
+
+    expect(user.email).toBe('frank@test.com');
+
+    await User.updateOne({ _id: user._id }, { $unset: { email: 1 } });
+    await user.reload();
+
+    expect(user.email).toBeUndefined();
+  });
+
+  it('should throw error when document is not saved yet', async () => {
+    const user = new User({
+      name: 'Frank Reynolds',
+    });
+
+    await expect(user.reload()).rejects.toThrow('Document does not exist');
+  });
+
+  it('should reload array of populated references', async () => {
+    const friend1 = await User.create({ name: 'Friend 1' });
+    const friend2 = await User.create({ name: 'Friend 2' });
+
+    const user = await User.create({
+      name: 'Frank',
+      friends: [friend1, friend2],
+    });
+
+    friend1.name = 'Updated Friend 1';
+    await friend1.save();
+
+    await user.reload();
+
+    expect(user.friends[0].name).toBe('Updated Friend 1');
+    expect(user.friends[1].name).toBe('Friend 2');
+  });
+
+  it('should reload nested populated paths', async () => {
+    const owner = await User.create({ name: 'Owner' });
+
+    const product = await Product.create({
+      name: 'Product 1',
+      owner,
+    });
+
+    owner.name = 'Updated Owner';
+    await owner.save();
+
+    await product.reload();
+
+    expect(product.owner.name).toBe('Updated Owner');
+  });
+
+  it('should reload virtual populates', async () => {
+    const product = await Product.create({ name: 'Product 1' });
+
+    const comment1 = await Comment.create({
+      body: 'Comment 1',
+      product: product._id,
+    });
+
+    await Comment.create({
+      body: 'Comment 2',
+      product: product._id,
+    });
+
+    await product.include('comments');
+
+    comment1.body = 'Updated Comment 1';
+    await comment1.save();
+
+    await product.reload();
+
+    expect(product.comments).toHaveLength(2);
+    expect(product.comments[0].body).toBe('Updated Comment 1');
+  });
+
+  it('should reload nested virtual populates', async () => {
+    const product = await Product.create({
+      name: 'Product',
+    });
+
+    const shop = await Shop.create({
+      name: 'Shop',
+      inventory: [
+        {
+          product,
+          quantity: 100,
+        },
+      ],
+    });
+
+    const comment1 = await Comment.create({
+      body: 'Comment 1',
+      product,
+    });
+
+    await Comment.create({
+      body: 'Comment 2',
+      product,
+    });
+
+    await shop.include('inventory.product.comments');
+
+    comment1.body = 'Updated Comment 1';
+    await comment1.save();
+
+    await shop.reload();
+
+    expect(shop.inventory).toMatchObject([
+      {
+        quantity: 100,
+        product: {
+          name: 'Product',
+          comments: [
+            {
+              body: 'Updated Comment 1',
+            },
+            {
+              body: 'Comment 2',
+            },
+          ],
+        },
+      },
+    ]);
   });
 });

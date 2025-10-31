@@ -1,4 +1,5 @@
 dist
 types
 .vscode
+.claude
 yarn-error.log

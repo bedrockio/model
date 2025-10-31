@@ -1,8 +1,6 @@
 import logger from '@bedrockio/logger';
 import mongoose from 'mongoose';
 
-import './matchers/error';
-
 async function setupDb() {
   try {
     mongoose.set('strictQuery', false);
