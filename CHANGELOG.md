@@ -1,3 +1,9 @@
+## 0.18.2
+
+- Further fix for `reload` not working with delete hooks.
+- Better detection of literal `type` fields.
+- Schema refactor.
+
 ## 0.18.1
 
 - Added `export` for dumping documents and to support reload.

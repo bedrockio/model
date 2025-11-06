@@ -6,6 +6,21 @@ import { getInnerField } from './utils';
 
 const { ObjectId: SchemaObjectId } = mongoose.Schema.Types;
 
+export function addDeletedFields(definition) {
+  let { onDelete: deleteHooks } = definition;
+
+  if (!deleteHooks) {
+    return;
+  }
+
+  definition.attributes['deletedRefs'] = [
+    {
+      _id: 'ObjectId',
+      ref: 'String',
+    },
+  ];
+}
+
 export function applyDeleteHooks(schema, definition) {
   let { onDelete: deleteHooks } = definition;
 
@@ -42,15 +57,6 @@ export function applyDeleteHooks(schema, definition) {
   schema.method('restore', async function () {
     await restoreReferences(this, cleanHooks);
     await restoreFn.apply(this, arguments);
-  });
-
-  schema.add({
-    deletedRefs: [
-      {
-        _id: 'ObjectId',
-        ref: 'String',
-      },
-    ],
   });
 }
 

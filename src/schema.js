@@ -1,10 +1,10 @@
-import { camelCase, capitalize, isPlainObject, pick } from 'lodash';
+import { camelCase, capitalize, isPlainObject, last, pick } from 'lodash';
 import mongoose from 'mongoose';
 
 import { applyAssign } from './assign';
-import { applyCache } from './cache';
+import { addCacheFields, applyCache } from './cache';
 import { applyClone } from './clone';
-import { applyDeleteHooks } from './delete-hooks';
+import { addDeletedFields, applyDeleteHooks } from './delete-hooks';
 import { applyDisallowed } from './disallowed';
 import { applyExport } from './export';
 import { applyHydrate } from './hydrate';
@@ -32,28 +32,32 @@ import {
  * @returns mongoose.Schema
  */
 export function createSchema(definition, options = {}) {
-  const schema = new mongoose.Schema(
-    attributesToMongoose({
-      ...definition.attributes,
+  addCacheFields(definition);
+  addDeletedFields(definition);
 
-      // Although timestamps are being set below, we still need to add
-      // them to the schema so that validation can be generated for them,
-      // namely in getSearchValidation.
-      createdAt: 'Date',
-      updatedAt: 'Date',
-      deletedAt: 'Date',
-      deleted: {
-        type: 'Boolean',
-        default: false,
-      },
-    }),
-    {
-      timestamps: true,
-      toJSON: serializeOptions,
-      toObject: serializeOptions,
-      ...options,
+  const attributes = normalizeAttributes({
+    ...definition.attributes,
+
+    // Although timestamps are being set below, we still need to add
+    // them to the schema so that validation can be generated for them,
+    // namely in getSearchValidation.
+    createdAt: 'Date',
+    updatedAt: 'Date',
+    deletedAt: 'Date',
+    deleted: {
+      type: 'Boolean',
+      default: false,
     },
-  );
+  });
+
+  applyExtensions(attributes);
+
+  const schema = new mongoose.Schema(attributes, {
+    timestamps: true,
+    toJSON: serializeOptions,
+    toObject: serializeOptions,
+    ...options,
+  });
 
   // Soft Delete needs to be applied
   // first for hooks to work correctly.
@@ -80,17 +84,9 @@ export function normalizeAttributes(arg, path = []) {
     return arg;
   } else if (typeof arg === 'function') {
     throw new Error('Native functions are not allowed as types.');
-  } else if (typeof arg === 'string') {
-    return normalizeSchemaTypedef({ type: arg }, path);
-  } else if (Array.isArray(arg)) {
-    return normalizeSchemaTypedef({ type: arg }, path);
+  } else if (isTypedefInput(arg)) {
+    return normalizeTypedef(arg, path);
   } else if (typeof arg === 'object') {
-    assertRefs(arg, path);
-
-    if (isSchemaTypedef(arg)) {
-      return normalizeSchemaTypedef(arg, path);
-    }
-
     const attributes = {};
     for (let [key, val] of Object.entries(arg)) {
       attributes[key] = normalizeAttributes(val, [...path, key]);
@@ -99,78 +95,77 @@ export function normalizeAttributes(arg, path = []) {
   }
 }
 
-function normalizeSchemaTypedef(typedef, path) {
-  const { type } = typedef;
-
-  if (Array.isArray(type)) {
-    typedef.type = normalizeArrayAttributes(type, path);
-  } else if (typeof type === 'object') {
-    typedef.type = normalizeAttributes(type, path);
-  } else {
-    assertSchemaType(type, path);
-  }
-
-  if (typedef.type === 'String') {
-    typedef.trim ??= true;
-  }
-
-  return typedef;
-}
-
 function normalizeArrayAttributes(arr, path) {
   return arr.map((el, i) => {
     return normalizeAttributes(el, [...path, i]);
   });
 }
 
-function attributesToMongoose(attributes) {
-  if (typeof attributes === 'string') {
-    return attributes;
-  } else if (Array.isArray(attributes)) {
-    return attributes.map(attributesToMongoose);
+function normalizeTypedef(arg, path) {
+  const typedef = arg.type ? arg : { type: arg };
+
+  if (Array.isArray(typedef.type)) {
+    // Normalize all inner fields.
+    typedef.type = normalizeArrayAttributes(typedef.type, path);
+  } else if (typeof typedef.type === 'object') {
+    // Normalize literal "type" field.
+    typedef.type = normalizeAttributes(typedef.type, path);
+  } else if (isExtendedSyntax(typedef)) {
+    // Normalize extended syntax: type "Object" or "Array".
+    typedef.attributes = normalizeAttributes(typedef.attributes, path);
   }
 
-  attributes = normalizeAttributes(attributes);
+  if (typedef.type === 'String') {
+    // Auto-apply trim to string fields.
+    typedef.trim ??= true;
 
-  let definition = {};
-
-  const isTypedef = isSchemaTypedef(attributes);
-
-  for (let [key, val] of Object.entries(attributes)) {
-    const type = typeof val;
-    if (isTypedef) {
-      if (key === 'type' && type !== 'function') {
-        val = attributesToMongoose(val);
-      } else if (key === 'match' && type === 'string') {
-        // Convert match field to RegExp that cannot be expressed in JSON.
-        val = parseRegExp(val);
-      } else if (key === 'validate' && type === 'string') {
-        // Allow custom mongoose validation function that derives from the schema.
-        val = getNamedValidator(val);
-      } else if (key === 'attributes' && type === 'object') {
-        val = attributesToMongoose(val);
-      }
-    } else if (Array.isArray(val)) {
-      val = val.map(attributesToMongoose);
-    } else if (isPlainObject(val)) {
-      if (isScopeExtension(val)) {
-        applyScopeExtension(val, definition);
-        continue;
-      } else {
-        val = attributesToMongoose(val);
-      }
+    if (typeof typedef.match === 'string') {
+      // Convert string RegExp so that
+      // it can be expressed in JSON.
+      typedef.match = parseRegExp(typedef.match);
     }
-    definition[key] = val;
   }
 
-  if (isTypedef) {
-    applyExtensions(definition);
-  }
+  assertSchemaType(typedef, path);
+  assertObjectRefs(typedef, path);
 
-  return definition;
+  return typedef;
 }
 
-function assertSchemaType(type, path) {
+function isTypedefInput(arg) {
+  if (typeof arg === 'string') {
+    // "Number" as shorthand for a typedef.
+    return true;
+  } else if (Array.isArray(arg)) {
+    // Array signals an array field with inner schema.
+    return true;
+  } else if (hasLiteralTypeField(arg)) {
+    // An object with a literal "type" field.
+    return false;
+  }
+  return isSchemaTypedef(arg);
+}
+
+// Detects input like:
+// {
+//   "type": "String",
+//   "name": "String",
+// }
+// Which is not intended to be a typedef.
+function hasLiteralTypeField(arg) {
+  const { type, ...rest } = arg || {};
+
+  if (!isMongooseType(type)) {
+    return false;
+  }
+
+  return Object.values(rest).some((key) => {
+    return isMongooseType(key);
+  });
+}
+
+function assertSchemaType(typedef, path) {
+  const { type } = typedef;
   if (typeof type === 'string') {
     if (!isMongooseType(type)) {
       const p = path.join('.');
@@ -184,46 +179,68 @@ function assertSchemaType(type, path) {
   }
 }
 
-function assertRefs(field, path) {
-  const { type, ref, refPath } = field;
+function assertObjectRefs(typedef, path) {
+  const { type, ref } = typedef;
   const p = path.join('.');
-  if (isObjectIdType(type) && !ref && !refPath) {
+
+  if (requiresRef(typedef, path)) {
     throw new Error(`Ref must be passed for "${p}".`);
+    // TODO: what is the middle part doing here??
   } else if (ref && !isMongooseType(ref) && !isObjectIdType(type)) {
     throw new Error(`Ref field "${p}" must be type "ObjectId".`);
   }
 }
 
-function camelUpper(str) {
-  return capitalize(camelCase(str));
+function requiresRef(typedef, path) {
+  const { type, ref, refPath } = typedef;
+
+  // Allow "_id" to not have a ref for the
+  // delete hooks module to function.
+  if (last(path) === '_id') {
+    return false;
+  }
+
+  return isObjectIdType(type) && !ref && !refPath;
 }
 
-function isObjectIdType(type) {
-  return type === 'ObjectId' || type === mongoose.Schema.Types.ObjectId;
-}
+// Extensions
 
-function isMongooseType(type) {
-  return !!mongoose.Schema.Types[type];
-}
+function applyExtensions(arg) {
+  if (isSchemaTypedef(arg)) {
+    applySyntaxExtensions(arg);
+    applyValidateExtension(arg);
+    applyUniqueExtension(arg);
+    applyTupleExtension(arg);
+    applyDateExtension(arg);
 
-function applyExtensions(typedef) {
-  applySyntaxExtensions(typedef);
-  applyUniqueExtension(typedef);
-  applyTupleExtension(typedef);
-  applyDateExtension(typedef);
+    if (Array.isArray(arg.type)) {
+      for (let field of arg.type) {
+        applyExtensions(field);
+      }
+      applyArrayValidators(arg);
+      applyOptionHoisting(arg);
+    }
+  } else if (isPlainObject(arg)) {
+    for (let [key, value] of Object.entries(arg)) {
+      if (isScopeExtension(value)) {
+        applyScopeExtension(value, arg, key);
+      } else {
+        applyExtensions(value);
+      }
+    }
+  }
 }
 
 function applySyntaxExtensions(typedef) {
   const { type, attributes } = typedef;
   if (isExtendedSyntax(typedef)) {
-    typedef.type = new mongoose.Schema(attributes);
+    applyExtensions(attributes);
     if (type === 'Array') {
-      typedef.type = [typedef.type];
+      typedef.type = [attributes];
+    } else if (type === 'Object') {
+      typedef.type = new mongoose.Schema(attributes);
     }
-  }
-  if (Array.isArray(typedef.type)) {
-    applyArrayValidators(typedef);
-    applyOptionHoisting(typedef);
+    delete typedef['attributes'];
   }
 }
 
@@ -235,30 +252,42 @@ function applyOptionHoisting(typedef) {
 
 function isExtendedSyntax(typedef) {
   const { type, attributes } = typedef;
-  return attributes && (type === 'Object' || type === 'Array');
+  if (!attributes) {
+    return false;
+  }
+  return type === 'Object' || type === 'Array' || type === 'Scope';
 }
 
 function isScopeExtension(arg) {
   return isSchemaTypedef(arg) && arg.type === 'Scope';
 }
 
-function applyScopeExtension(typedef, definition) {
-  const { type, attributes, ...options } = typedef;
-  for (let [key, val] of Object.entries(normalizeAttributes(attributes))) {
-    if (isSchemaTypedef(val)) {
-      val = {
-        ...val,
-        ...options,
+function applyScopeExtension(typedef, parent, name) {
+  const { type, attributes, ...rest } = typedef;
+
+  for (let [key, value] of Object.entries(attributes)) {
+    if (isSchemaTypedef(value)) {
+      // If the child is a typedef then apply
+      // options directly to the field.
+      applyExtensions(value);
+      parent[key] = {
+        ...value,
+        ...rest,
       };
     } else {
-      val = {
+      // If the child is a nested object then
+      // need to use extended object syntax.
+      const typedef = {
         type: 'Object',
-        attributes: val,
-        ...options,
+        attributes: value,
+        ...rest,
       };
+      applyExtensions(typedef);
+      parent[key] = typedef;
     }
-    definition[key] = attributesToMongoose(val);
   }
+
+  delete parent[name];
 }
 
 // Extended tuple syntax. Return mixed type and set validator.
@@ -283,6 +312,15 @@ function applyDateExtension(typedef) {
     typedef.default = () => {
       return Date.now();
     };
+  }
+}
+
+// Apply custom mongoose validation by name.
+function applyValidateExtension(typedef) {
+  const { validate } = typedef;
+
+  if (typeof validate === 'string') {
+    typedef.validate = getNamedValidator(typedef.validate);
   }
 }
 
@@ -325,12 +363,7 @@ function validateMaxLength(max) {
   };
 }
 
-function chain(fn1, fn2) {
-  return (...args) => {
-    fn1?.(...args);
-    fn2?.(...args);
-  };
-}
+// Regex Parsing
 
 const REG_MATCH = /^\/(.+)\/(\w+)$/;
 
@@ -341,4 +374,25 @@ function parseRegExp(str) {
   }
   const [, source, flags] = match;
   return RegExp(source, flags);
+}
+
+// Utils
+
+function camelUpper(str) {
+  return capitalize(camelCase(str));
+}
+
+function isObjectIdType(type) {
+  return type === 'ObjectId' || type === mongoose.Schema.Types.ObjectId;
+}
+
+function isMongooseType(type) {
+  return !!mongoose.Schema.Types[type];
+}
+
+function chain(fn1, fn2) {
+  return (...args) => {
+    fn1?.(...args);
+    fn2?.(...args);
+  };
 }

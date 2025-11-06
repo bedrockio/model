@@ -1,3 +1,5 @@
+// Mongoose serializers to prevent errors with toEqual, etc.
+
 import { equals, iterableEquality, subsetEquality } from '@jest/expect-utils';
 import mongoose from 'mongoose';
 
@@ -28,9 +30,9 @@ function mongooseToPlain(obj) {
   if (obj === null || obj === undefined) {
     return obj;
   }
-  // Keep ObjectId as-is for comparison
+  // Convert ObjectId to string for comparison
   if (obj instanceof ObjectId) {
-    return obj;
+    return obj.toString();
   }
   if (obj instanceof Subdocument) {
     return mongooseToPlain(obj.toObject());
@@ -101,7 +103,7 @@ expect.extend({
   },
 });
 
-// Custom equality tester for ObjectId
+// Custom equality tester for ObjectId (for cases where mongooseToPlain isn't used)
 expect.addEqualityTesters([
   function objectIdEqualityTester(a, b) {
     if (a instanceof ObjectId && b instanceof ObjectId) {

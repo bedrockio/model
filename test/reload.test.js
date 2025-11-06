@@ -1,4 +1,6 @@
 import { Comment, Product, Shop, Upload, User } from './mocks';
+import { createSchema } from '../src/schema';
+import { createTestModel, getTestModelName } from '../src/testing';
 
 describe('reload', () => {
   it('should reload basic field', async () => {
@@ -353,5 +355,52 @@ describe('reload', () => {
         },
       },
     ]);
+  });
+});
+
+describe('delete-hooks', () => {
+  it('should work with delete hooks', async () => {
+    const userModelName = getTestModelName();
+    const userProfileModelName = getTestModelName();
+
+    const User = createTestModel(
+      userModelName,
+      createSchema({
+        attributes: {
+          profile: {
+            type: 'ObjectId',
+            ref: userProfileModelName,
+          },
+        },
+        onDelete: {
+          clean: [
+            {
+              path: 'profile',
+            },
+          ],
+        },
+      }),
+    );
+
+    const UserProfile = createTestModel(userProfileModelName, {
+      name: 'String',
+    });
+
+    const profile = await UserProfile.create({
+      name: 'Barry',
+    });
+
+    const user = await User.create({
+      profile,
+    });
+
+    profile.name = 'Larry';
+    await profile.save();
+
+    await user.reload();
+
+    expect(user.profile.name).toBe('Larry');
+    await User.deleteMany({});
+    await UserProfile.deleteMany({});
   });
 });

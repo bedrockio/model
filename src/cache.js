@@ -7,6 +7,23 @@ const definitionMap = new Map();
 
 mongoose.plugin(cacheSyncPlugin);
 
+export function addCacheFields(definition) {
+  const { cache } = definition;
+
+  if (!cache) {
+    return;
+  }
+
+  for (let [cachedField, def] of Object.entries(cache)) {
+    const { type, path, ...rest } = def;
+    definition.attributes[cachedField] = {
+      type,
+      ...rest,
+      writeAccess: 'none',
+    };
+  }
+}
+
 export function applyCache(schema, definition) {
   definitionMap.set(schema, definition);
 
@@ -14,24 +31,8 @@ export function applyCache(schema, definition) {
     return;
   }
 
-  createCacheFields(schema, definition);
   applyStaticMethods(schema, definition);
   applyCacheHook(schema, definition);
-}
-
-function createCacheFields(schema, definition) {
-  for (let [cachedField, def] of Object.entries(definition.cache)) {
-    const { type, path, ...rest } = def;
-
-    schema.add({
-      [cachedField]: type,
-    });
-    schema.obj[cachedField] = {
-      ...rest,
-      type,
-      writeAccess: 'none',
-    };
-  }
 }
 
 function applyStaticMethods(schema, definition) {

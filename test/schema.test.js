@@ -6,7 +6,7 @@ import { createTestModel } from '../src/testing';
 const { Decimal128 } = mongoose.Types;
 
 describe('normalizeAttributes', () => {
-  it('should accept a correctly formatted definition', async () => {
+  it('should accept already normalized', async () => {
     const attributes = {
       name: {
         type: 'String',
@@ -32,7 +32,7 @@ describe('normalizeAttributes', () => {
     });
   });
 
-  it('should convert strings to type definitions', async () => {
+  it('should convert string shorthand', async () => {
     const attributes = {
       name: 'String',
       age: 'Number',
@@ -52,7 +52,7 @@ describe('normalizeAttributes', () => {
     });
   });
 
-  it('should convert objects to type definitions', async () => {
+  it('should convert nested object', async () => {
     const attributes = {
       profile: {
         firstName: 'String',
@@ -73,7 +73,7 @@ describe('normalizeAttributes', () => {
     });
   });
 
-  it('should convert array of strings to type definitions', async () => {
+  it('should convert string array', async () => {
     const attributes = {
       names: ['String'],
     };
@@ -89,7 +89,7 @@ describe('normalizeAttributes', () => {
     });
   });
 
-  it('should convert array of objects to type definitions', async () => {
+  it('should convert object array', async () => {
     const attributes = {
       profiles: [
         {
@@ -230,7 +230,7 @@ describe('normalizeAttributes', () => {
     }).toThrow('Ref must be passed for "user".');
   });
 
-  it('should error on ref but not ObjectId', async () => {
+  it('should error on ref without ObjectId', async () => {
     const attributes = {
       user: {
         ref: 'User',
@@ -238,7 +238,7 @@ describe('normalizeAttributes', () => {
     };
     expect(() => {
       normalizeAttributes(attributes);
-    }).toThrow('Ref field "user" must be type "ObjectId".');
+    }).toThrow('Invalid type "User" for "user.ref"');
   });
 
   it('should error on native functions for type', async () => {
@@ -304,7 +304,7 @@ describe('normalizeAttributes', () => {
     });
   });
 
-  it('should normalize an object type', async () => {
+  it('should work with literal type', async () => {
     const attributes = {
       profile: {
         type: {
@@ -320,6 +320,77 @@ describe('normalizeAttributes', () => {
             trim: true,
           },
         },
+      },
+    });
+  });
+
+  it('should normalize extended object syntax', async () => {
+    const attributes = {
+      profile: {
+        type: 'Object',
+        attributes: {
+          firstName: 'String',
+          lastName: 'String',
+        },
+      },
+    };
+    expect(normalizeAttributes(attributes)).toEqual({
+      profile: {
+        type: 'Object',
+        attributes: {
+          firstName: {
+            type: 'String',
+            trim: true,
+          },
+          lastName: {
+            type: 'String',
+            trim: true,
+          },
+        },
+      },
+    });
+  });
+
+  it('should normalize extended array syntax', async () => {
+    const attributes = {
+      profiles: {
+        type: 'Array',
+        attributes: {
+          firstName: 'String',
+          lastName: 'String',
+        },
+      },
+    };
+    expect(normalizeAttributes(attributes)).toEqual({
+      profiles: {
+        type: 'Array',
+        attributes: {
+          firstName: {
+            type: 'String',
+            trim: true,
+          },
+          lastName: {
+            type: 'String',
+            trim: true,
+          },
+        },
+      },
+    });
+  });
+
+  it('should auto-detect literal "type" field', async () => {
+    const attributes = {
+      type: 'String',
+      name: 'String',
+    };
+    expect(normalizeAttributes(attributes)).toEqual({
+      type: {
+        type: 'String',
+        trim: true,
+      },
+      name: {
+        type: 'String',
+        trim: true,
       },
     });
   });
@@ -1149,12 +1220,15 @@ describe('createSchema', () => {
             },
           },
         });
+
         const user = await User.create({
           profile: {
             name: 'foo',
+            foo: 'bar',
           },
         });
         expect(user.profile.name).toBe('foo');
+        expect(user.profile.foo).toBeUndefined();
       });
 
       it('should correctly reflect a nested path with a scope', async () => {
@@ -1172,6 +1246,42 @@ describe('createSchema', () => {
         });
         const schema = User.schema.path('profile.name');
         expect(schema instanceof mongoose.SchemaTypes.String).toBe(true);
+      });
+
+      it('should support scopes with mixed path types', async () => {
+        const User = createTestModel({
+          $private: {
+            type: 'Scope',
+            readAccess: ['admin'],
+            attributes: {
+              name: {
+                type: 'String',
+              },
+              profile: {
+                age: 'Number',
+              },
+            },
+          },
+        });
+
+        const user = await User.create({
+          name: 'foo',
+          profile: {
+            age: 42,
+          },
+        });
+
+        expect(user.name).toBe('foo');
+        expect(user.profile).toEqual({
+          age: 42,
+          _id: user.profile._id,
+        });
+
+        expect(user.toObject()).toEqual({
+          id: user.id,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        });
       });
     });
   });
