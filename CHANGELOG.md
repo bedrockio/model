@@ -1,3 +1,7 @@
+## 0.18.3
+
+- Fixed issues with `getUpdateValidation` not allowing null for nested objects.
+
 ## 0.18.2
 
 - Further fix for `reload` not working with delete hooks.

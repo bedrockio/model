@@ -1618,6 +1618,22 @@ describe('getUpdateValidation', () => {
       });
     });
 
+    it('should allow null to unset object', async () => {
+      const User = createTestModel({
+        nested: {
+          name: 'String',
+        },
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertPass(schema, {
+        nested: null,
+      });
+      await assertFail(schema, {
+        nested: '',
+      });
+    });
+
     it('should allow null or empty on nested primitive fields', async () => {
       const User = createTestModel({
         nested: {
@@ -1727,6 +1743,44 @@ describe('getUpdateValidation', () => {
       });
       await assertFail(schema, {
         tags: '',
+      });
+    });
+
+    it('should not allow null on array elements', async () => {
+      const User = createTestModel({
+        tags: ['String'],
+      });
+      const schema = User.getUpdateValidation();
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertFail(schema, {
+        tags: [null],
+      });
+    });
+
+    it('should allow null on nested array fields', async () => {
+      const User = createTestModel({
+        profiles: [
+          {
+            name: {
+              type: 'String',
+              required: true,
+            },
+            age: {
+              type: 'Number',
+            },
+          },
+        ],
+      });
+      const schema = User.getUpdateValidation();
+
+      expect(yd.isSchema(schema)).toBe(true);
+      await assertPass(schema, {
+        profiles: [
+          {
+            name: 'Frank',
+            age: null,
+          },
+        ],
       });
     });
 

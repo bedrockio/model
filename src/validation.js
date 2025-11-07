@@ -200,15 +200,17 @@ function getObjectSchema(arg, options) {
   if (isSchemaTypedef(arg)) {
     return getSchemaForTypedef(arg, options);
   } else if (isMongooseSchema(arg)) {
-    return getObjectSchema(arg.obj, options);
+    return getNestedSchema(arg.obj, options);
   } else if (Array.isArray(arg)) {
     return getArraySchema(arg, options);
   } else if (typeof arg === 'object') {
     const { stripUnknown, stripEmpty, allowFlatKeys } = options;
+
     const map = {};
+
     for (let [key, field] of Object.entries(arg)) {
       if (!isExcludedField(field, options)) {
-        map[key] = getObjectSchema(field, options);
+        map[key] = getNestedSchema(field, options);
       }
     }
 
@@ -232,10 +234,22 @@ function getObjectSchema(arg, options) {
       });
     }
 
+    if (isNullAllowed(options)) {
+      schema = schema.nullable();
+    }
+
     return schema;
   } else {
     return getSchemaForType(arg, options);
   }
+}
+
+function getNestedSchema(arg, options) {
+  return getObjectSchema(arg, {
+    ...options,
+    isNested: true,
+    isArrayElement: false,
+  });
 }
 
 function getArraySchema(arr, options) {
@@ -248,6 +262,7 @@ function getArraySchema(arr, options) {
     schema = getObjectSchema(arr[0], {
       ...options,
       skipRequired: false,
+      isArrayElement: true,
     });
     if (!options.unwindArrayFields) {
       schema = yd.array(schema);
@@ -275,7 +290,7 @@ function getSchemaForTypedef(typedef, options = {}) {
     // Null may be allowed to unset non-required fields
     // in an update operation or to search for non-existent
     // fields in a search operation.
-    if (allowNull(typedef, options)) {
+    if (isNullAllowedForTypedef(typedef, options)) {
       schema = schema.nullable();
     }
 
@@ -407,8 +422,13 @@ function isRequired(typedef, options) {
   return typedef.required && !typedef.default && !options.skipRequired;
 }
 
-function allowNull(typedef, options) {
-  if (!options.allowNull) {
+function isNullAllowed(options) {
+  const { allowNull, isNested, isArrayElement } = options;
+  return allowNull && isNested && !isArrayElement;
+}
+
+function isNullAllowedForTypedef(typedef, options) {
+  if (!isNullAllowed(options)) {
     return false;
   }
   const { required, type } = typedef;
