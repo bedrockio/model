@@ -461,7 +461,8 @@ validation which will:
   `Model.getUpdateValidation` to allow this constraint to trickle down to the
   API.
 
-> [!WARNING] Note that calling `Model.updateOne` will throw an error when a
+> [!WARNING]
+> Note that calling `Model.updateOne` will throw an error when a
 > unique field exists on any document **including the document being updated**.
 > This is an intentional constraint that allows `updateOne` better peformance by
 > not having to fetch the ids of the documents being updated in order to exclude
@@ -1066,7 +1067,8 @@ await Product.findById(id).include('shop.user.^name').
 }
 ```
 
-> [!WARNING] Fields that are dynamically referenced using `refPath` are unable
+> [!WARNING]
+> Fields that are dynamically referenced using `refPath` are unable
 > to resolve the schemas beforehand (ie. before query execution), therefore they
 > can only be populated at the top level.
 
@@ -1613,7 +1615,8 @@ for (let shop of shops) {
 }
 ```
 
-> [!WARNING] The ability to run an `$and` query with multiple paths is currently
+> [!WARNING]
+> The ability to run an `$and` query with multiple paths is currently
 > not implemented.
 
 #### Erroring on Delete
@@ -1643,7 +1646,8 @@ Models that have delete hooks defined on them will keep a reference of the
 documents that were deleted. Calling `.restore()` on the document will also
 restore these references.
 
-> [!WARNING] Delete hooks are **only** run on a single document (`.delete` or
+> [!WARNING]
+> Delete hooks are **only** run on a single document (`.delete` or
 > `.restore`). They will not be run when using model methods like `deleteOne` or
 > `deleteMany`.
 
