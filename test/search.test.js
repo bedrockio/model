@@ -720,6 +720,8 @@ describe('search', () => {
 
   describe('null', () => {
     it('should allow null in search', async () => {
+      // Note this is a newer mongoose feature,
+      // not one that is provided by this package.
       const User = createTestModel({
         name: 'String',
         age: 'Number',

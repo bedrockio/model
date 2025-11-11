@@ -13,12 +13,15 @@ export function addDeletedFields(definition) {
     return;
   }
 
-  definition.attributes['deletedRefs'] = [
-    {
+  definition.attributes['deletedRefs'] = {
+    type: 'Array',
+    readAccess: 'none',
+    writeAccess: 'none',
+    attributes: {
       _id: 'ObjectId',
       ref: 'String',
     },
-  ];
+  };
 }
 
 export function applyDeleteHooks(schema, definition) {

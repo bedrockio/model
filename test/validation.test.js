@@ -1060,6 +1060,11 @@ describe('getCreateValidation', () => {
         name: 'foo',
       },
     ]);
+    await assertFail(schema, [
+      {
+        name: null,
+      },
+    ]);
   });
 
   it('should have correct error details', async () => {
@@ -1558,10 +1563,10 @@ describe('getUpdateValidation', () => {
       type: 'object',
       properties: {
         profile: {
-          type: 'object',
+          type: ['object', 'null'],
           properties: {
             name: {
-              type: 'string',
+              type: ['string', 'null'],
             },
           },
           required: [],
@@ -3070,14 +3075,14 @@ describe('getSearchValidation', () => {
       });
       const schema = User.getSearchValidation();
       const json = schema.toJSON();
+
       expect(json).toMatchObject({
         type: 'object',
         properties: {
           name: {
             anyOf: [
               {
-                type: 'string',
-                nullable: true,
+                type: ['string', 'null'],
               },
               {
                 type: 'array',
@@ -3301,9 +3306,7 @@ describe('getBaseSchema', () => {
       expect(schema.toJSON()).toMatchObject({
         type: 'object',
         properties: {
-          any: {
-            type: ['object', 'array', 'string', 'number', 'boolean', 'null'],
-          },
+          any: {},
         },
       });
     });

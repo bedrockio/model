@@ -733,6 +733,30 @@ describe('delete hooks', () => {
 
           expect(await Shop.countDocuments()).toBe(2);
         });
+
+        it('should not expose refs as writeable', async () => {
+          const User = createTestModel(
+            createSchema({
+              attributes: {
+                name: 'String',
+              },
+              onDelete: {
+                errorOnReferenced: true,
+              },
+            }),
+          );
+
+          expect(User.getCreateValidation().toJsonSchema()).toEqual({
+            type: 'object',
+            properties: {
+              name: {
+                type: 'string',
+              },
+            },
+            required: [],
+            additionalProperties: false,
+          });
+        });
       });
 
       describe('errors', () => {

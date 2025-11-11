@@ -1,3 +1,7 @@
+## Next
+
+- Fixed `deletedRefs` being exposed.
+
 ## 0.18.3
 
 - Fixed issues with `getUpdateValidation` not allowing null for nested objects.

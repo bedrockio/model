@@ -270,6 +270,7 @@ function getArraySchema(arr, options) {
   } else {
     throw new Error('Array schema may not have more than 1 element.');
   }
+
   return schema;
 }
 
@@ -397,22 +398,22 @@ function getSchemaForType(type, options) {
 function getSearchSchema(schema, type) {
   if (type === 'String') {
     return yd
-      .allow(schema, yd.array(schema), STRING_RANGE_SCHEMA)
+      .allow(schema, yd.array(schema.nullable(false)), STRING_RANGE_SCHEMA)
       .description(
         'Allows searching by a string, array of strings, or a range.',
       );
   } else if (type === 'Number') {
     return yd
-      .allow(schema, yd.array(schema), NUMBER_RANGE_SCHEMA)
+      .allow(schema, yd.array(schema.nullable(false)), NUMBER_RANGE_SCHEMA)
       .description(
         'Allows searching by a value, array of values, or a  range.',
       );
   } else if (type === 'Date') {
     return yd
-      .allow(schema, yd.array(schema), DATE_RANGE_SCHEMA)
+      .allow(schema, yd.array(schema.nullable(false)), DATE_RANGE_SCHEMA)
       .description('Allows searching by a date, array of dates, or a range.');
   } else if (type === 'ObjectId') {
-    return yd.allow(schema, yd.array(schema));
+    return yd.allow(schema, yd.array(schema.nullable(false)));
   } else {
     return schema;
   }
