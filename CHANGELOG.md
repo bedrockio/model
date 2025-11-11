@@ -1,5 +1,6 @@
-## Next
+## 0.18.4
 
+- Bumped yada to fix JSON schema issues.
 - Fixed `deletedRefs` being exposed.
 
 ## 0.18.3
