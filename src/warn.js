@@ -1,7 +1,6 @@
-import logger from '@bedrockio/logger';
-
 export default function warn(...lines) {
   if (process.env.ENV_NAME !== 'test') {
-    logger.warn(lines.join('\n'));
+    // Allow warnings to be traced.
+    process.emitWarning(lines.join('\n'));
   }
 }

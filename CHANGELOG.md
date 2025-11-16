@@ -1,3 +1,7 @@
+## 0.18.5
+
+- Moved warnings to `process.emitWarning`.
+
 ## 0.18.4
 
 - Bumped yada to fix JSON schema issues.
