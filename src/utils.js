@@ -130,7 +130,15 @@ export function getInnerField(obj, path) {
 
 function resolveInnerField(field) {
   if (Array.isArray(field?.type)) {
-    field = field.type[0];
+    // An unspecified array type has no inner
+    // fields so return Array as the type.
+    if (field.type.length === 0) {
+      return {
+        type: 'Array',
+      };
+    } else {
+      field = field.type[0];
+    }
   }
   if (field?.type instanceof mongoose.Schema) {
     field = field.type.obj;

@@ -1,6 +1,7 @@
 ## 0.18.5
 
 - Moved warnings to `process.emitWarning`.
+- Fixed reload issue with mixed array types.
 
 ## 0.18.4
 

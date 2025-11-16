@@ -356,6 +356,64 @@ describe('reload', () => {
       },
     ]);
   });
+
+  it('should work with mixed array type', async () => {
+    const User = createTestModel({
+      coordinates: [],
+    });
+
+    const user = await User.create({
+      coordinates: [35, 95],
+    });
+
+    await User.updateOne(
+      {
+        _id: user.id,
+      },
+      {
+        $set: {
+          coordinates: [45, 95],
+        },
+      },
+    );
+
+    await user.reload();
+
+    expect(user.coordinates).toEqual([45, 95]);
+  });
+
+  it('should work with mixed object type', async () => {
+    const User = createTestModel({
+      profile: {},
+    });
+
+    const user = await User.create({
+      profile: {
+        foo: 'bar',
+      },
+    });
+
+    await User.updateOne(
+      {
+        _id: user.id,
+      },
+      {
+        $set: {
+          profile: {
+            foo: 'bar',
+            moo: 'car',
+          },
+        },
+      },
+    );
+
+    await user.reload();
+
+    expect(user.profile).toEqual({
+      foo: 'bar',
+      moo: 'car',
+    });
+  });
 });
 
 describe('delete-hooks', () => {
