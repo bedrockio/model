@@ -1,3 +1,7 @@
+## 0.18.6
+
+- Yada bump.
+
 ## 0.18.5
 
 - Moved warnings to `process.emitWarning`.
