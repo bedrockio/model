@@ -7,12 +7,12 @@
 // - Cannot deal with unique fields.
 //
 export function applyClone(schema) {
-  schema.method('clone', async function clone() {
-    return await cloneDocument(this);
+  schema.method('clone', function clone() {
+    return cloneDocument(this);
   });
 }
 
-async function cloneDocument(doc) {
+function cloneDocument(doc) {
   const Model = doc.constructor;
   const clone = new Model();
 
@@ -25,8 +25,6 @@ async function cloneDocument(doc) {
 
     clone.set(key, value);
   }
-
-  await clone.save();
 
   return clone;
 }

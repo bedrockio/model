@@ -1,3 +1,7 @@
+## 0.19.0
+
+- Ensure that document clone is synchronous.
+
 ## 0.18.6
 
 - Yada bump.

@@ -7,7 +7,7 @@ describe('clone', () => {
       email: 'foo@bar.com',
     });
 
-    const clone = await user.clone();
+    const clone = user.clone();
 
     expect(clone.id).not.toBe(user.id);
     expect(clone.name).toBe(user.name);
@@ -24,7 +24,7 @@ describe('clone', () => {
     });
     await upload.include('owner');
 
-    const clone = await upload.clone();
+    const clone = upload.clone();
 
     expect(clone.id).not.toBe(upload.id);
     expect(clone.owner).toBe(upload.owner);
@@ -40,12 +40,12 @@ describe('clone', () => {
     user.image = upload;
     await user.save();
 
-    const clone = await user.clone();
+    const clone = user.clone();
 
     expect(clone.id).not.toBe(user.id);
     expect(clone.name).toBe(user.name);
     expect(clone.image).toBe(user.image);
     expect(clone.createdAt).toBe(user.createdAt);
-    expect(clone.updatedAt).not.toBe(user.updatedAt);
+    expect(clone.updatedAt).toBe(user.updatedAt);
   });
 });

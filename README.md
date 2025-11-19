@@ -1785,9 +1785,7 @@ shop.name; // Now "My New Shop"
 
 ### Clone
 
-Adds a single `clone` method on documents. This is an async method mostly for
-testing that will immediately create a copy of the document. It makes up for
-some of the shortcomings of the Mongoose `$clone` method:
+Adds a single `clone` method on documents that makes up for some of the shortcomings of the Mongoose `$clone` method:
 
 - A new `id` will be generated.
 - Populated and self-referencing documents are handled.
