@@ -232,9 +232,13 @@ function getUpdates(doc, fields) {
 function getIncludes(fields) {
   const includes = new Set();
   for (let field of fields) {
-    includes.add(field.local);
+    includes.add(getPathBase(field.path));
   }
   return includes;
+}
+
+function getPathBase(path) {
+  return path.split('.').slice(0, -1).join('.');
 }
 
 // Assertions

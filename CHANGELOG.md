@@ -1,3 +1,7 @@
+## 0.19.1
+
+- Fix for deep cache field not saving.
+
 ## 0.19.0
 
 - Ensure that document clone is synchronous.

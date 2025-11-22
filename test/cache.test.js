@@ -116,12 +116,14 @@ describe('cached fields', () => {
     const User = createTestModel({
       name: 'String',
     });
+
     const Shop = createTestModel({
       user: {
         type: 'ObjectId',
         ref: User.modelName,
       },
     });
+
     const schema = createSchema({
       attributes: {
         shop: {
@@ -136,6 +138,7 @@ describe('cached fields', () => {
         },
       },
     });
+
     const Product = createTestModel(schema);
 
     const user = await User.create({
@@ -143,7 +146,7 @@ describe('cached fields', () => {
     });
 
     const shop = await Shop.create({
-      user,
+      user: user.id,
     });
 
     const product = await Product.create({
