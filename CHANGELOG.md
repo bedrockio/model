@@ -1,6 +1,7 @@
 ## 0.19.1
 
 - Fix for deep cache field not saving.
+- Test for multiple decomposers.
 
 ## 0.19.0
 

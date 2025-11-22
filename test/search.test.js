@@ -1144,6 +1144,48 @@ describe('keyword search', () => {
       // Falling back to non-decomposed query
       await assertMatch('Maart', user2);
     });
+
+    it('should allow multiple decomposers', async () => {
+      const schema = createSchema({
+        attributes: {
+          ownerFirstName: 'String',
+          ownerLastName: 'String',
+          workerFirstName: 'String',
+          workerLastName: 'String',
+        },
+        search: {
+          decompose: [
+            '{ownerFirstName} {ownerLastName...}',
+            '{workerFirstName} {workerLastName...}',
+          ],
+          fields: [
+            'ownerFirstName',
+            'ownerLastName',
+            'workerFirstName',
+            'workerLastName',
+          ],
+        },
+      });
+
+      const Shop = createTestModel(schema);
+
+      const shop = await Shop.create({
+        ownerFirstName: 'Frank',
+        ownerLastName: 'Reynolds',
+        workerFirstName: 'Dennis',
+        workerLastName: 'Reynolds',
+      });
+
+      async function assertMatch(keyword, shop) {
+        const { data } = await Shop.search({
+          keyword,
+        });
+        expect(data[0].id).toBe(shop.id);
+      }
+
+      await assertMatch('Frank Reynolds', shop);
+      await assertMatch('Dennis Reynolds', shop);
+    });
   });
 
   it('should perform keyword search on a number field', async () => {
