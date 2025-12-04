@@ -1,3 +1,7 @@
+## 0.19.2
+
+- Fixed issue with delete hooks in subdocument arrays.
+
 ## 0.19.1
 
 - Fix for deep cache field not saving.

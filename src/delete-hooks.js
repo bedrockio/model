@@ -4,7 +4,8 @@ import mongoose from 'mongoose';
 import { ReferenceError } from './errors';
 import { getInnerField } from './utils';
 
-const { ObjectId: SchemaObjectId } = mongoose.Schema.Types;
+const { ObjectId: SchemaObjectId, DocumentArray: SchemaDocumentArray } =
+  mongoose.Schema.Types;
 
 export function addDeletedFields(definition) {
   let { onDelete: deleteHooks } = definition;
@@ -215,7 +216,7 @@ function getAllReferences(doc) {
   const targetName = doc.constructor.modelName;
   return Object.values(mongoose.models)
     .map((model) => {
-      const paths = getModelReferences(model, targetName);
+      const paths = getModelReferences(model.schema, targetName);
       return { model, paths };
     })
     .filter(({ paths }) => {
@@ -223,27 +224,34 @@ function getAllReferences(doc) {
     });
 }
 
-function getModelReferences(model, targetName) {
-  const paths = [];
-  model.schema.eachPath((schemaPath, schemaType) => {
-    if (schemaType instanceof SchemaObjectId && schemaPath[0] !== '_') {
+function getModelReferences(schema, targetName, path = []) {
+  let references = [];
+  schema.eachPath((name, schemaType) => {
+    if (name.startsWith('_') || name === 'deletedRefs') {
+      return;
+    }
+
+    if (schemaType instanceof SchemaObjectId) {
       const { ref, refPath } = schemaType.options;
       let refs;
       if (ref) {
         refs = [ref];
       } else if (refPath) {
-        refs = model.schema.path(refPath).options.enum;
+        refs = schema.path(refPath).options.enum;
       } else {
-        throw new Error(
-          `Cannot derive refs for ${model.modelName}#${schemaPath}.`,
-        );
+        throw new Error(`Cannot derive refs for ${targetName}#${name}.`);
       }
       if (refs.includes(targetName)) {
-        paths.push(schemaPath);
+        references.push([...path, name].join('.'));
       }
+    } else if (schemaType instanceof SchemaDocumentArray) {
+      references = [
+        ...references,
+        ...getModelReferences(schemaType.schema, targetName, [name]),
+      ];
     }
   });
-  return paths;
+  return references;
 }
 
 // Delete

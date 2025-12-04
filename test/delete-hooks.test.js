@@ -907,6 +907,52 @@ describe('delete hooks', () => {
       });
     });
 
+    describe('error on references in subdocument array', () => {
+      const User = createTestModel(
+        createSchema({
+          attributes: {
+            name: 'String',
+          },
+          onDelete: {
+            errorOnReferenced: true,
+          },
+        }),
+      );
+
+      const Shop = createTestModel({
+        owners: [
+          {
+            user: {
+              type: 'ObjectId',
+              ref: User.modelName,
+            },
+          },
+        ],
+      });
+
+      it('should throw error if document is referenced externally', async () => {
+        const user1 = await User.create({
+          name: 'Barry',
+        });
+        const user2 = await User.create({
+          name: 'Larry',
+        });
+        await Shop.create({
+          owners: [
+            {
+              user: user1,
+            },
+          ],
+        });
+
+        await expect(async () => {
+          await user1.delete();
+        }).rejects.toThrow(`Refusing to delete ${User.modelName}.`);
+
+        await expect(user2.delete()).resolves.not.toThrow();
+      });
+    });
+
     describe('error with exceptions', () => {
       const userModelName = getTestModelName();
       const shopModelName = getTestModelName();
