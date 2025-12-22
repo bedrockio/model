@@ -129,7 +129,9 @@ function searchPipeline(Model, pipeline, options) {
   options = mergeOptions(SEARCH_DEFAULTS, options);
 
   let { skip, limit, sort } = options;
-  sort = resolveSort(sort, schema);
+  sort = resolveSort(sort, schema, {
+    allowUnknown: true,
+  });
 
   if (debug) {
     logger.info(
@@ -199,7 +201,9 @@ function validateDefinition(definition) {
   }
 }
 
-function resolveSort(sort, schema) {
+function resolveSort(sort, schema, options = {}) {
+  const { allowUnknown = false } = options;
+
   if (!sort) {
     return { _id: 1 };
   }
@@ -216,8 +220,10 @@ function resolveSort(sort, schema) {
         'Sort property "name" is not allowed. Use "field" instead.',
       );
     }
-    if (!field.startsWith('$') && !schema.path(field)) {
-      throw new Error(`Unknown sort field "${field}".`);
+    if (!schema.path(field)) {
+      if (!allowUnknown && !field.startsWith('$')) {
+        throw new Error(`Unknown sort field "${field}".`);
+      }
     }
 
     result[field] = order === 'desc' ? -1 : 1;

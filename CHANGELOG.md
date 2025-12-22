@@ -1,3 +1,7 @@
+## 0.19.3
+
+- Fixed issue with unknown sort fields throwing in aggregations.
+
 ## 0.19.2
 
 - Fixed issue with delete hooks in subdocument arrays.

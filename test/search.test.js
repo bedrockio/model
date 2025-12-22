@@ -1286,6 +1286,43 @@ describe('aggregations', () => {
     });
   });
 
+  it('should allow unknown sort field in aggregation', async () => {
+    const User = createTestModel({
+      firstName: 'String',
+      lastName: 'String',
+    });
+    await Promise.all([
+      User.create({
+        firstName: 'Mantis',
+        lastName: 'Toboggan',
+      }),
+      User.create({
+        firstName: 'Frank',
+        lastName: 'Reynolds',
+      }),
+    ]);
+    const { data } = await User.search(
+      [
+        {
+          $addFields: {
+            name: { $concat: ['$firstName', ' ', '$lastName'] },
+          },
+        },
+      ],
+      {
+        sort: {
+          field: 'name',
+          order: 'asc',
+        },
+      },
+    );
+
+    expect(data).toMatchObject([
+      { name: 'Frank Reynolds' },
+      { name: 'Mantis Toboggan' },
+    ]);
+  });
+
   it('should not error when no results', async () => {
     const User = createTestModel({
       name: 'String',
