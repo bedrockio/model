@@ -28,8 +28,8 @@ import {
  * applied. For more about syntax and functionality see
  * [the documentation](https://github.com/bedrockio/model#schemas).
  * @param {object} definition
- * @param {mongoose.SchemaOptions} options
- * @returns mongoose.Schema
+ * @param {mongoose.SchemaOptions} [options]
+ * @returns {mongoose.Schema}
  */
 export function createSchema(definition, options = {}) {
   addCacheFields(definition);

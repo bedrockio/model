@@ -26,6 +26,8 @@ Bedrock utilities for model creation.
   - [Reload](#reload)
   - [Clone](#clone)
   - [Slugs](#slugs)
+  - [Hydrate](#hydrate)
+  - [Export](#export)
 - [Testing](#testing)
 - [Troubleshooting](#troubleshooting)
 
@@ -1813,6 +1815,33 @@ is possible:
 - `cafecafecafecafecafecafe`
 
 However the likelyhood of such collisions on a slug are acceptably small.
+
+### Hydrate
+
+Overrides the default Mongoose `hydrate` method to only include fields defined
+in the schema. This prevents leaking extra data from aggregations:
+
+```js
+const user = User.hydrate({
+  _id: '507f1f77bcf86cd799439011',
+  name: 'John Doe',
+  email: 'john@example.com',
+  extraField: 'This will be excluded',
+});
+```
+
+### Export
+
+Adds an `export` method to documents that exports all defined schema paths into
+a plain object, excluding undefined values:
+
+```js
+const data = user.export();
+```
+
+> [!WARNING]
+> Note that this method is for internal use only. It bypasses all access control and may include sensitive data. Typical serialization of documents uses `toObject` or simply relies on the `toJSON` method of documents.
+
 
 ## Testing
 

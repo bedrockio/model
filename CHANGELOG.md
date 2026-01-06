@@ -1,3 +1,7 @@
+## 0.20.0
+
+- Added types and documentation to all augmented methods.
+
 ## 0.19.3
 
 - Fixed issue with unknown sort fields throwing in aggregations.

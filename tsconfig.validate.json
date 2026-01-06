@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["types/index.d.ts"],
+  "compilerOptions": {
+    "noEmit": true,
+    "skipLibCheck": false
+  }
+}

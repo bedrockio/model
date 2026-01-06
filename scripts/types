@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Generate TypeScript declarations and validate mongoose augmentation.
+# Fails if our code has type errors. Ignores external library errors.
+
+# Generate declarations
+tsc || { echo "❌ Failed to generate type declarations"; exit 1; }
+
+# Validate augmentation (skipLibCheck=false to catch Model signature mismatches)
+output=$(tsc --project tsconfig.validate.json 2>&1)
+
+# Check for errors in our code (types/ directory)
+if echo "$output" | grep "^types/.*error TS" > /dev/null; then
+  echo "❌ Type errors in our code:"
+  echo "$output" | grep "^types/.*error TS"
+  exit 1
+fi
+
+echo "✓ Types validated"
