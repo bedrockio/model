@@ -89,7 +89,13 @@ export function normalizeAttributes(arg, path = []) {
   } else if (typeof arg === 'object') {
     const attributes = {};
     for (let [key, val] of Object.entries(arg)) {
-      attributes[key] = normalizeAttributes(val, [...path, key]);
+      if (key === '_id' && val === false) {
+        // This is a special case in Mongoose that allows disabling
+        // the _id field for array objects so perserve it here.
+        attributes[key] = val;
+      } else {
+        attributes[key] = normalizeAttributes(val, [...path, key]);
+      }
     }
     return attributes;
   }

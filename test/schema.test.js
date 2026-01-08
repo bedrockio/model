@@ -943,7 +943,7 @@ describe('createSchema', () => {
       });
     });
 
-    it('should allow arrays of ids to have a minLength', async () => {
+    it('should allow array of refs to have a minLength', async () => {
       const Category = createTestModel({
         name: 'String',
       });
@@ -977,6 +977,36 @@ describe('createSchema', () => {
 
       expect(product.categories[0]._id).toEqual(category1._id);
       expect(product.categories[1]._id).toEqual(category2._id);
+    });
+
+    it('should be able to disable array _id field with shorthand', async () => {
+      const Product = createTestModel({
+        categories: [
+          {
+            name: 'String',
+            _id: false,
+          },
+        ],
+      });
+      const product = await Product.create({
+        categories: [
+          {
+            name: 'foo',
+          },
+          {
+            name: 'bar',
+          },
+        ],
+      });
+
+      expect(product.toObject().categories).toEqual([
+        {
+          name: 'foo',
+        },
+        {
+          name: 'bar',
+        },
+      ]);
     });
   });
 

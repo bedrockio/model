@@ -1,3 +1,7 @@
+## 0.20.1
+
+- Fixed `_id: false` on array fields.
+
 ## 0.20.0
 
 - Added types and documentation to all augmented methods.
