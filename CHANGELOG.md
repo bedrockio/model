@@ -1,3 +1,7 @@
+## 0.20.2
+
+- Fixed `_id: false` on validation schemas.
+
 ## 0.20.1
 
 - Fixed `_id: false` on array fields.

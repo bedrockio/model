@@ -3343,6 +3343,36 @@ describe('getBaseSchema', () => {
       });
     });
   });
+
+  it('should handle disabled _id field as a special case', async () => {
+    const User = createTestModel({
+      categories: [
+        {
+          name: 'String',
+          _id: false,
+        },
+      ],
+    });
+    const schema = User.getBaseSchema();
+    expect(yd.isSchema(schema)).toBe(true);
+
+    expect(schema.toJSON()).toMatchObject({
+      type: 'object',
+      properties: {
+        categories: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: {
+                type: 'string',
+              },
+            },
+          },
+        },
+      },
+    });
+  });
 });
 
 describe('getValidationSchema', () => {

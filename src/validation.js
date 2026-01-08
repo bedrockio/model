@@ -209,6 +209,11 @@ function getObjectSchema(arg, options) {
     const map = {};
 
     for (let [key, field] of Object.entries(arg)) {
+      if (key === '_id' && field === false) {
+        // This is a special case in Mongoose that allows disabling
+        // the _id field for array objects so skip it here.
+        continue;
+      }
       if (!isExcludedField(field, options)) {
         map[key] = getNestedSchema(field, options);
       }
