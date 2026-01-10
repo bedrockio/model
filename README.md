@@ -6,6 +6,7 @@ Bedrock utilities for model creation.
 - [Dependencies](#dependencies)
 - [Usage](#usage)
 - [Schemas](#schemas)
+  - [Schema Comments](#schema-comments)
 - [Schema Extensions](#schema-extensions)
   - [Attributes](#attributes)
   - [Scopes](#scopes)
@@ -58,14 +59,13 @@ const { loadModelDir } = require('@bedrockio/model');
 model.exports = loadModelDir('path/to/definitions/');
 ```
 
-Models that need to be extended can use the `createSchema` method with the
-definition and add to the schema as needed:
+Models that need to be extended can use the `loadSchema` method.
 
 ```js
 const mongoose = require('mongoose');
-const definition = require('./definitions/user.json');
+const { loadSchema } = require('@bedrockio/model')
 
-const schema = createSchema(definition);
+const schema = loadSchema('user');
 
 schema.virtual('name').get(function () {
   return [this.firstName, this.lastName].join(' ');
@@ -89,7 +89,7 @@ model.exports = {
 The `attributes` field of model definitions can be considered equivalent to
 Mongoose, but defined in JSON with extended features:
 
-```js
+```jsonc
 {
   "attributes": {
     // Shortcut for the syntax below.
@@ -128,6 +128,21 @@ Links:
 
 - [Validation](#validation)
 - [Access Control](#access-control)
+
+
+#### Schema Comments
+
+Schemas may be `.jsonc` which will allow comments in definitions:
+
+```jsonc
+// user.jsonc
+{
+  "attributes": {
+    // User name
+    "name": "String",
+  }
+}
+```
 
 ### Schema Extensions
 

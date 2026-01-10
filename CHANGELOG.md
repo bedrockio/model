@@ -1,3 +1,7 @@
+## 0.21.2
+
+- Export `loadDefinition` and readme updates.
+
 ## 0.21.1
 
 - Fixed issues with schema loading.

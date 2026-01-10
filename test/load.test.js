@@ -1,30 +1,25 @@
 import mongoose from 'mongoose';
 
-import { loadModel, loadModelDir, loadSchema } from '../src/load';
+import {
+  loadDefinition,
+  loadModel,
+  loadModelDir,
+  loadSchema,
+} from '../src/load';
 
-describe('loadModel', () => {
-  it('should load basic model', async () => {
-    expect(!!mongoose.models.Box).toBe(false);
-    const Box = loadModel(
-      {
-        attributes: {
-          name: {
-            type: 'String',
-            validate: /[a-z]/,
-          },
+describe('loadDefinition', () => {
+  it('should load schema definition', async () => {
+    const definition = loadDefinition(
+      'model-with-comments',
+      'test/definitions',
+    );
+    expect(definition).toEqual({
+      attributes: {
+        name: {
+          type: 'String',
         },
       },
-      'Box',
-    );
-    expect(!!mongoose.models.Box).toBe(true);
-    const box = new Box({ name: 'foo' });
-
-    expect(box.name).toBe('foo');
-
-    await expect(async () => {
-      box.name = 'FOO';
-      await box.save();
-    }).rejects.toThrow();
+    });
   });
 });
 
@@ -66,6 +61,32 @@ describe('loadSchema', () => {
     expect(() => {
       loadSchema('model-with-comments.jsonc', 'test/definitions');
     }).toThrow('Name should not include extension');
+  });
+});
+
+describe('loadModel', () => {
+  it('should load basic model', async () => {
+    expect(!!mongoose.models.Box).toBe(false);
+    const Box = loadModel(
+      {
+        attributes: {
+          name: {
+            type: 'String',
+            validate: /[a-z]/,
+          },
+        },
+      },
+      'Box',
+    );
+    expect(!!mongoose.models.Box).toBe(true);
+    const box = new Box({ name: 'foo' });
+
+    expect(box.name).toBe('foo');
+
+    await expect(async () => {
+      box.name = 'FOO';
+      await box.save();
+    }).rejects.toThrow();
   });
 });
 

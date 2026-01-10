@@ -64,7 +64,7 @@ export function loadSchema(name, dir) {
 const DEFINITION_DIR = 'src/models/definitions';
 const SCHEMA_EXTENSIONS = ['.json', '.jsonc'];
 
-function loadDefinition(name, dir) {
+export function loadDefinition(name, dir) {
   const { filepath, ext } = resolvePath(name, dir);
   const content = fs.readFileSync(filepath, 'utf-8');
   return ext === '.jsonc' ? parseWithComments(content) : JSON.parse(content);
