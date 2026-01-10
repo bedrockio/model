@@ -29,8 +29,8 @@ describe('loadModel', () => {
 });
 
 describe('loadSchema', () => {
-  it('should load schema with comments', async () => {
-    const schema = loadSchema('test/definitions/model-with-comments');
+  it('should load schema by filename', async () => {
+    const schema = loadSchema('model-with-comments', 'test/definitions');
     expect(schema.obj).toEqual({
       name: {
         trim: true,
@@ -52,8 +52,8 @@ describe('loadSchema', () => {
     });
   });
 
-  it('should load with extension', async () => {
-    const schema = loadSchema('test/definitions/model-with-comments.jsonc');
+  it('should load schema by model name', async () => {
+    const schema = loadSchema('ModelWithComments', 'test/definitions');
     expect(schema.obj).toMatchObject({
       name: {
         trim: true,
@@ -62,10 +62,10 @@ describe('loadSchema', () => {
     });
   });
 
-  it('should error on non-JSON extensions', async () => {
+  it('should error when extension passed', async () => {
     expect(() => {
-      loadSchema('test/definitions/model.js');
-    }).toThrow('Schema files must be .json or .jsonc');
+      loadSchema('model-with-comments.jsonc', 'test/definitions');
+    }).toThrow('Name should not include extension');
   });
 });
 

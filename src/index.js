@@ -1,5 +1,5 @@
 export { createSchema } from './schema';
-export { loadModel, loadModelDir } from './load';
+export { loadModel, loadModelDir, loadSchema } from './load';
 export { addValidators } from './validation';
 export { isEqual } from './utils';
 export * from './testing';

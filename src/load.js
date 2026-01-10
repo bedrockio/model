@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { parse as parseWithComments } from 'jsonc-parser';
+import { kebabCase } from 'lodash';
 import { startCase } from 'lodash';
 import mongoose from 'mongoose';
 
@@ -39,9 +40,9 @@ export function loadModelDir(dir) {
       continue;
     }
 
-    const filepath = path.join(dir, file);
-    const definition = loadDefinition(filepath);
-    const modelName = getModelName(definition, filepath);
+    const { name: basename } = path.parse(file);
+    const definition = loadDefinition(basename, dir);
+    const modelName = getModelName(definition, basename);
 
     if (!mongoose.models[modelName]) {
       loadModel(definition, modelName);
@@ -50,49 +51,64 @@ export function loadModelDir(dir) {
   return mongoose.models;
 }
 
-export function loadSchema(input) {
-  const definition = loadDefinition(input);
+/**
+ * Loads the schema from a .json or .jsonc file.
+ * @param {string} name - The model or schema name.
+ * @param {string} [dir] - The schema directory (defaults to `src/models/definitions`)
+ */
+export function loadSchema(name, dir) {
+  const definition = loadDefinition(name, dir);
   return createSchema(definition);
 }
 
+const DEFINITION_DIR = 'src/models/definitions';
 const SCHEMA_EXTENSIONS = ['.json', '.jsonc'];
 
-function loadDefinition(input) {
-  const { filepath, ext } = resolvePath(input);
+function loadDefinition(name, dir) {
+  const { filepath, ext } = resolvePath(name, dir);
   const content = fs.readFileSync(filepath, 'utf-8');
   return ext === '.jsonc' ? parseWithComments(content) : JSON.parse(content);
 }
 
-function resolvePath(filepath) {
-  let ext = path.extname(filepath);
-
-  if (!ext) {
-    ext = resolveSchemaExtension(filepath);
-    filepath += ext;
+function resolvePath(name, dir = DEFINITION_DIR) {
+  if (name.includes('.')) {
+    throw new Error('Name should not include extension');
   }
 
+  let filename = kebabCase(name);
+  let ext = path.extname(name);
+
   if (!ext) {
-    throw new Error(`No .json or .jsonc file found for: ${filepath}`);
-  } else if (!SCHEMA_EXTENSIONS.includes(ext)) {
+    ext = resolveExtension(filename, dir);
+
+    if (ext) {
+      filename += ext;
+    } else {
+      throw new Error(`No .json or .jsonc file found for: ${name}`);
+    }
+  }
+
+  if (!SCHEMA_EXTENSIONS.includes(ext)) {
     throw new Error(`Schema files must be .json or .jsonc`);
   }
 
+  const filepath = path.resolve(dir, filename);
+
   return {
     ext,
-    filepath: filepath,
+    filepath,
   };
 }
 
-function resolveSchemaExtension(input) {
+function resolveExtension(filename, dir) {
   for (const ext of SCHEMA_EXTENSIONS) {
-    const filepath = input + ext;
+    const filepath = path.resolve(dir, filename + ext);
     if (fs.existsSync(filepath)) {
       return ext;
     }
   }
 }
 
-function getModelName(definition, filepath) {
-  const { name: filename } = path.parse(filepath);
-  return definition.modelName || startCase(filename).replace(/\s/g, '');
+function getModelName(definition, basename) {
+  return definition.modelName || startCase(basename).replace(/\s/g, '');
 }

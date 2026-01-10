@@ -1,3 +1,7 @@
+## 0.21.1
+
+- Fixed issues with schema loading.
+
 ## 0.21.0
 
 - Allow comments in schemas with .jsonc.
