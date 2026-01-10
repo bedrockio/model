@@ -1,3 +1,7 @@
+## 0.21.0
+
+- Allow comments in schemas with .jsonc.
+
 ## 0.20.2
 
 - Fixed `_id: false` on validation schemas.

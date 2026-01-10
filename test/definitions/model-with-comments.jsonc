@@ -1,0 +1,8 @@
+{
+  "attributes": {
+    // This is the user's name
+    "name": {
+      "type": "String"
+    }
+  }
+}
