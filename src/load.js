@@ -30,6 +30,7 @@ export function loadModel(definition, name) {
  * Loads all model definitions in the given directory.
  * Returns the full loaded model set.
  * @param {string} dir
+ * @returns {{ [name: string]: mongoose.Model<any> }}
  */
 export function loadModelDir(dir) {
   const files = fs.readdirSync(dir);
