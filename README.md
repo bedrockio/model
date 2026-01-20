@@ -603,8 +603,6 @@ Input to `search` will execute the optimal mongo query and supports several
 advanced features:
 
 - Array fields will be executed using `$in`.
-- Javascript regular expressions will map to `$regex` which allows for
-  [more advanced PCRE compatible features](https://docs.mongodb.com/manual/reference/operator/query/regex/#pcre-vs-javascript).
 - Nested objects will be automatically flattened to query subdocuments:
 
 ```

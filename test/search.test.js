@@ -75,24 +75,6 @@ describe('search', () => {
     expect(result.meta.total).toBe(0);
   });
 
-  it('should allow shorthand for a regex query', async () => {
-    const User = createTestModel({
-      name: 'String',
-    });
-    await Promise.all([
-      User.create({ name: 'Willy' }),
-      User.create({ name: 'Billy' }),
-    ]);
-
-    let result;
-
-    result = await User.search({
-      name: '/bi/i',
-    });
-    expect(result.data).toMatchObject([{ name: 'Billy' }]);
-    expect(result.meta.total).toBe(1);
-  });
-
   it('should behave like $in when empty array passed', async () => {
     const User = createTestModel({
       categories: ['String'],
@@ -1345,6 +1327,97 @@ describe('aggregations', () => {
       skip: 0,
       limit: 50,
     });
+  });
+});
+
+describe('regex', () => {
+  it('should not allow regex tokens', async () => {
+    const User = createTestModel({
+      name: 'String',
+    });
+
+    await User.create({ name: 'Frank' });
+    await User.create({ name: 'Dennis' });
+    await User.create({ name: '/.*/i' });
+
+    const { data } = await User.search({
+      name: '/.*/i',
+    });
+
+    expect(data).toMatchObject([
+      {
+        name: '/.*/i',
+      },
+    ]);
+  });
+
+  it('should not allow regex tokens in keyword field', async () => {
+    const schema = createSchema({
+      attributes: {
+        name: 'String',
+      },
+      search: {
+        fields: ['name'],
+      },
+    });
+    const User = createTestModel(schema);
+
+    await User.create({ name: 'Frank' });
+    await User.create({ name: 'Dennis' });
+    await User.create({ name: '/.*/i' });
+
+    const { data } = await User.search({
+      keyword: '/.*/i',
+    });
+
+    expect(data).toMatchObject([
+      {
+        name: '/.*/i',
+      },
+    ]);
+  });
+
+  it('should not allow a regex in a decomposed keyword query', async () => {
+    const schema = createSchema({
+      attributes: {
+        firstName: 'String',
+        lastName: 'String',
+      },
+      search: {
+        decompose: '{firstName} {lastName...}',
+        fields: ['firstName', 'lastName'],
+      },
+    });
+
+    const User = createTestModel(schema);
+
+    await User.create({
+      firstName: 'Frank',
+      lastName: 'Reynolds',
+    });
+
+    const { data } = await User.search({
+      keyword: 'Frank .*',
+    });
+
+    expect(data).toEqual([]);
+  });
+
+  it('should not allow regex in number keyword query', async () => {
+    const schema = createSchema({
+      attributes: {
+        code: 'Number',
+      },
+      search: {
+        fields: ['code'],
+      },
+    });
+    const User = createTestModel(schema);
+
+    await User.create({ code: 100 });
+
+    const { data } = await User.search({ keyword: '.*' });
+    expect(data).toEqual([]);
   });
 });
 

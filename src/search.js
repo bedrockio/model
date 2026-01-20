@@ -398,8 +398,6 @@ function hasTextIndex(schema) {
 // handling specialed query syntax:
 // ranges:
 //  path: { min: n, max n }
-// regex:
-//  path: "/reg/"
 // array:
 //  path; [1,2,3]
 function normalizeQuery(query, schema, root = {}, rootPath = []) {
@@ -411,8 +409,6 @@ function normalizeQuery(query, schema, root = {}, rootPath = []) {
       }
     } else if (isNestedQuery(key, value)) {
       normalizeQuery(value, getField(schema, key), root, path);
-    } else if (isRegexQuery(key, value)) {
-      root[path.join('.')] = parseRegexQuery(value);
     } else if (isArrayQuery(key, value)) {
       root[path.join('.')] = { $in: value };
     } else if (isEmptyArrayQuery(schema, key, value)) {
@@ -473,25 +469,6 @@ function isMongoOperator(str) {
 
 function isInclude(str) {
   return str === 'include';
-}
-
-// Regex queries
-
-const REGEX_QUERY = /^\/(.+)\/(\w*)$/;
-
-function isRegexQuery(key, value) {
-  return REGEX_QUERY.test(value);
-}
-
-function parseRegexQuery(str) {
-  // Note that using the $options syntax allows for PCRE features
-  // that aren't supported in Javascript as compared to RegExp(...):
-  // https://docs.mongodb.com/manual/reference/operator/query/regex/#pcre-vs-javascript
-  const [, $regex, $options] = str.match(REGEX_QUERY);
-  return {
-    $regex,
-    $options,
-  };
 }
 
 // Search field caching

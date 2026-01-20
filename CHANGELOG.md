@@ -1,3 +1,7 @@
+## 0.22.0
+
+- Removed regex parsing in search.
+
 ## 0.21.3
 
 - Fixed issue with middleware hook patch.
