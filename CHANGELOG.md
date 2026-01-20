@@ -1,6 +1,5 @@
-## 0.22.0
+## 0.21.3
 
-- Added `getIncludeValidation` method.
 - Fixed issue with middleware hook patch.
 - Output model name in UniqueConstraintError.
 

@@ -1183,6 +1183,17 @@ const user = await User.find({
 });
 ```
 
+#### Include with Create
+
+Includes are not allowed in create operations by default. Instead use the `createWithInclude` method:
+
+```js
+const user = await User.createWithInclude({
+  firstName: 'Frank',
+  include: 'profile',
+});
+```
+
 #### Validation with includes
 
 The [validation](#validation) methods additionally allow `include` as a special
@@ -1204,6 +1215,18 @@ router.post('/', validateBody(User.getSearchValidation()), async (ctx) => {
 The `getSearchValidation` will allow the `include` property to be passed,
 letting the client populate documents as they require. Note that the fields a
 client is able to include is subject to [access control](#access-control).
+
+Additionally the `getIncludeValidation` exports the includes as a standalone schema so that it can be used ad-hoc in routes and [composed with other custom validations](https://github.com/bedrockio/yada#append).
+
+
+|Method|Includes|
+|---|---|
+|getSearchValiation|default|
+|getIncludeValidation|default|
+|getCreateValidation|optional|
+|getUpdateValidation|optional|
+
+
 
 #### Other Differences with Populate
 
