@@ -1,3 +1,9 @@
+## 0.22.0
+
+- Added `getIncludeValidation` method.
+- Fixed issue with middleware hook patch.
+- Output model name in UniqueConstraintError.
+
 ## 0.21.2
 
 - Export `loadDefinition` and readme updates.

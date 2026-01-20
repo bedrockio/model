@@ -456,6 +456,13 @@ function applyHookPatch(schema) {
   const schemaPost = schema.post;
 
   schema.pre = function (name, fn) {
+    // Newer Mongoose versions appear to use internal plugins
+    // that pass objects instead of functions here (not documented)
+    // so abort and pass to internal handler.
+    if (typeof fn !== 'function') {
+      return schemaPre.apply(this, arguments);
+    }
+
     if (name === 'restore') {
       // Document hooks
       schemaPre.call(this, 'save', getPreDocRestore(fn));

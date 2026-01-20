@@ -945,7 +945,7 @@ describe('getCreateValidation', () => {
       expect(uniqueError).toBeInstanceOf(UniqueConstraintError);
       expect(uniqueError.details.field).toBe('email');
       expect(uniqueError.details.value).toBe('foo@bar.com');
-      expect(uniqueError.details.model).toBe(User);
+      expect(uniqueError.details.modelName).toBe(User.modelName);
     });
   });
 
