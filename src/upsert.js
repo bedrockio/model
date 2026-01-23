@@ -12,8 +12,10 @@ export function applyUpsert(schema) {
     if (doc) {
       doc.assign(fields);
       await doc.save();
+      doc.$locals.created = false;
     } else {
       doc = await this.create(fields);
+      doc.$locals.created = true;
     }
 
     return doc;

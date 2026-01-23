@@ -74,6 +74,34 @@ describe('upsert', () => {
     });
     expect(user.generated).toBe('generated');
   });
+
+  it('should indicate if document was created or updated', async () => {
+    let user;
+
+    user = await User.upsert(
+      {
+        name: 'Frank Reynolds',
+      },
+      {
+        name: 'Frank Reynolds',
+        email: 'foo1@bar.com',
+      },
+    );
+
+    expect(user.$locals.created).toBe(true);
+
+    user = await User.upsert(
+      {
+        name: 'Frank Reynolds',
+      },
+      {
+        name: 'Frank Reynolds',
+        email: 'foo2@bar.com',
+      },
+    );
+
+    expect(user.$locals.created).toBe(false);
+  });
 });
 
 describe('findOrCreate', () => {

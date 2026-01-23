@@ -1,3 +1,7 @@
+## 0.22.1
+
+- Indicate whether document was created or not in upsert.
+
 ## 0.22.0
 
 - Removed regex parsing in search.
