@@ -89,6 +89,7 @@ describe('upsert', () => {
     );
 
     expect(user.$locals.created).toBe(true);
+    expect(user.$locals.updated).toBe(false);
 
     user = await User.upsert(
       {
@@ -101,6 +102,20 @@ describe('upsert', () => {
     );
 
     expect(user.$locals.created).toBe(false);
+    expect(user.$locals.updated).toBe(true);
+
+    user = await User.upsert(
+      {
+        name: 'Frank Reynolds',
+      },
+      {
+        name: 'Frank Reynolds',
+        email: 'foo2@bar.com',
+      },
+    );
+
+    expect(user.$locals.created).toBe(false);
+    expect(user.$locals.updated).toBe(false);
   });
 });
 

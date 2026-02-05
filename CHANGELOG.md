@@ -1,3 +1,7 @@
+## 0.22.2
+
+- Small fixes around upsert reporting.
+
 ## 0.22.1
 
 - Indicate whether document was created or not in upsert.
