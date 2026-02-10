@@ -4147,6 +4147,53 @@ describe('tuples', () => {
       },
     });
   });
+
+  it('should export correct OpenAI JSON schema', async () => {
+    const User = createTestModel({
+      address: {
+        geometry: {
+          type: {
+            type: 'String',
+            default: 'Point',
+          },
+          coordinates: ['Number', 'Number'],
+        },
+      },
+    });
+
+    const schema = User.getUpdateValidation();
+
+    expect(schema.toOpenAi().toJsonSchema()).toEqual({
+      type: 'object',
+      properties: {
+        address: {
+          type: ['object', 'null'],
+          properties: {
+            geometry: {
+              type: ['object', 'null'],
+              properties: {
+                type: {
+                  type: ['string', 'null'],
+                },
+                coordinates: {
+                  type: 'array',
+                  items: {
+                    type: 'number',
+                  },
+                },
+              },
+              required: ['type', 'coordinates'],
+              additionalProperties: true,
+            },
+          },
+          required: ['geometry'],
+          additionalProperties: true,
+        },
+      },
+      required: ['address'],
+      additionalProperties: true,
+    });
+  });
 });
 
 describe('named validators', () => {

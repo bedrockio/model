@@ -1,3 +1,7 @@
+## 0.22.4
+
+- Yada bump and ensure GeoJSON validators are respected.
+
 ## 0.22.3
 
 - Package bump

@@ -214,6 +214,7 @@ function getObjectSchema(arg, options) {
         // the _id field for array objects so skip it here.
         continue;
       }
+
       if (!isExcludedField(field, options)) {
         map[key] = getNestedSchema(field, options);
       }
@@ -287,6 +288,9 @@ function getSchemaForTypedef(typedef, options = {}) {
   if (isMongooseSchema(type)) {
     schema = getObjectSchema(type, options);
   } else if (Array.isArray(type)) {
+    if (typedef.validate?.schema) {
+      return typedef.validate.schema;
+    }
     schema = getArraySchema(type, options);
   } else if (typeof type === 'object') {
     schema = getObjectSchema(type, options);
