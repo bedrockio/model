@@ -1,3 +1,7 @@
+## 0.22.3
+
+- Package bump
+
 ## 0.22.2
 
 - Small fixes around upsert reporting.
