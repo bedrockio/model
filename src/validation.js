@@ -499,6 +499,9 @@ function validateAccess(type, schema, allowed, options) {
         } else {
           throw new Error(
             `Access validation "${error.name}" requires passing { document, authUser } to the validator.`,
+            {
+              cause: error,
+            },
           );
         }
       } else {

@@ -21,8 +21,10 @@ export function loadModel(definition, name) {
   try {
     const schema = createSchema(definition);
     return mongoose.model(name, schema);
-  } catch (err) {
-    throw new Error(`${err.message} (loading ${name})`);
+  } catch (error) {
+    throw new Error(`${error.message} (loading ${name})`, {
+      cause: error,
+    });
   }
 }
 

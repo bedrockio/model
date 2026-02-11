@@ -1,6 +1,7 @@
 ## 0.23.0
 
 - Support for Mongoose v9.
+- Other package bumps.
 
 ## 0.22.5
 
