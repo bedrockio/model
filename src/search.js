@@ -65,7 +65,7 @@ export function searchValidation(options = {}) {
 
 export function exportValidation(options = {}) {
   const { defaults, formats = ['csv'] } = options;
-  const { filename = 'export.csv' } = defaults || {};
+  const { filename } = defaults || {};
   return {
     filename: yd
       .string()

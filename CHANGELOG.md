@@ -1,3 +1,7 @@
+## 0.22.5
+
+- Remove default filename `export.csv`.
+
 ## 0.22.4
 
 - Yada bump and ensure GeoJSON validators are respected.

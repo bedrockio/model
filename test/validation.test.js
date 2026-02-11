@@ -2937,6 +2937,20 @@ describe('getSearchValidation', () => {
         filename: 'foo.csv',
       });
     });
+
+    it('should not have default filename', async () => {
+      const User = createTestModel({
+        name: 'String',
+      });
+
+      const schema = User.getSearchValidation({
+        allowExport: true,
+      });
+
+      const { filename } = await schema.validate({});
+
+      expect(filename).toBeUndefined();
+    });
   });
 
   describe('write access', () => {
