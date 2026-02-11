@@ -57,13 +57,12 @@ function getUniqueErrorMessage(field, options) {
 function applyQueries(schema) {
   // Implementation
 
-  schema.pre(/^find|count|exists/, function (next) {
+  schema.pre(/^find|count|exists/, function () {
     const filter = this.getFilter();
     if (filter.deleted === undefined) {
       // Search non-deleted docs by default
       filter.deleted = false;
     }
-    return next();
   });
 
   // Instance Methods
@@ -351,14 +350,7 @@ function applyUniqueConstraints(schema) {
     });
   });
 
-  schema.pre('insertMany', async function (next, obj) {
-    // Note that in order to access the objects to be inserted
-    // we must supply the hook with at least 2 arguments, the
-    // first of which is the next hook. This typically appears
-    // as the last argument, however as we are passing an async
-    // function it appears to not stop the middleware if we
-    // don't call it directly.
-
+  schema.pre('insertMany', async function (obj) {
     await runUniqueConstraints(obj, {
       model: this,
       uniquePaths,
@@ -537,27 +529,20 @@ function applyHookPatch(schema) {
 // determine the arguments to pass.
 
 function getPre(fn, check) {
-  return function (next) {
-    runHook(this, fn, check, next, arguments);
+  return function () {
+    runHook(this, fn, check, arguments);
   };
 }
 
 function getPost(fn, check) {
-  return function (res, next) {
-    runHook(this, fn, check, next, arguments);
+  return function () {
+    runHook(this, fn, check, arguments);
   };
 }
 
-function runHook(query, fn, check, next, args) {
+function runHook(query, fn, check, args) {
   if (!check || check(query)) {
-    const ret = fn.apply(query, args);
-    if (ret instanceof Promise) {
-      ret.finally(next);
-    } else {
-      next();
-    }
-  } else {
-    next();
+    return fn.apply(query, args);
   }
 }
 

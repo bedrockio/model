@@ -107,7 +107,7 @@ export function resolveRefPath(schema, path) {
 
     let type = schema.path(base.join('.'));
     if (type instanceof SchemaTypes.Array) {
-      type = type.caster;
+      type = type.getEmbeddedSchemaType();
     }
 
     if (type instanceof SchemaTypes.ObjectId) {

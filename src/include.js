@@ -19,7 +19,7 @@ mongoose.Query.prototype.include = function include(arg) {
 export function applyInclude(schema) {
   // Query Includes
 
-  schema.pre(/^find/, function (next) {
+  schema.pre(/^find/, function () {
     const filter = this.getFilter();
     if (filter.include) {
       const { select, populate } = getQueryParams(this, filter.include);
@@ -27,13 +27,11 @@ export function applyInclude(schema) {
       this.populate(populate);
       delete filter.include;
     }
-    return next();
   });
 
-  schema.pre(/^count/, function (next) {
+  schema.pre(/^count/, function () {
     const filter = this.getFilter();
     delete filter.include;
-    return next();
   });
 
   // Static Methods

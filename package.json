@@ -32,7 +32,7 @@
   },
   "peerDependencies": {
     "@bedrockio/yada": "1.x",
-    "mongoose": "8.x"
+    "mongoose": "9.x"
   },
   "devDependencies": {
     "@babel/cli": "^7.26.4",
@@ -46,7 +46,7 @@
     "jest": "^30.2.0",
     "jest-environment-node": "^30.2.0",
     "mongodb": "^6.20.0",
-    "mongoose": "^8.19.2",
+    "mongoose": "^9.2.0",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2"
   },

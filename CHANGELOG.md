@@ -1,3 +1,7 @@
+## 0.23.0
+
+- Support for Mongoose v9.
+
 ## 0.22.5
 
 - Remove default filename `export.csv`.

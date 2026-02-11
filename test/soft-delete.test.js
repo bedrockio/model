@@ -1383,16 +1383,14 @@ describe('soft delete', () => {
             name: 'String',
           });
 
-          schema.pre('deleteOne', function (next) {
+          schema.pre('deleteOne', function () {
             expect(this).toBeInstanceOf(mongoose.Query);
             calls.pre += 1;
-            next();
           });
 
-          schema.post('deleteOne', function (res, next) {
+          schema.post('deleteOne', function () {
             expect(this).toBeInstanceOf(mongoose.Query);
             calls.post += 1;
-            next();
           });
 
           const User = createTestModel(schema);
