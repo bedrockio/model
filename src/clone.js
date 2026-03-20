@@ -5,7 +5,9 @@
 // - Fails on circular references.
 // - Clones other internals like __v.
 // - Cannot deal with unique fields.
-//
+
+const INTERNAL_FIELDS = ['createdAt', 'updatedAt', 'deletedAt', 'deleted'];
+
 export function applyClone(schema) {
   schema.method('clone', function clone() {
     return cloneDocument(this);
@@ -17,6 +19,10 @@ function cloneDocument(doc) {
   const clone = new Model();
 
   for (let [key, typedef] of Object.entries(Model.schema.obj)) {
+    if (INTERNAL_FIELDS.includes(key)) {
+      continue;
+    }
+
     let value = doc.get(key);
     const { unique, softUnique } = typedef;
     if (value && (unique || softUnique)) {

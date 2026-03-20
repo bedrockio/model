@@ -1,3 +1,7 @@
+## 0.23.1
+
+- Fixed issue with clone preserving timestamps.
+
 ## 0.23.0
 
 - Support for Mongoose v9.

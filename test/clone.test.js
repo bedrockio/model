@@ -1,6 +1,21 @@
 import { Upload, User } from './mocks';
 
 describe('clone', () => {
+  it('should perform basic clone', async () => {
+    const user = await User.create({
+      name: 'Frank Reynolds',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+
+    const clone = await user.clone();
+
+    expect(clone.id).not.toBe(user.id);
+    expect(clone.name).toBe(user.name);
+    expect(clone.createdAt).not.toEqual(user.createdAt);
+    expect(clone.updatedAt).not.toEqual(user.updatedAt);
+  });
+
   it('should not fail on a unique field', async () => {
     const user = await User.create({
       name: 'Frank Reynolds',
@@ -9,8 +24,6 @@ describe('clone', () => {
 
     const clone = user.clone();
 
-    expect(clone.id).not.toBe(user.id);
-    expect(clone.name).toBe(user.name);
     expect(clone.email).toBe('foo1@bar.com');
   });
 
@@ -33,6 +46,8 @@ describe('clone', () => {
   it('should clone a self-referencing document', async () => {
     const user = await User.create({
       name: 'Frank Reynolds',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
     });
     const upload = await Upload.create({
       owner: user,
@@ -45,7 +60,7 @@ describe('clone', () => {
     expect(clone.id).not.toBe(user.id);
     expect(clone.name).toBe(user.name);
     expect(clone.image).toBe(user.image);
-    expect(clone.createdAt).toBe(user.createdAt);
-    expect(clone.updatedAt).toBe(user.updatedAt);
+    expect(clone.createdAt).not.toBe(user.createdAt);
+    expect(clone.updatedAt).not.toBe(user.updatedAt);
   });
 });
