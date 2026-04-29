@@ -216,6 +216,7 @@ function applyExtensions(arg) {
     applySyntaxExtensions(arg);
     applyValidateExtension(arg);
     applyUniqueExtension(arg);
+    applyMixedExtension(arg);
     applyTupleExtension(arg);
     applyDateExtension(arg);
 
@@ -258,6 +259,7 @@ function applyOptionHoisting(typedef) {
 
 function isExtendedSyntax(typedef) {
   const { type, attributes } = typedef;
+
   if (!attributes) {
     return false;
   }
@@ -318,6 +320,24 @@ function applyDateExtension(typedef) {
     typedef.default = () => {
       return Date.now();
     };
+  }
+}
+
+function applyMixedExtension(typedef) {
+  const { type, minimize } = typedef;
+  if (type === 'Mixed' && minimize === false) {
+    // Non-strict mixed schema that does not mutate the input.
+    // Main use case: preserving empty objects passed down by
+    // LLMs that fail validation when stripped out and passed
+    // back up.
+    typedef.type = new mongoose.Schema(
+      {},
+      {
+        strict: false,
+        minimize: false,
+        _id: false,
+      },
+    );
   }
 }
 
