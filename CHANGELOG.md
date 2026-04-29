@@ -1,3 +1,7 @@
+## 0.24.0
+
+- Prevent stripping empty objects on mixed content with `minimize`.
+
 ## 0.23.1
 
 - Fixed issue with clone preserving timestamps.
