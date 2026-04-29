@@ -457,22 +457,6 @@ describe('createSchema', () => {
       });
     });
 
-    it('should not strip empty objects on Mixed type', async () => {
-      const User = createTestModel({
-        any: {
-          type: 'Mixed',
-          minimize: false,
-        },
-      });
-
-      let user = new User();
-
-      user.any = {};
-      await user.save();
-      user = await User.findById(user.id);
-      expect(user.any).toEqual({});
-    });
-
     it('should error when type is unknown', async () => {
       expect(() => {
         createTestModel({

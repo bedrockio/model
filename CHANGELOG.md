@@ -1,10 +1,6 @@
-## 0.24.1
+## 0.24.2
 
-- Version conflict.
-
-## 0.24.0
-
-- Prevent stripping empty objects on mixed content with `minimize`.
+- Reverted version conflicts.
 
 ## 0.23.1
 
