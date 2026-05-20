@@ -2174,10 +2174,6 @@ describe('getUpdateValidation', () => {
         createSchema({
           attributes: {
             name: 'String',
-            owner: {
-              type: 'ObjectId',
-              ref: User.modelName,
-            },
           },
           access: {
             update: ['owner', 'admin'],
@@ -2187,11 +2183,7 @@ describe('getUpdateValidation', () => {
 
       const schema = Shop.getUpdateValidation();
 
-      const user1 = await User.create({
-        name: 'Barry',
-      });
-
-      const user2 = await User.create({
+      const user = await User.create({
         name: 'Larry',
       });
 
@@ -2205,22 +2197,7 @@ describe('getUpdateValidation', () => {
 
       const shop = await Shop.create({
         name: 'My Shop',
-        owner: user1,
       });
-
-      await assertPass(
-        schema,
-        {
-          name: 'My New Shop',
-        },
-        {
-          name: 'My New Shop',
-        },
-        {
-          document: shop,
-          authUser: user1,
-        },
-      );
 
       await assertPass(
         schema,
@@ -2244,7 +2221,7 @@ describe('getUpdateValidation', () => {
         },
         {
           document: shop,
-          authUser: user2,
+          authUser: user,
         },
         'You do not have permissions to update this document.',
       );
@@ -2271,45 +2248,22 @@ describe('getUpdateValidation', () => {
         createSchema({
           attributes: {
             name: 'String',
-            owner: {
-              type: 'ObjectId',
-              ref: User.modelName,
-            },
           },
           access: {
-            update: ['owner', 'admin'],
+            update: ['admin'],
           },
         }),
       );
 
       const schema = Shop.getUpdateValidation();
 
-      const user1 = await User.create({
-        name: 'Barry',
-      });
-
-      const user2 = await User.create({
+      const user = await User.create({
         name: 'Larry',
       });
 
       const shop = await Shop.create({
         name: 'My Shop',
-        owner: user1.id,
       });
-
-      await assertPass(
-        schema,
-        {
-          name: 'My New Shop',
-        },
-        {
-          name: 'My New Shop',
-        },
-        {
-          document: shop,
-          authUser: user1,
-        },
-      );
 
       await assertFail(
         schema,
@@ -2318,7 +2272,7 @@ describe('getUpdateValidation', () => {
         },
         {
           document: shop,
-          authUser: user2,
+          authUser: user,
         },
         'You do not have permissions to update this document.',
       );
@@ -2478,25 +2432,16 @@ describe('getDeleteValidation', () => {
             type: 'String',
             required: true,
           },
-          owner: {
-            type: 'ObjectId',
-            ref: User.modelName,
-            required: true,
-          },
         },
         access: {
-          delete: ['owner', 'admin'],
+          delete: ['admin'],
         },
       }),
     );
 
     const schema = Shop.getDeleteValidation();
 
-    const user1 = await User.create({
-      name: 'Barry',
-    });
-
-    const user2 = await User.create({
+    const user = await User.create({
       name: 'Larry',
     });
 
@@ -2510,22 +2455,7 @@ describe('getDeleteValidation', () => {
 
     const shop = await Shop.create({
       name: 'My Shop',
-      owner: user1,
     });
-
-    await assertPass(
-      schema,
-      {
-        name: 'My New Shop',
-      },
-      {
-        name: 'My New Shop',
-      },
-      {
-        document: shop,
-        authUser: user1,
-      },
-    );
 
     await assertPass(
       schema,
@@ -2549,7 +2479,7 @@ describe('getDeleteValidation', () => {
       },
       {
         document: shop,
-        authUser: user2,
+        authUser: user,
       },
       'You do not have permissions to delete this document.',
     );

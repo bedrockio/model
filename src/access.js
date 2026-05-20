@@ -15,6 +15,7 @@ export function hasAccess(allowed = 'all', options = {}) {
     const scopes = resolveScopes(options);
 
     allowed = resolveAllowed(allowed);
+
     return allowed.some((token) => {
       if (token === 'self') {
         assertOptions(token, options);
@@ -22,9 +23,6 @@ export function hasAccess(allowed = 'all', options = {}) {
       } else if (token === 'user') {
         assertOptions(token, options);
         return isEqual(document.user, authUser);
-      } else if (token === 'owner') {
-        assertOptions(token, options);
-        return isEqual(document.owner, authUser);
       } else {
         return scopes?.includes(token);
       }

@@ -60,7 +60,7 @@ function isAllowedField(key, field, options) {
   } else {
     const { readAccess } = getField(field, key);
     try {
-      return hasAccess(readAccess, options);
+      return hasAccess(readAccess, { ...options, debug: key === 'status' });
     } catch {
       return false;
     }

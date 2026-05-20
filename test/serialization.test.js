@@ -184,39 +184,6 @@ describe('serialization', () => {
       expect(data.password).toBeUndefined();
     });
 
-    it('should allow owner read access', () => {
-      let data;
-
-      const User = createTestModel();
-      const Shop = createTestModel({
-        name: 'String',
-        earnings: {
-          type: 'Number',
-          readAccess: 'owner',
-        },
-        owner: {
-          type: 'ObjectId',
-          ref: User.modelName,
-        },
-      });
-      const user1 = new User();
-      const shop = new Shop({
-        earnings: 5000,
-        owner: user1,
-      });
-
-      data = shop.toObject({
-        authUser: user1,
-      });
-      expect(data.earnings).toBe(5000);
-
-      const user2 = new User();
-      data = shop.toObject({
-        authUser: user2,
-      });
-      expect(data.earnings).toBeUndefined();
-    });
-
     it('should allow user read access', () => {
       let data;
 

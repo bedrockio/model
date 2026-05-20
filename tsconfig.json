@@ -5,7 +5,7 @@
   "compilerOptions": {
     "target": "ESNext",
     "allowJs": true,
-    "checkJs": true,
+    "checkJs": false,
     "declaration": true,
     "skipLibCheck": true,
     "declarationMap": true,

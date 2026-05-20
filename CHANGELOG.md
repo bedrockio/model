@@ -1,3 +1,7 @@
+## 0.24.3
+
+- Removed unused "owner" as a special access token.
+
 ## 0.24.2
 
 - Reverted version conflicts.
